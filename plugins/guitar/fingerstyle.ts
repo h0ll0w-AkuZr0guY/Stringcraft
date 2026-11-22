@@ -12,6 +12,13 @@ import {
 import { rightFinger, assignFingers } from "./hands";
 import { tuning } from "./voicings";
 import { activePreferences, fingeringPath } from "./fingering";
+import {
+  addWrittenVoices,
+  writtenPosition,
+  soundingOriginId,
+  hasWrittenSupportingVoice,
+  nextWrittenAttack,
+} from "./written-voices";
 
 export function fingerstyle(
   score: MusicalScore,
@@ -29,6 +36,7 @@ export function fingerstyle(
   );
   // Work in phrases: preserve melodic events, add only structural bass, never all detector leftovers.
   const times = new Map(score.events.map((e) => [e.id, e.beat]));
+  const eventsById = new Map(score.events.map((e) => [e.id, e]));
   let lastPosition = 0,
     lastBeat = -100,
     lastString = 0;
@@ -43,7 +51,12 @@ export function fingerstyle(
       .filter((p) => p.fret >= 0 && p.fret <= limit.fret)
       .sort((a, b) => {
         const grip = grips.find((g) => g.beat <= beat && g.endBeat > beat);
+        const written = writtenPosition(
+          score.events.find((e) => e.id === n.id)!,
+          options,
+        );
         const cost = (p: typeof a) =>
+          (p.string === written?.string ? -100 : 0) +
           (preferred[index]?.string === p.string ? -4 : 0) +
           Math.abs(p.fret - lastPosition) * 0.65 +
           (p.string === lastString ? -0.4 : 0) +
@@ -59,12 +72,18 @@ export function fingerstyle(
       )
         continue;
       const event = score.events.find((e) => e.id === n.id)!;
-      const durationBeats = secondsToBeat(score, n.start + n.duration) - beat;
+      const durationBeats = Math.min(
+        secondsToBeat(score, n.start + n.duration) - beat,
+        (nextWrittenAttack(score, pos.string, beat, options) ?? Infinity) -
+          beat,
+      );
       const previous = actions.at(-1);
       const legato =
         options.difficulty !== "easy" &&
         event.slurFrom &&
-        previous?.sourceIds.includes(event.slurFrom) &&
+        previous?.sourceIds.includes(
+          soundingOriginId(eventsById, event.slurFrom),
+        ) &&
         previous.string === pos.string &&
         previous.fret !== pos.fret &&
         Math.abs(previous.fret - pos.fret) <= 3 &&
@@ -94,11 +113,22 @@ export function fingerstyle(
       break;
     }
   }
-  if (options.goal === "fingerstyle")
+  const withWritten =
+    options.goal === "fingerstyle"
+      ? addWrittenVoices(score, actions, options)
+      : actions;
+  actions.splice(0, actions.length, ...withWritten);
+  if (options.goal === "fingerstyle" && !hasWrittenSupportingVoice(score))
     for (const grip of grips) {
       const s = grip.shape.frets.findLastIndex((f) => f >= 0) + 1;
       // Roots on beats 1 and 3, with sustained melody kept ahead of bass.
       for (let beat = grip.beat; beat < grip.endBeat; beat += 2) {
+        if (
+          actions.some(
+            (a) => a.role === "bass" && Math.abs(a.beat - beat) < 0.08,
+          )
+        )
+          continue;
         const active = actions.filter(
           (a) =>
             a.beat <= beat + 0.001 && a.beat + a.durationBeats > beat + 0.001,

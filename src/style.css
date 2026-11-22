@@ -2004,6 +2004,27 @@ svg {
   line-height: 1.7;
   color: #74876d;
 }
+.voice-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.voice-row select {
+  max-width: 200px;
+}
+.legato-link {
+  pointer-events: none;
+}
+.rhythm-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px;
+}
 @media print {
   .tab-pages {
     overflow: visible;
@@ -2015,6 +2036,7 @@ svg {
   }
   .structure-panel,
   .arrangement-report,
+  .rhythm-controls,
   .fingering-toggle {
     display: none;
   }

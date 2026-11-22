@@ -7,6 +7,10 @@
 - `refinement-calibration.json`：18 段录音的训练/验证/留出候选清理实验；单项退化超限，维持默认关闭。
 - `qingtian-first8.json`：Steven Law《晴天》改编版本首 8 小节的符号处理与动作对照。
 - `qingtian-glyph-audit.json`：首 8 小节弦品标注与原 PDF 可见字形的顺序复核，不评估节奏和录音对齐。
+- `qingtian-verse8.json`、`qingtian-chorus8.json`：第 9–16、25–32 小节的多声部、弦位、连奏和闷音保真及来源层消融；后者正式副歌边界尚未确认。
+- `qingtian-section-glyph-audit.json`：另外 253 个弦品/X 字形的顺序复核。
+- `qingtian-suite.json`、`qingtian-suite-result.json`：三组私人输入的冻结摘要、用途、门槛及当前聚合结果，素材不分发。
+- `qingtian-recording-alignment.json`：使用检测起音拟合已知 riff 的未确认网格诊断；不作为识别准确率或独立对齐真值。
 
 GuitarSet 原始资料采用 CC-BY-4.0：Qingyang Xi、Rachel M. Bittner、Johan Pauwels、Xuzhou Ye、Juan P. Bello，GuitarSet: A Dataset for Guitar Transcription，ISMIR 2018，数据版本 1.1.0，[原始发布](https://zenodo.org/records/3371780)。本项目生成上述统计，不重新分发原始录音及标注。
 

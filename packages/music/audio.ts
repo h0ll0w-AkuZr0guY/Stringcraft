@@ -64,6 +64,33 @@ function synth(
   origin: number,
   speed: number,
 ) {
+  if ((n as GuitarNote).dead) {
+    const length = Math.max(0.02, Math.min(0.07, duration)),
+      buffer = ctx.createBuffer(
+        1,
+        Math.ceil(ctx.sampleRate * length),
+        ctx.sampleRate,
+      ),
+      channel = buffer.getChannelData(0);
+    let state = 17;
+    for (let i = 0; i < channel.length; i++) {
+      state = (Math.imul(state, 1664525) + 1013904223) | 0;
+      channel[i] =
+        (state / 2147483648) *
+        Math.exp((-i / channel.length) * 7) *
+        n.velocity *
+        0.45;
+    }
+    const source = ctx.createBufferSource(),
+      filter = ctx.createBiquadFilter();
+    source.buffer = buffer;
+    filter.type = "lowpass";
+    filter.frequency.value = 1100;
+    source.connect(filter);
+    filter.connect(destination);
+    source.start(when);
+    return;
+  }
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.0001, when);
   gain.gain.exponentialRampToValueAtTime(
@@ -109,7 +136,9 @@ export async function schedule(
     audioGestures(notes, from, to).map(async (gesture) => ({
       gesture,
       sample:
-        tone === "synth" ? null : await getSample(ctx, gesture.note, tone),
+        tone === "synth" || (gesture.note as GuitarNote).dead
+          ? null
+          : await getSample(ctx, gesture.note, tone),
     })),
   );
   const origin =
@@ -140,7 +169,7 @@ export async function schedule(
       duration = Math.max(0.03, Math.min(n.duration, to - n.start) / speed);
     if (!sample) {
       synth(ctx, n, when, duration, mix, gesture.changes, from, origin, speed);
-      fallback++;
+      if (!(n as GuitarNote).dead) fallback++;
       continue;
     }
     const source = ctx.createBufferSource(),

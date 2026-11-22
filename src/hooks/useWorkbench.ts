@@ -7,6 +7,7 @@ import {
   type MusicProject,
   type NoteEvent,
   type ArrangementGoal,
+  soundingEvents,
 } from "../../packages/contracts";
 import { decode, transcribe } from "../../packages/music/analyze";
 import { demoProject } from "../../packages/music/demo";
@@ -170,18 +171,24 @@ export function useWorkbench() {
           return;
         }
         if (active) {
-          setProject((p) => ({
-            ...p,
-            arrangement: plugin.arrange!(p.notes, {
-              difficulty: "normal",
-              capo: 0,
-              transpose: 0,
-              bpm: p.bpm,
-              score: projectScore(p),
-              goal: "accompaniment",
-              pattern: "strum",
-            }),
-          }));
+          // Bootstrap can finish after a user imports another project. Compute
+          // outside React's updater and only apply to the unchanged initial demo.
+          const arrangement = plugin.arrange!(project.notes, {
+            difficulty: "normal",
+            capo: 0,
+            transpose: 0,
+            bpm: project.bpm,
+            score: projectScore(project),
+            goal: "accompaniment",
+            pattern: "strum",
+          });
+          setProject((p) =>
+            p.id === project.id &&
+            p.updatedAt === project.updatedAt &&
+            !p.arrangement
+              ? { ...p, arrangement }
+              : p,
+          );
           setReady(true);
         }
       })
@@ -420,14 +427,16 @@ export function useWorkbench() {
         throw new Error(
           "请先在音乐结构中点击“升级为 v2 副本”，保留旧项目后再重编配。",
         );
-      const melody = project.melody.length
-        ? project.melody
-        : await invoke<NoteEvent[]>(
-            "melody-tracker",
-            "extractMelody",
-            [project.refinement?.notes ?? project.notes],
-            control.signal,
-          );
+      const melody = project.score
+        ? soundingEvents(project.score).filter((n) => n.role === "melody")
+        : project.melody.length
+          ? project.melody
+          : await invoke<NoteEvent[]>(
+              "melody-tracker",
+              "extractMelody",
+              [project.refinement?.notes ?? project.notes],
+              control.signal,
+            );
       if ((await installed("guitar-standard"))!.manifest.version === "0.1.0")
         throw new Error("请在插件中心更新标准吉他到 0.2，再使用新的编配方式。");
       const harmony = await load("harmony-analysis");

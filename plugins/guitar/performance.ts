@@ -7,6 +7,7 @@ import {
   beatToSeconds,
   secondsToBeat,
   validateScore,
+  eventRole,
   type InstrumentPluginV2,
   type MusicalScore,
   type PerformancePlan,
@@ -161,11 +162,12 @@ export function soundEvents(
     leftFinger: a.finger,
     rightFinger: a.rightFinger,
     attack: a.kind,
+    dead: a.kind === "dead" ? true : undefined,
+    notationDurationBeats: a.notationDurationBeats,
     linkFrom: a.from,
     stroke: a.stroke,
     strokeId: a.strokeId,
     technique: a.kind === "hammer" ? "h" : a.kind === "pull" ? "p" : undefined,
-    letRing: true,
   }));
 }
 export const guitarPerformancePlugin: InstrumentPluginV2<
@@ -249,7 +251,12 @@ export function arrangeMusicalScore(
       plan.goal === "accompaniment"
         ? []
         : score.events
-            .filter((e) => e.midi !== null && !e.tieFrom && !kept.has(e.id))
+            .filter(
+              (e) =>
+                (e.midi !== null || e.unpitched) &&
+                !e.tieFrom &&
+                !kept.has(e.id),
+            )
             .map((e) => ({
               noteId: e.id,
               reason: "优先旋律后按演奏动作约束简化；未增加检测残留音",
@@ -257,7 +264,10 @@ export function arrangeMusicalScore(
     warnings: [
       ...score.warnings,
       ...plan.issues.map((i) => i.message),
-      "结构化编配仍需真人试弹；连奏音色为采样/合成近似。",
+      "编配通过动作约束检查；真实谱面比较见评估文档。连奏音色为采样/合成近似。",
+      ...(notes.some((n) => n.dead)
+        ? ["闷音试听为短噪声近似，MIDI 使用打击乐侧击音代替。"]
+        : []),
     ],
   };
 }
@@ -271,11 +281,12 @@ function projectActions(
     durationBeats:
       secondsToBeat(score, n.start + n.duration) -
       secondsToBeat(score, n.start),
+    notationDurationBeats: n.notationDurationBeats,
     string: n.string,
     fret: n.fret,
     finger: n.leftFinger ?? 0,
     rightFinger: n.rightFinger ?? rightFinger(n.string),
-    kind: n.attack ?? "pluck",
+    kind: n.dead ? "dead" : (n.attack ?? "pluck"),
     from: n.linkFrom,
     stroke: n.stroke,
     strokeId: n.strokeId,
@@ -376,10 +387,7 @@ export function recommendForScore(
         options.goal === "accompaniment"
           ? []
           : score.events.filter(
-              (e) =>
-                e.midi !== null &&
-                (e.role === "melody" || e.voice === "melody") &&
-                !e.tieFrom,
+              (e) => e.midi !== null && eventRole(e) === "melody" && !e.tieFrom,
             );
       const retained = new Set(plan.actions.flatMap((a) => a.sourceIds));
       const missingMelody = expected.filter((e) => !retained.has(e.id)).length;

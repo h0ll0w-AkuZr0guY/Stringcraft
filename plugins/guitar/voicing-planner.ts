@@ -1,4 +1,4 @@
-import type { MusicalScore } from "../../packages/contracts";
+import { eventRole, type MusicalScore } from "../../packages/contracts";
 import { limits, type GuitarOptions, type GuitarGrip } from "./types";
 import { tuning, voicings, transitionCost, chordName } from "./voicings";
 
@@ -33,7 +33,7 @@ export function selectGrips(
           const phrase = score.events.filter(
             (e) =>
               e.midi !== null &&
-              (e.role === "melody" || e.voice === "melody") &&
+              eventRole(e) === "melody" &&
               e.beat >= chord.beat &&
               e.beat < chord.beat + chord.durationBeats &&
               !e.tieFrom,

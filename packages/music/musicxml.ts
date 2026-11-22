@@ -45,6 +45,8 @@ export function readMusicXML(text: string): MusicalScore {
       beatsPerBar = 4;
     const ties = new Map<string, string>(),
       slurs = new Map<string, string>();
+    let transpose = 0;
+    const staffTransposition = new Map<number, number>();
     for (const measure of part.querySelectorAll(":scope > measure")) {
       let cursor = barStart,
         previous = cursor,
@@ -61,6 +63,23 @@ export function readMusicXML(text: string): MusicalScore {
             beatsPerBar = (numerator * 4) / denominator;
             if (partIndex === 0)
               score.meter.push({ beat: cursor, numerator, denominator });
+          }
+          for (const shift of child.querySelectorAll(":scope > transpose")) {
+            const amount =
+              number(shift, "chromatic", 0) +
+              12 * number(shift, "octave-change", 0);
+            if (!Number.isInteger(amount))
+              throw new Error("暂不支持非半音的 MusicXML 移调");
+            const staff = shift.getAttribute("number");
+            if (staff) staffTransposition.set(Number(staff), amount);
+            else {
+              transpose = amount;
+              staffTransposition.clear();
+            }
+            if (shift.querySelector("double"))
+              score.warnings.push(
+                "MusicXML 八度重奏只导入主音，请人工补充重奏声部。",
+              );
           }
           continue;
         }
@@ -128,7 +147,8 @@ export function readMusicXML(text: string): MusicalScore {
         const midi = pitch
           ? (number(pitch, "octave", 4) + 1) * 12 +
             pitchClass[pitch.querySelector("step")?.textContent ?? "C"] +
-            number(pitch, "alter", 0)
+            number(pitch, "alter", 0) +
+            (staffTransposition.get(number(child, "staff", 1)) ?? transpose)
           : null;
         const event: ScoreEvent = {
           id: `xml-event-${id++}`,
@@ -136,8 +156,11 @@ export function readMusicXML(text: string): MusicalScore {
           durationBeats: duration,
           voice,
           midi,
+          unpitched: child.querySelector("unpitched") ? true : undefined,
           velocity: 0.7,
           sourceIds: [],
+          origin: "imported",
+          roleOrigin: "inferred",
           role:
             partIndex === 0 &&
             number(child, "staff", 1) === 1 &&
@@ -145,6 +168,20 @@ export function readMusicXML(text: string): MusicalScore {
               ? "melody"
               : "harmony",
         };
+        const technical = child.querySelector("notations > technical");
+        if (technical) {
+          const fields: Record<string, string | number | boolean> = {};
+          for (const name of ["string", "fret", "fingering"]) {
+            const value = technical.querySelector(name)?.textContent;
+            if (
+              value !== undefined &&
+              value !== null &&
+              Number.isFinite(Number(value))
+            )
+              fields[name] = Number(value);
+          }
+          if (Object.keys(fields).length) event.extensions = { guitar: fields };
+        }
         const key = `${voice}/${midi}`;
         const tieStops = !!child.querySelector(
           'tie[type="stop"], tied[type="stop"]',

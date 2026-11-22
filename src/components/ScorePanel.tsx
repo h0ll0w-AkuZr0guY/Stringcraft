@@ -334,7 +334,10 @@ export default function ScorePanel() {
         <div className="note-editor">
           <div className="note-editor-heading">
             <strong>
-              {noteName(chosen.pitch.midi)} <small>音符编辑</small>
+              {chosen.dead
+                ? `${chosen.string}弦闷音`
+                : noteName(chosen.pitch.midi)}{" "}
+              <small>音符编辑</small>
             </strong>
             <button
               className="icon-button"
@@ -380,11 +383,23 @@ export default function ScorePanel() {
                 aria-label="编辑弦号"
                 value={chosen.string}
                 onChange={(e) => {
-                  const string = Number(e.target.value),
-                    fret =
-                      chosen.pitch.midi -
-                      [64, 59, 55, 50, 45, 40][string - 1] -
-                      (project.arrangement?.capo ?? 0);
+                  const string = Number(e.target.value);
+                  if (chosen.dead) {
+                    updateNote(chosen.id, {
+                      string,
+                      fret: 0,
+                      pitch: {
+                        midi:
+                          [64, 59, 55, 50, 45, 40][string - 1] +
+                          (project.arrangement?.capo ?? 0),
+                      },
+                    });
+                    return;
+                  }
+                  const fret =
+                    chosen.pitch.midi -
+                    [64, 59, 55, 50, 45, 40][string - 1] -
+                    (project.arrangement?.capo ?? 0);
                   if (fret < 0) {
                     notify("该音高在所选弦不可弹");
                     return;
@@ -403,6 +418,7 @@ export default function ScorePanel() {
               品
               <input
                 type="number"
+                disabled={!!chosen.dead}
                 min="0"
                 max="24"
                 value={chosen.fret}
@@ -419,6 +435,74 @@ export default function ScorePanel() {
                   });
                 }}
               />
+            </label>
+            <label>
+              演奏动作
+              <select
+                aria-label="编辑演奏动作"
+                value={chosen.dead ? "dead" : (chosen.attack ?? "pluck")}
+                onChange={(e) => {
+                  const attack = e.target.value as GuitarNote["attack"];
+                  const linked =
+                    attack === "hammer" ||
+                    attack === "pull" ||
+                    attack === "slide";
+                  const previous = linked
+                    ? notes
+                        .filter(
+                          (n) =>
+                            n.id !== chosen.id &&
+                            !n.dead &&
+                            n.string === chosen.string &&
+                            n.start < chosen.start &&
+                            Math.abs(n.start + n.duration - chosen.start) <
+                              0.001,
+                        )
+                        .sort((a, b) => b.start - a.start)[0]
+                    : undefined;
+                  if (linked && !previous) {
+                    notify(
+                      "请先让前一个同弦音的结束时间与当前起音相接，再设置连奏。",
+                    );
+                    return;
+                  }
+                  updateNote(chosen.id, {
+                    attack,
+                    dead: attack === "dead" ? true : undefined,
+                    linkFrom: previous?.id,
+                    technique:
+                      attack === "hammer"
+                        ? "h"
+                        : attack === "pull"
+                          ? "p"
+                          : undefined,
+                    stroke: undefined,
+                    strokeId: undefined,
+                    ...(attack === "dead"
+                      ? {
+                          fret: 0,
+                          leftFinger: 0,
+                          pitch: {
+                            midi:
+                              [64, 59, 55, 50, 45, 40][chosen.string - 1] +
+                              (project.arrangement?.capo ?? 0),
+                          },
+                        }
+                      : {}),
+                  });
+                }}
+              >
+                <option value="pluck">独立拨弦</option>
+                <option value="hammer">击弦 h</option>
+                <option value="pull">勾弦 p</option>
+                <option value="slide">滑音 /</option>
+                <option value="dead">闷音 ×</option>
+                {chosen.attack === "strum" && (
+                  <option value="strum" disabled>
+                    扫弦组（当前）
+                  </option>
+                )}
+              </select>
             </label>
             <button
               className={`icon-button ${chosen.locked ? "locked" : ""}`}
@@ -547,7 +631,7 @@ export default function ScorePanel() {
               setTimeout(() => window.print(), 100);
             }}
           >
-            打印 PDF
+            打印六线谱 PDF
           </button>
           <button
             className="button secondary small"

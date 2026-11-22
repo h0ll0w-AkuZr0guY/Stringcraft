@@ -47,7 +47,50 @@
 
 《晴天》手工标注另经过 PDF 文本字形的自动复核：按实际 TAB 行和绘制的小节线读取顺序弦品，首 8 小节共 219 个音符全部一致，见 [字形复核](../benchmarks/qingtian-glyph-audit.json)。该复核没有证明节奏、声部或原录音对齐，不能扩大为完整标注审阅。
 
-## 复现
+## 第二轮实测
+
+### 已有谱的声部与技法保真
+
+继续使用同一 Steven Law 版本，增加第 9–16、25–32 小节。后者这里只称“带闷音的段落”，尚未依据原录音确认正式的副歌边界。第 9–16 小节的 105 个弦品字形、第 25–32 小节的 148 个弦品/闷音 X 字形全部通过独立 PDF 文本几何复核；节奏与声部仍是单次视觉标注，不能把字形复核扩大成完整审阅。见 [分段字形复核](../benchmarks/qingtian-section-glyph-audit.json)。
+
+| 已知谱处理 | 第 9–16 小节 | 第 25–32 小节 |
+| --- | --- | --- |
+| 延音合并后的有音高起音 | 101/101 保留 | 122/122 保留 |
+| 明确闷音动作 | 不适用 | 16/16 保留 |
+| 标注的击勾弦连接 | 8/8 保留 | 无标注连接 |
+| 参考弦品一致率 | 100% | 100% |
+| 同弦释放后的发声时长误差 | 0 | 0 |
+| 动作硬错误 | 0 | 0 |
+
+这些结果来自已有弦品与声部输入，证明导入后能保留材料；没有证明算法能从录音发现这些声部或自行创作相同编配。弦品一致率也不意味着这一指法唯一或适合每位演奏者。完整聚合见 [主歌对照](../benchmarks/qingtian-verse8.json)和[闷音段对照](../benchmarks/qingtian-chorus8.json)。
+
+同版本消融把已确认的支持声部故意降为未确认检测候选，其他规则不变：两段有音高 F1 分别降至 0.7758、0.5977，独立低音和内声部召回都为 0。这是来源保留层的消融，不能写成相对历史版本的音频识别提升。新规则只优先保留人工或导入材料，仍拒绝把未经核对的检测残留自动堆成和声。
+
+闷音以无固定音高事件保存，与普通休止区分。评估按弦号和起音匹配，不拿兼容六线谱投影中的占位 MIDI 音高计分。短噪声衰减与谱面时值分开保存；试听为噪声近似，MIDI 为侧击音替代。延音线、击勾弦、同音重弹分别处理。
+
+### 固定参考验收集
+
+[验收清单](../benchmarks/qingtian-suite.json)固定三组输入的 SHA-256、用途和门槛；[当前结果](../benchmarks/qingtian-suite-result.json)三组通过。完整商业谱标注仅存在本地，因此该集需准备合法私人输入后运行，普通 CI 使用原创回归短句。清单标记均为 development，这些谱例已经参与规则修正，不能再当作独立留出组。
+
+```powershell
+node scripts/evaluate-reference-suite.mjs benchmarks/qingtian-suite.json artifacts/quality/score-suite
+```
+
+参考摘要不一致会停止执行，门槛失败返回非零退出码。不得为了通过测试更新参考摘要或降低门槛；标注纠错需单独解释证据，规则更新需补相应最小反例。每轮先固定参照、切分和指标，再用训练与验证组选软参数；硬演奏规则保持不变，最后只评价未参与调参的留出素材。平均提升但个别风格退化超限的候选保持实验状态。
+
+### 用户《晴天》录音诊断
+
+浏览器实际分析前 30 秒，得到 338 个原始候选、102 个旋律候选；初学和弦伴奏 68 个发声事件，导出成功、外部上传为 0。它只是流程检查，不能报告音符准确率。
+
+固定在 60–180 BPM、0–4 秒起点范围搜索，只用已知 riff 前两小节的音高与检测起音选网格，后两小节作同录音延续检查。最佳候选 68.25 BPM、起点 0.78 秒：选网格的前段匹配 17/17，后段 14/18，后段匹配起音平均偏差约 20 ms。工作台原提议为 145 BPM、起点 0，仍标为未确认。见 [录音对齐诊断](../benchmarks/qingtian-recording-alignment.json)。
+
+这项拟合可能同时拟合检测误差，不能充当人工对齐真值；参照改编与原曲也可能不同。当前记录为 `unconfirmed`，不写回产品默认速度。下一轮优先修复节拍候选与首拍估计，再建立独立对齐标注，避免把节拍偏差误算成音高识别或指法问题。
+
+```powershell
+node scripts/align-reference.mjs artifacts/reference-corpus/qingtian/first8.json artifacts/private-recording-project.json artifacts/quality/qingtian-recording-alignment.json
+```
+
+## 基础复现
 
 先将官方 `annotation.zip` 下载到忽略的 artifacts 目录；脚本会核对官方 MD5。普通 CI 不下载大型语料。
 
@@ -60,7 +103,7 @@ $env:STRINGCRAFT_REFERENCE_AUDIO='artifacts/reference-corpus/guitarset/audio/man
 npx playwright test tests/e2e/reference-audio.spec.ts
 ```
 
-最后一条需要本地私人参考标注，不在仓库中分发。格式含 source（版本、来源链接、摘要、审阅状态）、MusicalScore、参考 GuitarNote[]。评估输出只含聚合误差与小节统计，仍需检查后再公开。
+曲谱对照命令需要本地私人参考标注，不在仓库中分发。格式含 source（版本、来源链接、摘要、审阅状态）、MusicalScore、可选参考 GuitarNote[]。多声部例设置 evaluationGoal；缺少 reference 时从核对过的弦品、延音与连奏关系投影。评估输出只含聚合误差与小节统计，仍需检查后再公开。
 
 ## 下一轮的条件
 

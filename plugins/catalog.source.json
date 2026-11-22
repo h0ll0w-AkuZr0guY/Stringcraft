@@ -3,10 +3,8 @@
     "id": "guitar-standard",
     "name": "标准吉他",
     "directory": "guitar",
-    "version": "0.2.0",
-    "capabilities": [
-      "instrument"
-    ],
+    "version": "0.2.1",
+    "capabilities": ["instrument"],
     "description": "和弦伴奏、独奏指弹与单线练习；独立按弦与演奏动作验证",
     "license": "Apache-2.0"
   },
@@ -15,9 +13,7 @@
     "name": "旋律追踪",
     "directory": "melody",
     "version": "0.1.0",
-    "capabilities": [
-      "melody"
-    ],
+    "capabilities": ["melody"],
     "description": "结合起音、时长与音高连续性提取主声部",
     "license": "Apache-2.0"
   },
@@ -25,10 +21,8 @@
     "id": "standard-exporters",
     "name": "标准导出",
     "directory": "exporters",
-    "version": "0.2.0",
-    "capabilities": [
-      "exporter"
-    ],
+    "version": "0.2.1",
+    "capabilities": ["exporter"],
     "description": "项目、MIDI 和文本六线谱",
     "license": "Apache-2.0"
   },
@@ -37,9 +31,7 @@
     "name": "Basic Pitch",
     "directory": "basic-pitch",
     "version": "0.1.0",
-    "capabilities": [
-      "transcriber"
-    ],
+    "capabilities": ["transcriber"],
     "description": "浏览器神经音符识别，首次需下载模型",
     "license": "Apache-2.0"
   },
@@ -47,10 +39,8 @@
     "id": "guitar-samples",
     "name": "吉他实录音源",
     "directory": "guitar-samples",
-    "version": "0.2.0",
-    "capabilities": [
-      "renderer"
-    ],
+    "version": "0.2.1",
+    "capabilities": ["renderer"],
     "description": "CC0 钢弦、尼龙采样，缺失音域明确回退合成",
     "license": "CC0-1.0 / Apache-2.0"
   },
@@ -59,9 +49,7 @@
     "name": "百炼编配建议",
     "directory": "bailian-advisor",
     "version": "0.1.0",
-    "capabilities": [
-      "advisor"
-    ],
+    "capabilities": ["advisor"],
     "description": "使用自己的 API Key 比较本地已验证的候选",
     "license": "Apache-2.0"
   },
@@ -70,9 +58,7 @@
     "name": "钢琴契约验证包",
     "directory": "piano",
     "version": "0.2.0",
-    "capabilities": [
-      "instrument"
-    ],
+    "capabilities": ["instrument"],
     "description": "SDK v2 开发示例：双手、琴键与跨度。尚未接入工作台，不提供完整钢琴编配。",
     "license": "Apache-2.0"
   },
@@ -81,9 +67,7 @@
     "name": "和声与节拍候选",
     "directory": "harmony",
     "version": "0.2.0",
-    "capabilities": [
-      "harmony"
-    ],
+    "capabilities": ["harmony"],
     "description": "按拍窗估计和弦证据，保留人工校正；速度仅提供候选",
     "license": "Apache-2.0"
   },
@@ -92,9 +76,7 @@
     "name": "弱音候选清理（实验）",
     "directory": "note-refinement",
     "version": "0.2.0",
-    "capabilities": [
-      "refiner"
-    ],
+    "capabilities": ["refiner"],
     "description": "可减少误报，也可能漏掉弱和弦音；保留原候选供对照，默认不应用。",
     "license": "Apache-2.0"
   }

@@ -30,7 +30,11 @@ export interface GuitarNote extends NoteEvent {
   leftFinger?: number;
   rightFinger?: "p" | "i" | "m" | "a";
   linkFrom?: string;
-  attack?: "pluck" | "hammer" | "pull" | "slide" | "strum";
+  attack?: "pluck" | "hammer" | "pull" | "slide" | "strum" | "dead";
+  /** Legacy TAB projection: pitch describes the string position, not a sounded pitch. */
+  dead?: boolean;
+  /** Guitar percussion may have a notated beat value longer than its noise decay. */
+  notationDurationBeats?: number;
   stroke?: "down" | "up";
   strokeId?: string;
   letRing?: boolean;
@@ -274,7 +278,7 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     )
       throw new Error("编配参数无效");
     const tuning = [64, 59, 55, 50, 45, 40];
-    for (const n of p.arrangement.notes)
+    for (const n of p.arrangement.notes) {
       if (
         !Number.isInteger(n.string) ||
         n.string < 1 ||
@@ -285,5 +289,18 @@ export function validateProject(value: unknown): asserts value is MusicProject {
         n.pitch.midi !== tuning[n.string - 1] + p.arrangement.capo + n.fret
       )
         throw new Error("吉他弦位与音高不一致");
+      if (
+        (n.dead !== undefined && typeof n.dead !== "boolean") ||
+        (n.attack === "dead" && !n.dead) ||
+        (n.dead && n.attack !== undefined && n.attack !== "dead")
+      )
+        throw new Error("闷音与演奏动作不一致");
+      if (
+        n.notationDurationBeats !== undefined &&
+        (!Number.isFinite(n.notationDurationBeats) ||
+          n.notationDurationBeats <= 0)
+      )
+        throw new Error("谱面时值无效");
+    }
   }
 }

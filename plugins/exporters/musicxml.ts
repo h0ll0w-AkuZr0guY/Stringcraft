@@ -26,13 +26,16 @@ export function musicXML(project: MusicProject): string {
       beat: Math.max(0, Math.round(secondsToBeat(base, n.start) * 4) / 4),
       durationBeats: Math.max(
         0.25,
-        Math.round(
-          (secondsToBeat(base, n.start + n.duration) -
-            secondsToBeat(base, n.start)) *
-            4,
-        ) / 4,
+        n.dead && n.notationDurationBeats
+          ? n.notationDurationBeats
+          : Math.round(
+              (secondsToBeat(base, n.start + n.duration) -
+                secondsToBeat(base, n.start)) *
+                4,
+            ) / 4,
       ),
-      midi: n.pitch.midi,
+      midi: n.dead ? null : n.pitch.midi,
+      unpitched: n.dead ? true : undefined,
       velocity: n.velocity,
       sourceIds: [n.id],
     })),
@@ -63,7 +66,7 @@ export function musicXML(project: MusicProject): string {
     const meter =
       score.meter.findLast((m) => m.beat <= bar.beat) ?? score.meter[0];
     output.push(
-      `<measure number="${bar.index + 1}"${bar.index === 0 && score.pickupBeats ? ' implicit="yes"' : ""}><attributes><divisions>${divisions}</divisions><time><beats>${meter.numerator}</beats><beat-type>${meter.denominator}</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>`,
+      `<measure number="${bar.index + 1}"${bar.index === 0 && score.pickupBeats ? ' implicit="yes"' : ""}><attributes><divisions>${divisions}</divisions><time><beats>${meter.numerator}</beats><beat-type>${meter.denominator}</beat-type></time><clef><sign>G</sign><line>2</line></clef><transpose><diatonic>0</diatonic><chromatic>0</chromatic><octave-change>-1</octave-change></transpose></attributes>`,
     );
     const tempos = score.tempo.filter(
       (t) => t.beat >= bar.beat && t.beat < bar.endBeat,
@@ -134,7 +137,7 @@ export function musicXML(project: MusicProject): string {
           `<${kind} type="${type}" number="1"/>`;
         const technique = `${!before && n.linkFrom && (n.attack === "hammer" || n.attack === "pull") ? link(n.attack === "hammer" ? "hammer-on" : "pull-off", "stop") : ""}${!after && origin && (origin.attack === "hammer" || origin.attack === "pull") ? link(origin.attack === "hammer" ? "hammer-on" : "pull-off", "start") : ""}`;
         output.push(
-          `<note><pitch><step>${step}</step>${alter ? "<alter>1</alter>" : ""}<octave>${Math.floor(e.midi! / 12) - 1}</octave></pitch><duration>${duration(end - start)}</duration>${ties}<voice>${voice}</voice><notations>${tied}<technical><string>${n.string}</string><fret>${n.fret}</fret>${n.leftFinger ? `<fingering>${n.leftFinger}</fingering>` : ""}${technique}</technical></notations></note>`,
+          `<note>${n.dead ? "<unpitched><display-step>E</display-step><display-octave>3</display-octave></unpitched>" : `<pitch><step>${step}</step>${alter ? "<alter>1</alter>" : ""}<octave>${Math.floor(e.midi! / 12)}</octave></pitch>`}<duration>${duration(end - start)}</duration>${ties}<voice>${voice}</voice>${n.dead ? "<notehead>x</notehead>" : ""}<notations>${tied}<technical><string>${n.string}</string><fret>${n.fret}</fret>${n.leftFinger ? `<fingering>${n.leftFinger}</fingering>` : ""}${technique}</technical></notations></note>`,
         );
         cursor = end;
       }

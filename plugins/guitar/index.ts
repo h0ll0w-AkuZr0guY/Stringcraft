@@ -18,7 +18,7 @@ export const guitar: InstrumentDefinition = {
   tuning: [64, 59, 55, 50, 45, 40],
   maxFret: 24,
   notation: ["tablature", "staff"],
-  techniques: ["h", "p", "pm"],
+  techniques: ["h", "p", "pm", "dead"],
 };
 export const levels = {
   easy: { voices: 1, fret: 5, span: 3, gap: 0.3, speed: 6 },

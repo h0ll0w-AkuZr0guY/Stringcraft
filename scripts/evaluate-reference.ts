@@ -18,12 +18,15 @@ import {
   calibratedPreferences,
 } from "../plugins/guitar/fingering";
 import { chordIntervals } from "../plugins/harmony";
+import { referenceSoundEvents } from "../plugins/guitar/reference";
+import { compareGuitarPerformance } from "../plugins/guitar/evaluation";
 
 interface Reference {
   id: string;
   source: Record<string, unknown>;
   score: MusicalScore;
-  reference: GuitarNote[];
+  reference?: GuitarNote[];
+  evaluationGoal?: GuitarOptions["goal"];
 }
 function slice(reference: Reference, from: number, to: number) {
   const seconds = beatToSeconds(reference.score, from);
@@ -49,7 +52,7 @@ function slice(reference: Reference, from: number, to: number) {
   };
   return {
     score,
-    notes: reference.reference
+    notes: (reference.reference ?? referenceSoundEvents(reference.score))
       .filter(
         (n) =>
           n.start >= seconds && n.start < beatToSeconds(reference.score, to),
@@ -90,7 +93,7 @@ function texture(notes: GuitarNote[], score: MusicalScore) {
 function harmonicFit(notes: GuitarNote[], score: MusicalScore) {
   let correct = 0,
     total = 0;
-  for (const n of notes)
+  for (const n of notes.filter((n) => !n.dead))
     for (const c of score.chords) {
       const start = beatToSeconds(score, c.beat),
         end = beatToSeconds(score, c.beat + c.durationBeats);
@@ -114,6 +117,71 @@ function harmonicFit(notes: GuitarNote[], score: MusicalScore) {
 export async function evaluateReference(input: string, output: string) {
   const bytes = await readFile(input),
     reference = JSON.parse(bytes.toString()) as Reference;
+  if (reference.evaluationGoal) {
+    const score = reference.score,
+      truth = reference.reference ?? referenceSoundEvents(score),
+      options: GuitarOptions = {
+        difficulty: "hard",
+        goal: reference.evaluationGoal,
+        capo: 0,
+        transpose: 0,
+        pattern: "strum",
+      };
+    const plan = arrangeScore(score, options),
+      notes = soundEvents(plan, score),
+      metrics = compareGuitarPerformance(truth, notes);
+    const ablatedScore: MusicalScore = {
+      ...score,
+      timing: "estimated",
+      events: score.events.map((e) => ({
+        ...e,
+        origin: "detected",
+        roleOrigin: "inferred",
+      })),
+    };
+    const ablated = arrangeScore(ablatedScore, options);
+    const ablation = {
+      description:
+        "Same engine, but confirmed supporting voices are deliberately treated as unreviewed detector candidates. Not a comparison to a historical release.",
+      ...compareGuitarPerformance(truth, soundEvents(ablated, ablatedScore)),
+    };
+    const report = {
+      version: 2,
+      source: reference.source,
+      inputSha256: createHash("sha256").update(bytes).digest("hex"),
+      task: "authored multivoice TAB performance; same-string reattacks release earlier resonance; no audio-recognition claim",
+      ...metrics,
+      ablations: { withoutConfirmedSupportingVoices: ablation },
+      hardErrors: validatePerformance(plan, options).filter(
+        (i) => i.severity === "error",
+      ),
+      referenceTexture: texture(truth, score),
+      generatedTexture: texture(notes, score),
+      dropped: truth
+        .filter((n) => !notes.some((p) => p.id === n.id))
+        .map((n) => ({ id: n.id, role: n.role })),
+      limitations: [
+        "Manual rhythm/voice annotation still needs independent review",
+        "Not aligned to the user recording",
+        "Exact reconstruction does not demonstrate automatic composition quality",
+      ],
+    };
+    await mkdir(dirname(output), { recursive: true });
+    await writeFile(output, JSON.stringify(report, null, 2));
+    console.log(
+      JSON.stringify({
+        pitchedF1: metrics.pitched.f1,
+        percussionF1: metrics.percussion.f1,
+        reference: truth.length,
+        prediction: notes.length,
+        positions: metrics.positions.agreement,
+        articulation: metrics.articulation.agreement,
+        hardErrors: report.hardErrors.length,
+        dropped: report.dropped.length,
+      }),
+    );
+    return;
+  }
   const riff = slice(reference, 0, 16),
     comp = slice(reference, 16, 32);
   const evaluate = (weights: typeof defaultPreferences) => {

@@ -118,7 +118,7 @@ export function terminateStrings(actions: GuitarAction[]) {
 }
 export function assignRightHand(actions: GuitarAction[]) {
   const plucks = actions
-      .filter((a) => a.kind === "pluck")
+      .filter((a) => a.kind === "pluck" || a.kind === "dead")
       .sort((a, b) => a.beat - b.beat),
     groups: GuitarAction[][] = [];
   for (const a of plucks) {

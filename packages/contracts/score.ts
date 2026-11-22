@@ -16,11 +16,17 @@ export interface ScoreEvent {
   voice: string;
   beat: number;
   durationBeats: number;
-  /** null is an explicit rest. Raw detection times remain in source notes. */
+  /** null is a rest, or a percussion event when unpitched=true. */
   midi: number | null;
+  unpitched?: boolean;
   velocity: number;
   sourceIds: string[];
+  origin?: NoteEvent["source"] | "imported";
+  /** Namespaced primitive notation data; interpretation belongs to instrument packages. */
+  extensions?: Record<string, Record<string, string | number | boolean>>;
   role?: "melody" | "bass" | "harmony";
+  roleOrigin?: "manual" | "inferred" | "imported";
+  activation?: number;
   tieFrom?: string;
   slurFrom?: string;
 }
@@ -39,6 +45,18 @@ export interface ChordSymbol {
     quality: ChordSymbol["quality"];
     score: number;
   }[];
+}
+export function eventRole(
+  event: Pick<ScoreEvent, "voice" | "role">,
+): NonNullable<ScoreEvent["role"]> {
+  return (
+    event.role ??
+    (event.voice === "melody"
+      ? "melody"
+      : event.voice === "bass"
+        ? "bass"
+        : "harmony")
+  );
 }
 export interface MusicalScore {
   version: 2;
@@ -188,6 +206,48 @@ export function validateScore(score: MusicalScore): void {
       !Array.isArray(e.sourceIds)
     )
       throw new Error("谱面事件无效");
+    if (
+      e.origin !== undefined &&
+      !["detected", "manual", "imported", "generated", "demo"].includes(
+        e.origin,
+      )
+    )
+      throw new Error("谱面来源无效");
+    if (
+      e.activation !== undefined &&
+      (!finite(e.activation) || e.activation < 0 || e.activation > 1)
+    )
+      throw new Error("谱面激活值无效");
+    if (
+      e.roleOrigin !== undefined &&
+      !["manual", "inferred", "imported"].includes(e.roleOrigin)
+    )
+      throw new Error("声部用途来源无效");
+    if (
+      e.unpitched !== undefined &&
+      (typeof e.unpitched !== "boolean" || (e.unpitched && e.midi !== null))
+    )
+      throw new Error("非音高事件不能同时声明固定音高");
+    if (e.role !== undefined && !["melody", "bass", "harmony"].includes(e.role))
+      throw new Error("声部用途无效");
+    if (
+      e.extensions !== undefined &&
+      (e.extensions === null ||
+        Array.isArray(e.extensions) ||
+        typeof e.extensions !== "object" ||
+        Object.values(e.extensions).some(
+          (fields) =>
+            fields === null ||
+            Array.isArray(fields) ||
+            typeof fields !== "object" ||
+            Object.values(fields).some(
+              (value) =>
+                !["string", "number", "boolean"].includes(typeof value) ||
+                (typeof value === "number" && !finite(value)),
+            ),
+        ))
+    )
+      throw new Error("谱面扩展只能包含分命名空间的有限基础值");
     events.set(e.id, e);
   }
   for (const e of score.events) {
@@ -277,15 +337,9 @@ export function soundingEvents(score: MusicalScore): NoteEvent[] {
           beatToSeconds(score, e.beat),
         pitch: { midi: e.midi },
         velocity: e.velocity,
-        score: 1,
-        source: "manual",
-        role:
-          e.role ??
-          (e.voice === "bass"
-            ? "bass"
-            : e.voice === "melody"
-              ? "melody"
-              : "harmony"),
+        score: e.activation ?? (e.origin === "detected" ? 0 : 1),
+        source: e.origin === "imported" ? "manual" : (e.origin ?? "manual"),
+        role: eventRole(e),
       });
     }
   }

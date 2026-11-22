@@ -45,6 +45,10 @@ test("opt-in local-only real recording smoke test", async ({ page }) => {
     "artifacts/private-validation.json",
     JSON.stringify(stats, null, 2),
   );
+  await writeFile(
+    "artifacts/private-recording-project.json",
+    JSON.stringify(p),
+  );
   console.log(JSON.stringify(stats));
   expect(outsideUploads).toEqual([]);
   expect(p.arrangement.notes.length).toBeGreaterThan(0);

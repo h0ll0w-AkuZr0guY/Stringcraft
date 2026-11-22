@@ -1,6 +1,7 @@
 import type { MusicalScore } from "../../packages/contracts";
 import type { GuitarAction, GuitarGrip, GuitarOptions } from "./types";
 import { tuning } from "./voicings";
+import { hasWrittenSupportingVoice } from "./written-voices";
 
 /** Sparse chordal guide tones. A fill must leave the existing melody and bass intact. */
 export function addInnerVoice(
@@ -13,7 +14,11 @@ export function addInnerVoice(
     candidate: GuitarAction,
   ) => GuitarAction[] | null,
 ): GuitarAction[] {
-  if (!["hard", "expert"].includes(options.difficulty)) return initial;
+  if (
+    !["hard", "expert"].includes(options.difficulty) ||
+    hasWrittenSupportingVoice(score)
+  )
+    return initial;
   let actions = initial,
     lastPitch = 55;
   for (const grip of grips) {

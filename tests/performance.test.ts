@@ -22,6 +22,8 @@ import { alphaScore } from "../plugins/guitar/alpha-score";
 import { tabMeasures } from "../plugins/guitar/notation";
 import piano from "../plugins/piano";
 import { musicXML } from "../plugins/exporters/musicxml";
+import { referenceSoundEvents } from "../plugins/guitar/reference";
+import { compareGuitarPerformance } from "../plugins/guitar/evaluation";
 const score = (): MusicalScore => ({
   version: 2,
   durationBeats: 8,
@@ -59,6 +61,137 @@ const options = {
   pattern: "strum" as const,
 };
 describe("musical score and evidence", () => {
+  it("authored muted attacks release the string without inventing a pitched score event", () => {
+    const s = score();
+    s.chords = [];
+    s.events = [
+      {
+        id: "bass",
+        voice: "bass",
+        role: "bass",
+        origin: "manual",
+        beat: 0,
+        durationBeats: 2,
+        midi: 40,
+        velocity: 0.7,
+        sourceIds: [],
+        extensions: { guitar: { string: 6, fret: 0 } },
+      },
+      {
+        id: "tap",
+        voice: "bass",
+        role: "bass",
+        origin: "manual",
+        beat: 1,
+        durationBeats: 1,
+        midi: null,
+        unpitched: true,
+        velocity: 0.7,
+        sourceIds: [],
+        extensions: { guitar: { string: 6, fret: 0 } },
+      },
+    ];
+    expect(soundingEvents(s)).toHaveLength(1);
+    const p = arrangeScore(s, {
+      ...options,
+      goal: "fingerstyle",
+      difficulty: "hard",
+    });
+    const notes = referenceSoundEvents(s);
+    expect(p.actions.find((a) => a.id === "bass")!.durationBeats).toBe(1);
+    expect(p.actions.find((a) => a.id === "tap")!.kind).toBe("dead");
+    expect(p.actions.find((a) => a.id === "tap")!.notationDurationBeats).toBe(
+      1,
+    );
+    const exact = compareGuitarPerformance(notes, notes);
+    expect(exact.pitched.reference).toBe(1);
+    expect(exact.percussion.reference).toBe(1);
+    const missing = compareGuitarPerformance(
+      notes,
+      notes.filter((n) => !n.dead),
+    );
+    expect(missing.pitched.f1).toBe(1);
+    expect(missing.percussion.f1).toBe(0);
+    const wrongString = compareGuitarPerformance(
+      notes,
+      notes.map((n) => (n.dead ? { ...n, string: 5 } : n)),
+    );
+    expect(wrongString.percussion.f1).toBe(0);
+    expect(() =>
+      validateScore({
+        ...s,
+        events: s.events.map((e) => (e.unpitched ? { ...e, midi: 40 } : e)),
+      }),
+    ).toThrow("非音高");
+  });
+  it("quarter and half notes retain duration instead of becoming sixteenth tie chains", () => {
+    const p = demoProject();
+    const s = score();
+    s.chords = [];
+    s.events = [
+      {
+        id: "long",
+        voice: "melody",
+        beat: 0,
+        durationBeats: 2,
+        midi: 64,
+        velocity: 0.7,
+        sourceIds: [],
+      },
+      {
+        id: "quarter",
+        voice: "melody",
+        beat: 2,
+        durationBeats: 1,
+        midi: 67,
+        velocity: 0.7,
+        sourceIds: [],
+      },
+    ];
+    p.score = s;
+    p.arrangement = arrangeMusicalScore(s, {
+      ...options,
+      goal: "melody",
+      bpm: 120,
+    });
+    const bar = alphaScore(alpha, p).tracks[0].staves[0].bars[0];
+    expect(bar.voices[0].beats.map((b) => b.duration)).toEqual([
+      alpha.model.Duration.Half,
+      alpha.model.Duration.Quarter,
+      alpha.model.Duration.Quarter,
+    ]);
+    expect(
+      bar.voices[0].beats
+        .flatMap((b) => b.notes)
+        .some((n) => n.isTieDestination),
+    ).toBe(false);
+  });
+  it("guitar staff shows the conventional written octave without changing sounding pitch", () => {
+    const p = demoProject(),
+      s = score();
+    s.chords = [];
+    s.events = [
+      {
+        id: "e",
+        voice: "melody",
+        beat: 0,
+        durationBeats: 1,
+        midi: 64,
+        velocity: 0.7,
+        sourceIds: [],
+      },
+    ];
+    p.score = s;
+    p.arrangement = arrangeMusicalScore(s, {
+      ...options,
+      goal: "melody",
+      bpm: 120,
+    });
+    const note = alphaScore(alpha, p).tracks[0].staves[0].bars[0].voices[0]
+      .beats[0].notes[0];
+    expect(note.realValue).toBe(64);
+    expect(note.displayValue).toBe(76);
+  });
   it("ties excite once, a repeated pitch excites again, tempo changes preserve duration", () => {
     const s = score();
     s.tempo.push({ beat: 4, bpm: 60 });
@@ -164,6 +297,117 @@ describe("musical score and evidence", () => {
   });
 });
 describe("guitar actions rather than density", () => {
+  it("authored supporting voices are preserved without adding template notes", () => {
+    const s = score();
+    s.durationBeats = 4;
+    s.chords = s.chords.slice(0, 1);
+    s.events = [
+      {
+        id: "lead",
+        voice: "upper",
+        role: "melody",
+        origin: "manual",
+        beat: 0,
+        durationBeats: 4,
+        midi: 64,
+        velocity: 0.8,
+        sourceIds: [],
+        extensions: { guitar: { string: 1, fret: 0 } },
+      },
+      {
+        id: "written-bass",
+        voice: "lower",
+        role: "bass",
+        origin: "manual",
+        beat: 0,
+        durationBeats: 4,
+        midi: 40,
+        velocity: 0.6,
+        sourceIds: [],
+        extensions: { guitar: { string: 6, fret: 0 } },
+      },
+      {
+        id: "written-inner",
+        voice: "middle",
+        role: "harmony",
+        origin: "manual",
+        beat: 1,
+        durationBeats: 1,
+        midi: 55,
+        velocity: 0.5,
+        sourceIds: [],
+        extensions: { guitar: { string: 3, fret: 0 } },
+      },
+    ];
+    const plan = arrangeScore(s, {
+      ...options,
+      goal: "fingerstyle",
+      difficulty: "hard",
+    });
+    expect(plan.actions.map((a) => a.id).sort()).toEqual([
+      "lead",
+      "written-bass",
+      "written-inner",
+    ]);
+    expect(
+      plan.actions.find((a) => a.id === "written-bass")!.durationBeats,
+    ).toBe(4);
+  });
+  it("unreviewed detected supporting events are not treated as authored harmony", () => {
+    const s = score();
+    s.events = [
+      {
+        id: "lead",
+        voice: "melody",
+        beat: 0,
+        durationBeats: 4,
+        midi: 64,
+        velocity: 0.8,
+        sourceIds: [],
+      },
+      {
+        id: "noise",
+        voice: "other",
+        role: "harmony",
+        origin: "detected",
+        beat: 1,
+        durationBeats: 1,
+        midi: 70,
+        velocity: 0.9,
+        sourceIds: ["raw-noise"],
+      },
+    ];
+    const plan = arrangeScore(s, {
+      ...options,
+      goal: "fingerstyle",
+      difficulty: "hard",
+    });
+    expect(plan.actions.some((a) => a.sourceIds.includes("noise"))).toBe(false);
+  });
+  it("an explicit role overrides an opaque voice identifier", () => {
+    const s = score();
+    s.events = [
+      {
+        id: "bass-only",
+        voice: "melody",
+        role: "bass",
+        roleOrigin: "manual",
+        origin: "detected",
+        beat: 0,
+        durationBeats: 4,
+        midi: 40,
+        velocity: 0.6,
+        sourceIds: ["raw-bass"],
+      },
+    ];
+    const plan = arrangeScore(s, {
+      ...options,
+      goal: "fingerstyle",
+      difficulty: "hard",
+    });
+    expect(plan.actions).toHaveLength(1);
+    expect(plan.actions[0].role).toBe("bass");
+  });
   it("sparse fingerstyle adds a quiet inner voice without changing protected melody", () => {
     const s = score();
     s.durationBeats = 4;

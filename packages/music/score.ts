@@ -72,6 +72,9 @@ export function projectScore(project: MusicProject): MusicalScore {
         midi: n.pitch.midi,
         velocity: n.velocity,
         sourceIds: [n.id],
+        origin: n.source,
+        activation: n.score,
+        roleOrigin: "inferred" as const,
       };
     })
     .filter((n) => n.durationBeats > 0);

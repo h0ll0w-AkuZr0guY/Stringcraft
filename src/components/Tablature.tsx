@@ -54,7 +54,7 @@ export function Tablature({
             key={row}
             viewBox={`0 0 ${width} 250`}
             style={{ minWidth: width }}
-            role="img"
+            role="group"
             aria-label={`小节 ${row * 2 + 1} 至 ${row * 2 + bars.length} 六线谱`}
           >
             {bars.map((bar) => {
@@ -174,19 +174,7 @@ export function Tablature({
                       {column.notes.map((n) => {
                         const y = 74 + (n.string - 1) * 23;
                         return (
-                          <g
-                            key={n.id}
-                            className="tab-note"
-                            onClick={() => onSelect(n)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ")
-                                onSelect(n);
-                            }}
-                            tabIndex={0}
-                            role="button"
-                            aria-label={`${noteName(n.pitch.midi)} ${n.string}弦${n.fret}品 ${n.start.toFixed(2)}秒`}
-                          >
-                            <title>{`${n.start.toFixed(2)}s · ${n.duration.toFixed(2)}s${n.leftFinger ? ` · 左手 ${n.leftFinger}` : ""}${n.rightFinger ? ` · 右手 ${n.rightFinger}` : ""}${n.attack ? ` · ${n.attack}` : ""}`}</title>
+                          <g key={n.id}>
                             <line
                               x1={column.x + 13}
                               x2={Math.max(
@@ -205,55 +193,71 @@ export function Tablature({
                               }
                               strokeWidth={2}
                             />
-                            <rect
-                              x={column.x - 11}
-                              y={y - 11}
-                              width={24}
-                              height={23}
-                              rx={4}
-                              fill={
-                                selected === n.id
-                                  ? "#d8ad6b"
-                                  : n.locked
-                                    ? "#dbe7e0"
-                                    : "#fafbf8"
-                              }
-                            />
-                            <text
-                              x={column.x + 1}
-                              y={y + 5}
-                              textAnchor="middle"
-                              className={
-                                n.role === "melody" ? "fret melody" : "fret"
-                              }
+                            <g
+                              className="tab-note"
+                              onClick={() => onSelect(n)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  onSelect(n);
+                                }
+                              }}
+                              tabIndex={0}
+                              role="button"
+                              aria-label={`${n.dead ? "闷音" : noteName(n.pitch.midi)} ${n.string}弦${n.dead ? "" : `${n.fret}品`} ${n.start.toFixed(2)}秒`}
                             >
-                              {n.fret}
-                            </text>
-                            {(n.attack === "hammer" ||
-                              n.attack === "pull" ||
-                              n.attack === "slide") && (
+                              <title>{`${n.start.toFixed(2)}s · ${n.duration.toFixed(2)}s${n.leftFinger ? ` · 左手 ${n.leftFinger}` : ""}${n.rightFinger ? ` · 右手 ${n.rightFinger}` : ""}${n.attack ? ` · ${n.attack}` : ""}`}</title>
+                              <rect
+                                x={column.x - 11}
+                                y={y - 11}
+                                width={24}
+                                height={23}
+                                rx={4}
+                                fill={
+                                  selected === n.id
+                                    ? "#d8ad6b"
+                                    : n.locked
+                                      ? "#dbe7e0"
+                                      : "#fafbf8"
+                                }
+                              />
                               <text
-                                x={column.x - 15}
-                                y={y - 8}
-                                className="time-label"
+                                x={column.x + 1}
+                                y={y + 5}
+                                textAnchor="middle"
+                                className={
+                                  n.role === "melody" ? "fret melody" : "fret"
+                                }
                               >
-                                {n.attack === "hammer"
-                                  ? "h"
-                                  : n.attack === "pull"
-                                    ? "p"
-                                    : "/"}
+                                {n.dead ? "×" : n.fret}
                               </text>
-                            )}
-                            {fingering && (
-                              <text
-                                x={column.x + 13}
-                                y={y - 6}
-                                className="finger-label"
-                              >
-                                {n.fret > 0 ? n.leftFinger : ""}
-                                {n.rightFinger}
-                              </text>
-                            )}
+                              {!n.linkFrom &&
+                                (n.attack === "hammer" ||
+                                  n.attack === "pull" ||
+                                  n.attack === "slide") && (
+                                  <text
+                                    x={column.x - 15}
+                                    y={y - 8}
+                                    className="time-label"
+                                  >
+                                    {n.attack === "hammer"
+                                      ? "h"
+                                      : n.attack === "pull"
+                                        ? "p"
+                                        : "/"}
+                                  </text>
+                                )}
+                              {fingering && (
+                                <text
+                                  x={column.x + 13}
+                                  y={y - 6}
+                                  className="finger-label"
+                                >
+                                  {n.fret > 0 ? n.leftFinger : ""}
+                                  {n.rightFinger}
+                                </text>
+                              )}
+                            </g>
                           </g>
                         );
                       })}
@@ -296,6 +300,52 @@ export function Tablature({
                       strokeWidth={2}
                     />
                   )}
+                  {(project.arrangement?.notes ?? [])
+                    .filter(
+                      (n) =>
+                        n.linkFrom &&
+                        ["hammer", "pull", "slide"].includes(n.attack ?? ""),
+                    )
+                    .map((n) => {
+                      const previous = project.arrangement!.notes.find(
+                        (p) => p.id === n.linkFrom,
+                      );
+                      if (!previous || previous.string !== n.string)
+                        return null;
+                      const a = secondsToBeat(score, previous.start),
+                        b = secondsToBeat(score, n.start);
+                      if (b < bar.beat || a >= bar.endBeat) return null;
+                      const x1 = a < bar.beat ? 40 : beatX(a) + 12,
+                        x2 = b >= bar.endBeat ? bar.width - 10 : beatX(b) - 12;
+                      if (x2 <= x1) return null;
+                      const y = 62 + (n.string - 1) * 23,
+                        label =
+                          n.attack === "hammer"
+                            ? "h"
+                            : n.attack === "pull"
+                              ? "p"
+                              : "/";
+                      return (
+                        <g key={`link-${n.id}`} className="legato-link">
+                          <path
+                            d={`M ${x1} ${y} Q ${(x1 + x2) / 2} ${y - 24} ${x2} ${y}`}
+                            fill="none"
+                            stroke="#527560"
+                            strokeWidth="1.3"
+                          />
+                          <text
+                            x={(x1 + x2) / 2}
+                            y={y - 15}
+                            textAnchor="middle"
+                            className="time-label"
+                          >
+                            {a < bar.beat ? "←" : ""}
+                            {label}
+                            {b >= bar.endBeat ? "→" : ""}
+                          </text>
+                        </g>
+                      );
+                    })}
                 </g>
               );
             })}
@@ -307,11 +357,15 @@ export function Tablature({
 }
 export function RhythmScore({ project }: { project: MusicProject }) {
   const element = useRef<HTMLDivElement>(null),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [fingering, setFingering] = useState(false),
+    [rendered, setRendered] = useState(false);
+  const printScore = useRef<() => void>(undefined);
   useEffect(() => {
     let disposed = false,
       api: { destroy: () => void } | undefined;
     setError("");
+    setRendered(false);
     import("@coderline/alphatab")
       .then(async (alpha) => {
         if (disposed || !element.current) return;
@@ -336,17 +390,40 @@ export function RhythmScore({ project }: { project: MusicProject }) {
           display: { scale: 0.85 },
         });
         api = a;
+        printScore.current = () =>
+          a.print("180mm", { display: { scale: 0.8, barsPerRow: 2 } });
         a.error.on((e) => setError(String(e)));
-        a.renderScore(alphaScore(alpha, project));
+        a.renderFinished.on(() => {
+          if (!disposed) setRendered(true);
+        });
+        a.renderScore(alphaScore(alpha, project, fingering));
       })
       .catch((e) => setError(String(e)));
     return () => {
       disposed = true;
+      printScore.current = undefined;
       api?.destroy();
     };
-  }, [project]);
+  }, [project, fingering]);
   return (
     <div className="rhythm-view">
+      <div className="rhythm-controls">
+        <label className="fingering-toggle">
+          <input
+            type="checkbox"
+            checked={fingering}
+            onChange={(e) => setFingering(e.target.checked)}
+          />{" "}
+          显示节奏谱指法
+        </label>
+        <button
+          className="text-button"
+          disabled={!rendered}
+          onClick={() => printScore.current?.()}
+        >
+          打印节奏谱 PDF
+        </button>
+      </div>
       <p className="muted">
         节奏谱按十六分网格近似量化，旋律、低音与和弦独立分声部；延音线保持发声，试听保留原始时间。
       </p>

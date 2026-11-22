@@ -6,11 +6,12 @@ export interface GuitarAction {
   id: string;
   beat: number;
   durationBeats: number;
+  notationDurationBeats?: number;
   string: number;
   fret: number;
   finger: number;
   rightFinger: "p" | "i" | "m" | "a";
-  kind: "pluck" | "strum" | "hammer" | "pull" | "slide";
+  kind: "pluck" | "strum" | "hammer" | "pull" | "slide" | "dead";
   from?: string;
   stroke?: "down" | "up";
   strokeId?: string;
@@ -37,6 +38,7 @@ export interface GuitarOptions {
   goal: NonNullable<ArrangeOptions["goal"]>;
   pattern: "strum" | "arpeggio";
   preferences?: FretPreferences;
+  positionSource?: "written" | "optimize";
 }
 export const limits = {
   easy: { fret: 5, span: 3, minBeats: 1, shiftPerBeat: 2, barre: false },

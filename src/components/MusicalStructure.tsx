@@ -6,7 +6,13 @@ import {
   setChord,
   setSection,
 } from "../../packages/music/structure";
-import { beatToSeconds, secondsToBeat } from "../../packages/contracts/score";
+import {
+  beatToSeconds,
+  secondsToBeat,
+  soundingEvents,
+  eventRole,
+  type ScoreEvent,
+} from "../../packages/contracts/score";
 import { chordName } from "../../plugins/guitar/voicings";
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 
@@ -163,6 +169,63 @@ export default function MusicalStructure() {
           确认当前节拍
         </button>
       </div>
+      {!!score.events.length && (
+        <details className="voice-editor">
+          <summary>声部用途 · 核对旋律、低音与内声部</summary>
+          <p className="muted">
+            乐谱中的独立声部可分别指定用途。已导入的低音和内声部优先保留；未确认的检测残留不会自动当成和声。
+          </p>
+          {[...new Set(score.events.map((e) => e.voice))].map((voice) => {
+            const events = score.events.filter((e) => e.voice === voice),
+              roles = [
+                ...new Set(
+                  events
+                    .filter((e) => e.midi !== null || e.unpitched)
+                    .map(eventRole),
+                ),
+              ],
+              role = roles.length > 1 ? "mixed" : (roles[0] ?? "harmony");
+            return (
+              <label key={voice} className="voice-row">
+                <span>{voice}</span>
+                <select
+                  aria-label={`声部 ${voice} 用途`}
+                  value={role}
+                  onChange={(e) => {
+                    const next = structuredClone(score);
+                    next.events = next.events.map((event) =>
+                      event.voice === voice
+                        ? {
+                            ...event,
+                            role: e.target.value as ScoreEvent["role"],
+                            roleOrigin: "manual",
+                          }
+                        : event,
+                    );
+                    stop();
+                    edit({
+                      ...project,
+                      score: next,
+                      melody: soundingEvents(next).filter(
+                        (n) => n.role === "melody",
+                      ),
+                    });
+                  }}
+                >
+                  {role === "mixed" && (
+                    <option value="mixed" disabled>
+                      混合用途（保留原谱）
+                    </option>
+                  )}
+                  <option value="melody">主旋律</option>
+                  <option value="bass">独立低音</option>
+                  <option value="harmony">和声／内声部</option>
+                </select>
+              </label>
+            );
+          })}
+        </details>
+      )}
       <div className="chord-editor" aria-label="和弦进行编辑">
         {bars.map((bar) => {
           const starts = [

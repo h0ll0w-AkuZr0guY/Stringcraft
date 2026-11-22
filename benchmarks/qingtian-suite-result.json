@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "task": "Frozen known-score regression; no recording accuracy or listening claim",
+  "manifestSha256": "20a4d65d2284af61af4122c37fa021cf9c9992b52b41567ab1eca6b938159c35",
+  "passed": true,
+  "records": [
+    {
+      "id": "qingtian-first8",
+      "split": "development",
+      "inputSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+      "actual": {
+        "pitchedF1": 1,
+        "durationMae": 0,
+        "hardErrors": 0
+      },
+      "checks": [
+        {
+          "name": "minPitchedF1",
+          "target": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "maxHardErrors",
+          "target": 0,
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "qingtian-verse8",
+      "split": "development",
+      "inputSha256": "1c98d7e5d2b0a95b435f18588aa88f73dcf49f270895a9e5a03b961b6953a59f",
+      "actual": {
+        "pitchedF1": 1,
+        "percussionF1": 1,
+        "durationMae": 0,
+        "positionAgreement": 1,
+        "articulationAgreement": 1,
+        "hardErrors": 0,
+        "dropped": 0
+      },
+      "checks": [
+        {
+          "name": "minPitchedF1",
+          "target": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "maxDurationMae",
+          "target": 0.000001,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "name": "minPositionAgreement",
+          "target": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "minArticulationAgreement",
+          "target": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "maxHardErrors",
+          "target": 0,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "name": "maxDropped",
+          "target": 0,
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "qingtian-chorus8",
+      "split": "development",
+      "inputSha256": "a957dbb983d94de5de518c80281e9758ab1ac1597cbac697685117667020a821",
+      "actual": {
+        "pitchedF1": 1,
+        "percussionF1": 1,
+        "durationMae": 0,
+        "positionAgreement": 1,
+        "articulationAgreement": 1,
+        "hardErrors": 0,
+        "dropped": 0
+      },
+      "checks": [
+        {
+          "name": "minPitchedF1",
+          "target": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "minPercussionF1",
+          "target": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "maxDurationMae",
+          "target": 0.000001,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "name": "minPositionAgreement",
+          "target": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "minArticulationAgreement",
+          "target": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "maxHardErrors",
+          "target": 0,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "name": "maxDropped",
+          "target": 0,
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    }
+  ]
+}

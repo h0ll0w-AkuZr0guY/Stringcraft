@@ -60,6 +60,7 @@ export function validatePerformance(
       const previous = plan.actions.find((b) => b.id === a.from);
       if (
         !previous ||
+        previous.kind === "dead" ||
         previous.string !== a.string ||
         Math.abs(previous.beat + previous.durationBeats - a.beat) > 0.002 ||
         previous.fret === a.fret ||
@@ -68,9 +69,11 @@ export function validatePerformance(
       )
         add("legato", [a], "连奏必须连接同弦相邻动作并符合方向");
     }
-    if (a.kind === "pluck") {
+    if (a.kind === "pluck" || a.kind === "dead") {
       const simultaneous = plan.actions.filter(
-        (b) => b.kind === "pluck" && Math.abs(b.beat - a.beat) < 0.035,
+        (b) =>
+          (b.kind === "pluck" || b.kind === "dead") &&
+          Math.abs(b.beat - a.beat) < 0.035,
       );
       if (
         simultaneous.some(

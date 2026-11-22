@@ -7,15 +7,18 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 - `NoteRefinerPlugin<Options>` 与 `loadRefiner`：选择现有候选，返回保留的 NoteEvent[] 和省略原因。乐器/模型专用参数留在插件。`MusicProject.refinement` 单独保存处理结果，原始 `notes` 不改写；项目校验拒绝清理结果伪造音高或起音。
 
 - `MusicalScore`：quarter-note beat 单位的速度图与拍号图、原音频网格偏移、独立声部事件、显式休止、和弦来源与证据、人工段落。识别的秒时间仍保存在 `NoteEvent`。
-- `ScoreEvent`：稳定 ID、voice、beat、durationBeats、midi（null 为休止）、sourceIds。`tieFrom` 仅可连接同声部相邻同音；`slurFrom` 表示连奏关系，不自动断言原录音用了何种乐器技法。
+- `ScoreEvent`：稳定 ID、voice、beat、durationBeats、midi、sourceIds。midi=null 默认为休止，unpitched=true 为无固定音高事件；二者不得同时声明固定 MIDI。`tieFrom` 仅可连接同声部相邻同音；`slurFrom` 表示连奏关系，不自动断言原录音用了何种乐器技法。
+- `origin/roleOrigin/activation` 保留事件与声部用途的来源、相对激活值；`eventRole` 优先使用显式角色。`extensions` 只允许分命名空间的基础值，解释权属于插件；吉他包读取 `extensions.guitar.string/fret` 保留已核对弦品，可用 `GuitarOptions.positionSource=optimize` 显式重选。确认的支持声部优先保留，未经核对的检测残留不因此成为和声。
 - `soundingEvents` 合并延音链为一次起音，保留真正重弹；`beatToSeconds/secondsToBeat` 使用分段速度图。
 - `InstrumentPluginV2<Options,Action,Notation>`：`arrangeScore/validatePerformance/notation/soundEvents/editor`。乐器参数、动作和投影由插件定义。通过 `loadInstrument` 获取，不让通用契约导入吉他或钢琴包。
 - `plugins/guitar/performance.ts`：和弦指型序列搜索、动作验证、持续手指、弦占用、扫弦方向与时差、击勾弦连接。`GuitarPerformance.grips` 保存参考指型；`GuitarAction` 保存具体动作。
+- `plugins/guitar/evaluation.ts` 分别比较有音高事件、闷音弦号/起音、弦品、声部和技法；`referenceSoundEvents` 要求已核对的参考弦品，按下一次同弦动作归一实际发声释放。`dead` 的兼容 GuitarNote.pitch 仅为弦位占位，不进入音高指标；`notationDurationBeats` 可保留长于噪声衰减的谱面时值。
 - `plugins/piano`：最小契约验证例，含手别、键位、指法和跨度；尚无完整编配、踏板声音和工作台 UI。
 - `harmony-analysis.analyzeHarmony(notes,score)`：保留人工/导入和弦，只提供有证据的估计；`evidence` 为候选评分差，不是正确概率。`tempoCandidates` 返回相对分数，不能当作原曲速度真值。
 - `MusicProject.schemaVersion=2` 必须含 `score`。v1 通过 `upgradeProject` 生成新 ID 的副本，保留 `migratedFrom`、来源、锁定编辑，原对象不变。旧项目的 harmony 角色不会迁移成已确认和弦。
 - 兼容的 `arrange` 增加 `goal/score/pattern`。伴奏与指弹走 v2 动作层，单线练习暂沿用 v1 单音搜索。`Arrangement.performance` 保留动作，`notes` 是当前吉他编辑器与音源的秒时间投影。
 - MusicXML 导入保留独立 voice、休止、tie/slur、速度/拍号图与支持的和弦性质。导出取当前实际编配，量化到十六分网格；跨小节持续写为延音线，击勾弦写为 technical。装饰音、反复展开、复杂记谱仍需核对。
+- MusicXML 导入按 chromatic + octave-change 转为实际发声音高，支持按 staff 指定移调；吉他导出写高八度并声明 octave-change=-1。弦品、无音高事件和技法随谱保留，八度重奏目前只保留主音并提示。依据 [MusicXML transpose 定义](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/transpose/)。
 
 新增乐器请直接实现 v2 泛型接口。不要复制兼容项目中的 capo 或 GuitarNote 到新乐器事件。
 
