@@ -33,3 +33,5 @@ Windows、Python 3.11+：先 npm run build，再 python scripts/build-local.py�
 ci.yml 检查每个 PR。pages.yml 发布主分支网页；release.yml 对明确 v 标签构建 Windows 基础包并创建预览 Release，同时提供环境构建的独立 workflow_dispatch。CI 不读取本地 Key、不调用付费模型。
 
 维护者发布前检查差异、第三方许可、质量报告、版本和下载包。0.1.0 只能标记 preview，真人试弹与真实混音门槛未过前不作为稳定版 Latest。不要覆盖历史附件；新环境包应使用新版本名，提供 SHA-256。
+
+真实 Pages 的 BYOK 验证使用显式设置 STRINGCRAFT_PROVIDER_KEY_FILE 后运行 provider.spec.ts，默认跳过且禁止录屏、截图和 trace；普通 CI 永不读取或调用密钥。
