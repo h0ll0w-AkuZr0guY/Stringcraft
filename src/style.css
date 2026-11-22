@@ -1861,3 +1861,109 @@ svg {
 .tab-pages svg > line {
   pointer-events: none;
 }
+/* Musical structure is editable independently from raw detection evidence. */
+.structure-panel,
+.arrangement-report {
+  margin: 12px 24px;
+  padding: 14px;
+  border: 1px solid var(--border, #dfe5d9);
+  border-radius: 8px;
+  background: #fafbf7;
+}
+.structure-panel summary,
+.arrangement-report summary {
+  cursor: pointer;
+  color: #335942;
+  font-weight: 600;
+}
+.structure-timing {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 12px 0;
+}
+.structure-timing label {
+  width: 130px;
+}
+.chord-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow: auto;
+}
+.chord-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #dfe5d9;
+  border-radius: 6px;
+}
+.chord-cell small {
+  color: #6e7e66;
+}
+.arrangement-report p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.tab-pages {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.tab-pages svg {
+  width: 100%;
+  display: block;
+}
+.fingering-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  margin: 8px 0 16px;
+}
+.tab-pages .fingering-toggle {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.tab-pages .fingering-toggle input {
+  width: auto;
+  margin: 0;
+}
+.finger-label {
+  font: 9px system-ui;
+  fill: #8b6849;
+}
+.tab-pages svg line {
+  pointer-events: none;
+}
+.chord-diagrams {
+  margin: 12px 24px;
+  color: #466c47;
+  font-size: 12px;
+}
+.chord-diagrams summary {
+  cursor: pointer;
+}
+.chord-diagram-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 12px;
+}
+@media print {
+  .tab-pages {
+    overflow: visible;
+  }
+  .tab-pages svg {
+    min-width: 0 !important;
+    width: 100%;
+    break-inside: avoid;
+  }
+  .structure-panel,
+  .arrangement-report,
+  .fingering-toggle {
+    display: none;
+  }
+}

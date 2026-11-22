@@ -84,3 +84,7 @@ python -m unittest discover -s tests -p '*_test.py'
 ## 许可与致谢
 
 自有代码使用 Apache License 2.0；Basic Pitch、TensorFlow.js、alphaTab、Meta Open Sound 和本地模型各自保留原许可。详见 [NOTICE](NOTICE) 与[第三方许可](docs/LICENSING.md)。项目工程组织参考作者的 [MiaoTask](https://github.com/h0ll0w-AkuZr0guY/MiaoTask)，音乐算法与运行形态独立维护。
+
+## 0.2 开发分支
+
+音乐结构、和弦伴奏、乐器动作与已知谱往返正在重建。实现与未完成验收集中见 [音乐开发验收](docs/MUSICAL_DEVELOPMENT.md)。公开 0.1 预览的测试不能证明新版实曲识别或真人可演奏性。

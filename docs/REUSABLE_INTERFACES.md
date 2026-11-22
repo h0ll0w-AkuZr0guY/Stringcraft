@@ -1,13 +1,28 @@
 # 公共接口手册
 
-SDK v1 的源码定义位于 `packages/contracts/index.ts`。本文件描述语义，字段以 TypeScript 声明为准。
+SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容入口位于 `packages/contracts/index.ts`。宿主支持 v1、v2 目录项，不自动覆盖用户已安装的版本。字段以 TypeScript 声明为准。
+
+## SDK v2
+
+- `MusicalScore`：quarter-note beat 单位的速度图与拍号图、原音频网格偏移、独立声部事件、显式休止、和弦来源与证据、人工段落。识别的秒时间仍保存在 `NoteEvent`。
+- `ScoreEvent`：稳定 ID、voice、beat、durationBeats、midi（null 为休止）、sourceIds。`tieFrom` 仅可连接同声部相邻同音；`slurFrom` 表示连奏关系，不自动断言原录音用了何种乐器技法。
+- `soundingEvents` 合并延音链为一次起音，保留真正重弹；`beatToSeconds/secondsToBeat` 使用分段速度图。
+- `InstrumentPluginV2<Options,Action,Notation>`：`arrangeScore/validatePerformance/notation/soundEvents/editor`。乐器参数、动作和投影由插件定义。通过 `loadInstrument` 获取，不让通用契约导入吉他或钢琴包。
+- `plugins/guitar/performance.ts`：和弦指型序列搜索、动作验证、持续手指、弦占用、扫弦方向与时差、击勾弦连接。`GuitarPerformance.grips` 保存参考指型；`GuitarAction` 保存具体动作。
+- `plugins/piano`：最小契约验证例，含手别、键位、指法和跨度；尚无完整编配、踏板声音和工作台 UI。
+- `harmony-analysis.analyzeHarmony(notes,score)`：保留人工/导入和弦，只提供有证据的估计；`evidence` 为候选评分差，不是正确概率。`tempoCandidates` 返回相对分数，不能当作原曲速度真值。
+- `MusicProject.schemaVersion=2` 必须含 `score`。v1 通过 `upgradeProject` 生成新 ID 的副本，保留 `migratedFrom`、来源、锁定编辑，原对象不变。旧项目的 harmony 角色不会迁移成已确认和弦。
+- 兼容的 `arrange` 增加 `goal/score/pattern`。伴奏与指弹走 v2 动作层，单线练习暂沿用 v1 单音搜索。`Arrangement.performance` 保留动作，`notes` 是当前吉他编辑器与音源的秒时间投影。
+- MusicXML 导入保留独立 voice、休止、tie/slur、速度/拍号图与支持的和弦性质。导出取当前实际编配，量化到十六分网格；跨小节持续写为延音线，击勾弦写为 technical。装饰音、反复展开、复杂记谱仍需核对。
+
+新增乐器请直接实现 v2 泛型接口。不要复制兼容项目中的 capo 或 GuitarNote 到新乐器事件。
 
 ## 音乐与项目
 
 - `NoteEvent`：唯一 id、非负 start、正 duration、MIDI 0–127、可选 cents、velocity 与 score 0–1，source 区分 detected/demo/manual/generated。role 表示 melody/bass/harmony；locked 是人工保护标记。
 - `GuitarNote`：增加 string 1–6、fret 相对变调夹、可选 technique。仅为吉他事件，不要求所有乐器使用。
 - `Arrangement<N>`：instrumentId、difficulty、capo、transpose、notes、dropped 与 warnings。默认 N 为 GuitarNote；其他乐器可使用不同演奏事件。
-- `MusicProject<N>`：schemaVersion 1、来源、时长、BPM、beatOffset、sourceOffset、候选、旋律、编配、时间及插件版本。存储前校验；旧 schema 不静默改写。
+- `MusicProject<N>`：兼容 schemaVersion 1 与带 score 的 2，含来源、时长、BPM、beatOffset、sourceOffset、候选、旋律、编配、时间及插件版本。存储前校验；旧 schema 不静默改写。
 - `validateNotes`：拒绝重复 ID、非法音高、NaN、负时间、零时长和不支持的来源；最多 100000 音符。
 - `validateProject`：当前校验吉他项目及弦位音高关系。扩展乐器需注册相应校验器；禁止绕过校验。
 

@@ -6,6 +6,7 @@ import {
   type GuitarNote,
   type MusicProject,
   type NoteEvent,
+  type ArrangementGoal,
 } from "../../packages/contracts";
 import { decode, transcribe } from "../../packages/music/analyze";
 import { demoProject } from "../../packages/music/demo";
@@ -24,6 +25,12 @@ import { importMidi, importMusicXML } from "../../packages/music/import";
 import { analyzeLocal, localCapabilities } from "../../packages/music/local";
 import { listProjects, saveProject } from "../../packages/storage";
 import { recommend, violations } from "../../plugins/guitar";
+import { recommendForScore } from "../../plugins/guitar/performance";
+import {
+  projectScore,
+  upgradeProject,
+  withReferenceTempo,
+} from "../../packages/music/score";
 
 const labels: Record<Difficulty, string> = {
   easy: "初学",
@@ -54,6 +61,8 @@ export function useWorkbench() {
     [dirty, setDirty] = useState(false),
     [projects, setProjects] = useState<MusicProject[]>([]);
   const [difficulty, setDifficulty] = useState<Difficulty>("normal"),
+    [goal, setGoal] = useState<ArrangementGoal>("accompaniment"),
+    [pattern, setPattern] = useState<"strum" | "arpeggio">("strum"),
     [capo, setCapo] = useState(0),
     [autoCapo, setAutoCapo] = useState(true),
     [transpose, setTranspose] = useState(0),
@@ -96,6 +105,8 @@ export function useWorkbench() {
     playGeneration = useRef(0);
   const notify = useCallback((s: string) => setMessage(s), []);
   const edit = (next: MusicProject) => {
+    if (next.bpm !== project.bpm && next.score && next.score === project.score)
+      next = { ...next, score: withReferenceTempo(next.score, next.bpm) };
     setDirty(true);
     setHistory((h) => [...h.slice(-39), structuredClone(project)]);
     setFuture([]);
@@ -107,7 +118,12 @@ export function useWorkbench() {
     !!project.arrangement &&
     (project.arrangement.difficulty !== difficulty ||
       project.arrangement.capo !== capo ||
-      project.arrangement.transpose !== transpose);
+      project.arrangement.transpose !== transpose ||
+      project.arrangement.goal !== goal ||
+      project.arrangement.score?.tempo[0].bpm !== project.bpm ||
+      (!!project.score &&
+        JSON.stringify(project.arrangement.score) !==
+          JSON.stringify(project.score)));
   function stop() {
     playGeneration.current++;
     if (timerRef.current) clearInterval(timerRef.current);
@@ -122,6 +138,17 @@ export function useWorkbench() {
     bootstrap()
       .then(async () => {
         const plugin = await load("guitar-standard");
+        if (
+          (await installed("guitar-standard"))!.manifest.version === "0.1.0"
+        ) {
+          if (active) {
+            setReady(true);
+            notify(
+              "请在插件中心更新标准吉他、实录音源和标准导出到 0.2，以使用结构化编配。",
+            );
+          }
+          return;
+        }
         if (active) {
           setProject((p) => ({
             ...p,
@@ -130,6 +157,9 @@ export function useWorkbench() {
               capo: 0,
               transpose: 0,
               bpm: p.bpm,
+              score: projectScore(p),
+              goal: "accompaniment",
+              pattern: "strum",
             }),
           }));
           setReady(true);
@@ -201,14 +231,14 @@ export function useWorkbench() {
           ? await importMidi(f)
           : await importMusicXML(f);
         const tracker = await load("melody-tracker");
-        p.melody = tracker.extractMelody!(p.notes);
+        if (!p.score) p.melody = tracker.extractMelody!(p.notes);
         edit(p);
         setFile(null);
         setSourceUrl("");
 
         setWave([]);
         setSelected(null);
-        notify("乐谱已导入；MusicXML 复杂声部与连音请人工核对");
+        notify("乐谱已导入；请核对声部、节奏与技法后编配。");
       } else {
         setFile(f);
         setStart(0);
@@ -239,7 +269,7 @@ export function useWorkbench() {
           },
         );
         const tracker = await load("melody-tracker");
-        edit({
+        const p: MusicProject = {
           schemaVersion: 1,
           id: crypto.randomUUID(),
           name: file.name.replace(/\.[^.]+$/, ""),
@@ -259,7 +289,12 @@ export function useWorkbench() {
           arrangement: null,
           pluginVersions: { "local-separation": "0.1.0" },
           sourceKind: "audio",
-        });
+        };
+        const harmony = await load("harmony-analysis");
+        p.score = harmony.analyzeHarmony!(p.notes, projectScore(p));
+        p.schemaVersion = 2;
+        edit(p);
+        await set("audio:" + p.id, file);
         setSelected(null);
         notify(
           `本地分析完成，${data.notes.length} 个候选音符。单次最多处理 30 分钟。`,
@@ -300,6 +335,11 @@ export function useWorkbench() {
         },
         sourceKind: "audio",
       };
+      const harmony = await load("harmony-analysis");
+      const tempos = harmony.tempoCandidates!(detected);
+      if (tempos.length) p.bpm = tempos[0].bpm;
+      p.score = harmony.analyzeHarmony!(detected, projectScore(p));
+      p.schemaVersion = 2;
       sourceBuffer.current.set(p.id, data.buffer);
       if (sourceBuffer.current.size > 3)
         sourceBuffer.current.delete(sourceBuffer.current.keys().next().value!);
@@ -309,7 +349,7 @@ export function useWorkbench() {
       await set("audio:" + p.id, file);
       notify(
         detected.length
-          ? `识别到 ${detected.length} 个候选音、${melody.length} 个主旋律音。参考速度暂设为 120 BPM，可手动调整。`
+          ? `识别到 ${detected.length} 个候选音、${melody.length} 个旋律候选音。速度与和弦是待校正的候选，请先确认首拍。`
           : "没有检测到可靠音符，请换用更清晰片段或本地增强识别。",
       );
     } catch (e) {
@@ -329,6 +369,10 @@ export function useWorkbench() {
     try {
       const tracker = await load("melody-tracker"),
         guitar = await load("guitar-standard");
+      if (project.schemaVersion === 1 && goal !== "melody")
+        throw new Error(
+          "请先在音乐结构中点击“升级为 v2 副本”，保留旧项目后再重编配。",
+        );
       const melody = project.melody.length
         ? project.melody
         : await invoke<NoteEvent[]>(
@@ -337,7 +381,22 @@ export function useWorkbench() {
             [project.notes],
             control.signal,
           );
-      const candidates = recommend(melody, difficulty).slice(0, 5);
+      if ((await installed("guitar-standard"))!.manifest.version === "0.1.0")
+        throw new Error("请在插件中心更新标准吉他到 0.2，再使用新的编配方式。");
+      const harmony = await load("harmony-analysis");
+      const baseScore = projectScore({ ...project, melody });
+      const score = baseScore.chords.length
+        ? baseScore
+        : harmony.analyzeHarmony!(project.notes, baseScore);
+      const candidates = (
+        goal === "melody"
+          ? recommend(melody, difficulty)
+          : recommendForScore(score, { difficulty, transpose, goal, pattern })
+      ).slice(0, 5);
+      if (!candidates.length)
+        throw new Error(
+          "当前没有可用指型。请先补充或校正和弦，再调整移调、变调夹或难度。",
+        );
       let chosenCapo = autoCapo ? (candidates[0]?.capo ?? 0) : capo;
       if (useAI && autoCapo) {
         try {
@@ -359,18 +418,16 @@ export function useWorkbench() {
             control.signal,
           );
           chosenCapo = a.capo;
-          setAdvice("AI 建议：" + a.reason);
+          const metric = candidates.find((c) => c.capo === a.capo);
+          if (!metric) throw new Error("AI 返回了候选以外的结果");
+          setAdvice(
+            `AI 选择 Capo ${a.capo}；本地演奏候选评分 ${metric.score.toFixed(2)}。请试听核对。`,
+          );
         } catch (e) {
           setAdvice(errorMessage(e) + "，已使用本地规则。");
         }
       }
-      const melodyIds = new Set(melody.map((n) => n.id));
-      const input = [
-        ...melody,
-        ...project.notes
-          .filter((n) => !melodyIds.has(n.id))
-          .map((n) => ({ ...n, role: "harmony" as const })),
-      ];
+      const input = melody;
       const arrangement = await invoke<Arrangement>(
         "guitar-standard",
         "arrange",
@@ -382,6 +439,9 @@ export function useWorkbench() {
             transpose,
             bpm: project.bpm,
             previous: project.arrangement?.notes,
+            goal,
+            score,
+            pattern,
           },
         ],
         control.signal,
@@ -394,10 +454,17 @@ export function useWorkbench() {
       ])
         versions[id] = (await installed(id))!.manifest.version;
       setCapo(chosenCapo);
-      edit({ ...project, melody, arrangement, pluginVersions: versions });
+      edit({
+        ...project,
+        schemaVersion: project.schemaVersion,
+        score,
+        melody,
+        arrangement,
+        pluginVersions: versions,
+      });
       setSelected(null);
       notify(
-        `编配完成：${arrangement.notes.length} 个音符，已应用${labels[difficulty]}难度约束。`,
+        `编配完成：${goal === "accompaniment" ? "和弦伴奏" : goal === "fingerstyle" ? "独奏指弹" : "单线练习"}，${arrangement.notes.length} 个发声事件。请逐小节核对并试弹。`,
       );
     } catch (e) {
       notify(errorMessage(e));
@@ -416,6 +483,9 @@ export function useWorkbench() {
         capo,
         transpose,
         bpm: p.bpm,
+        goal,
+        score: projectScore(p),
+        pattern,
       });
       edit(p);
       setFile(null);
@@ -443,7 +513,18 @@ export function useWorkbench() {
     }
     try {
       let origin = ctx.currentTime + 0.06;
-      if (source && sourceBuffer.current.has(project.id)) {
+      if (source && !sourceBuffer.current.has(project.id)) {
+        const original = await get<File>("audio:" + project.id);
+        if (!original)
+          throw new Error(
+            "该项目没有原音频。请重新选择源文件进行分析；原曲对照不会使用合成音代替。",
+          );
+        sourceBuffer.current.set(
+          project.id,
+          await ctx.decodeAudioData(await original.arrayBuffer()),
+        );
+      }
+      if (source) {
         const s = ctx.createBufferSource();
         s.buffer = sourceBuffer.current.get(project.id)!;
         s.playbackRate.value = speed;
@@ -501,6 +582,8 @@ export function useWorkbench() {
       capo: project.arrangement.capo,
       transpose: project.arrangement.transpose,
       bpm: project.bpm,
+      score: project.arrangement.score,
+      goal: project.arrangement.goal,
     });
     if (errors.length) {
       notify(errors.join("、"));
@@ -536,6 +619,7 @@ export function useWorkbench() {
       validateProject(p);
       edit(p);
       if (p.arrangement) {
+        setGoal(p.arrangement.goal ?? "melody");
         setDifficulty(p.arrangement.difficulty);
         setCapo(p.arrangement.capo);
         setAutoCapo(false);
@@ -577,6 +661,11 @@ export function useWorkbench() {
         .catch((e) => notify(errorMessage(e)));
   };
   return {
+    goal,
+    setGoal,
+    pattern,
+    setPattern,
+    upgrade: () => edit(upgradeProject(project)),
     page,
     setPage,
     project,

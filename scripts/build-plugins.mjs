@@ -39,7 +39,7 @@ for (const {
     id,
     name,
     version,
-    sdk: 1,
+    sdk: 2,
     description,
     capabilities,
     runtime: "browser",

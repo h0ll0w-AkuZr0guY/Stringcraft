@@ -21,6 +21,8 @@ import { RhythmScore, Tablature } from "./Tablature";
 
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 import { labels } from "../hooks/useWorkbench";
+import MusicalStructure from "./MusicalStructure";
+import ChordDiagrams from "./ChordDiagrams";
 export default function ScorePanel() {
   const {
     section,
@@ -216,13 +218,29 @@ export default function ScorePanel() {
           </>
         )}
         <span className="muted">
-          {project.melody.length} 个主旋律音 · {notes.length} 个编配音符
+          {project.arrangement?.goal === "accompaniment"
+            ? `${new Set(notes.map((n) => n.strokeId ?? n.id)).size} 次扫拨动作 · 和弦伴奏`
+            : `${project.melody.length} 个旋律候选 · ${notes.length} 个编配音符`}
         </span>
       </div>
       {stale && (
         <p className="stale-note">
           设置已改变，谱面仍为上次结果。重新生成后应用新设置。
         </p>
+      )}
+      <MusicalStructure />
+      <ChordDiagrams />
+      {!!project.arrangement?.warnings.length && (
+        <details className="arrangement-report">
+          <summary>编配说明与待核对项</summary>
+          {project.arrangement.warnings.map((w) => (
+            <p key={w}>{w}</p>
+          ))}
+          <p>
+            省略 {project.arrangement.dropped.length}{" "}
+            个输入事件。演奏约束通过不代表真人试弹已通过。
+          </p>
+        </details>
       )}
       <div className="notation-toolbar">
         <div className="tabs">
@@ -465,6 +483,8 @@ export default function ScorePanel() {
               capo,
               transpose,
               bpm: project.bpm,
+              goal: project.arrangement?.goal,
+              score: project.arrangement?.score,
             });
             if (errors.length) {
               notify("请先删去末尾冲突音符，再添加新音符");
@@ -484,6 +504,13 @@ export default function ScorePanel() {
           添加音符
         </button>
         <div className="download-actions">
+          <button
+            className="text-button"
+            disabled={!notes.length}
+            onClick={() => exportAs("musicxml")}
+          >
+            MusicXML
+          </button>
           <button
             className="text-button"
             disabled={!notes.length || !!busy}

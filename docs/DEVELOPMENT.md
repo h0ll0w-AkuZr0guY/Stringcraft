@@ -10,7 +10,7 @@ Python 3.11+：安装 backend/requirements.txt，先 `npm run build`，再 `pyth
 
 ## 新增算法插件
 
-1. 阅读 SDK v1，确认输入输出能否复用 NoteEvent / Arrangement。
+1. 阅读 SDK v2 音乐结构接口；旧算法适配可复用 NoteEvent，乐器新增使用 InstrumentPluginV2。
 2. 在 plugins 下创建独立目录和类型化默认导出，参考 plugins/template。
 3. 在 plugins/catalog.source.json 的目录定义加入 id、入口、能力与描述；构建生成带摘要的独立 ESM 与 catalog。
 4. 添加至少一个能体现新行为和失败边界的测试，检查宿主仍可在插件未安装时运行。

@@ -3,11 +3,11 @@
     "id": "guitar-standard",
     "name": "标准吉他",
     "directory": "guitar",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "capabilities": [
       "instrument"
     ],
-    "description": "六弦调弦、分级指弹与指法约束",
+    "description": "和弦伴奏、独奏指弹与单线练习；独立按弦与演奏动作验证",
     "license": "Apache-2.0"
   },
   {
@@ -25,7 +25,7 @@
     "id": "standard-exporters",
     "name": "标准导出",
     "directory": "exporters",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "capabilities": [
       "exporter"
     ],
@@ -47,7 +47,7 @@
     "id": "guitar-samples",
     "name": "吉他实录音源",
     "directory": "guitar-samples",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "capabilities": [
       "renderer"
     ],
@@ -63,6 +63,26 @@
       "advisor"
     ],
     "description": "使用自己的 API Key 比较本地已验证的候选",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "piano-proof",
+    "name": "钢琴契约验证包",
+    "directory": "piano",
+    "version": "0.2.0",
+    "capabilities": ["instrument"],
+    "description": "SDK v2 开发示例：双手、琴键与跨度。尚未接入工作台，不提供完整钢琴编配。",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "harmony-analysis",
+    "name": "和声与节拍候选",
+    "directory": "harmony",
+    "version": "0.2.0",
+    "capabilities": [
+      "harmony"
+    ],
+    "description": "按拍窗估计和弦证据，保留人工校正；速度仅提供候选",
     "license": "Apache-2.0"
   }
 ]

@@ -1,5 +1,12 @@
-/** Public SDK v1. Seconds are source time; notation is a separate projection. */
-export const SDK_VERSION = 1;
+/** SDK v2 plus the v1 workbench compatibility projection. Seconds remain source time. */
+export const SDK_VERSION = 2;
+import {
+  validateScore,
+  type MusicalScore,
+  type ArrangementGoal,
+  type PerformancePlan,
+} from "./score";
+export * from "./score";
 export type Difficulty = "easy" | "normal" | "hard" | "expert";
 export interface Pitch {
   midi: number;
@@ -20,6 +27,13 @@ export interface GuitarNote extends NoteEvent {
   string: number;
   fret: number;
   technique?: "h" | "p" | "pm";
+  leftFinger?: number;
+  rightFinger?: "p" | "i" | "m" | "a";
+  linkFrom?: string;
+  attack?: "pluck" | "hammer" | "pull" | "slide" | "strum";
+  stroke?: "down" | "up";
+  strokeId?: string;
+  letRing?: boolean;
 }
 export interface InstrumentDefinition {
   id: string;
@@ -39,9 +53,14 @@ export interface Arrangement<N extends NoteEvent = GuitarNote> {
   notes: N[];
   dropped: { noteId: string; reason: string }[];
   warnings: string[];
+  goal?: ArrangementGoal;
+  score?: MusicalScore;
+  performance?: PerformancePlan<unknown>;
 }
 export interface MusicProject<N extends NoteEvent = GuitarNote> {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
+  score?: MusicalScore;
+  migratedFrom?: string;
   id: string;
   name: string;
   createdAt: string;
@@ -59,6 +78,7 @@ export interface MusicProject<N extends NoteEvent = GuitarNote> {
 export type Capability =
   | "transcriber"
   | "melody"
+  | "harmony"
   | "instrument"
   | "renderer"
   | "exporter"
@@ -88,8 +108,13 @@ export interface ArrangeOptions {
   transpose: number;
   bpm: number;
   previous?: GuitarNote[];
+  goal?: ArrangementGoal;
+  score?: MusicalScore;
+  pattern?: "strum" | "arpeggio";
 }
 export interface MusicPlugin {
+  analyzeHarmony?: (notes: NoteEvent[], score: MusicalScore) => MusicalScore;
+  tempoCandidates?: (notes: NoteEvent[]) => { bpm: number; score: number }[];
   instrument?: InstrumentDefinition;
   extractMelody?: (notes: NoteEvent[]) => NoteEvent[];
   arrange?: (notes: NoteEvent[], options: ArrangeOptions) => Arrangement;
@@ -166,7 +191,7 @@ export function validateProject(value: unknown): asserts value is MusicProject {
   const p = value as MusicProject;
   if (
     !p ||
-    p.schemaVersion !== 1 ||
+    ![1, 2].includes(p.schemaVersion) ||
     typeof p.id !== "string" ||
     typeof p.name !== "string" ||
     !Number.isFinite(p.duration) ||
@@ -188,6 +213,8 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
   validateNotes(p.melody);
+  if (p.schemaVersion === 2 && !p.score) throw new Error("v2 项目缺少音乐结构");
+  if (p.score) validateScore(p.score);
   for (const n of [...p.notes, ...p.melody, ...(p.arrangement?.notes ?? [])]) {
     if (n.start + n.duration > p.duration + 0.01)
       throw new Error("音符超出项目时间范围");

@@ -4,14 +4,18 @@ test("real workbench: editing, undo, score, downloads and saved project", async 
   page,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("pageerror", (e) => {
+    errors.push(e.message);
+    console.log("Workbench browser error:", e.message);
+  });
   await page.goto("./");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
-  await expect(page.getByTestId("tablature").locator(".tab-note")).toHaveCount(
-    40,
-  );
+  await expect(
+    page.getByTestId("tablature").locator(".tab-note").first(),
+  ).toBeVisible();
+  await expect(page.getByLabel("编配目标")).toHaveValue("accompaniment");
   await page.getByTestId("tablature").locator(".tab-note rect").first().click();
   await expect(page.getByText("音符编辑", { exact: true })).toBeVisible();
   await page.getByLabel("锁定音符", { exact: true }).click();
@@ -85,6 +89,7 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   await expect(page.getByRole("status")).toContainText("候选音", {
     timeout: 120000,
   });
+  await page.getByLabel("编配目标").selectOption("melody");
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
   expect(

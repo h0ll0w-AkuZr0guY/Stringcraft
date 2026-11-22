@@ -1,4 +1,5 @@
 import type { MusicPlugin, MusicProject } from "../../packages/contracts";
+import { musicXML } from "./musicxml";
 export function tablature(p: MusicProject): string {
   const a = p.arrangement;
   if (!a) throw new Error("请先生成编配");
@@ -104,6 +105,12 @@ export function midi(p: MusicProject): Uint8Array {
   ]);
 }
 export function exportFile(project: MusicProject, format: string) {
+  if (format === "musicxml")
+    return {
+      data: musicXML(project),
+      mime: "application/vnd.recordare.musicxml+xml",
+      extension: "musicxml",
+    };
   if (format === "txt")
     return {
       data: tablature(project),
