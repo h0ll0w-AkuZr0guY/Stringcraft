@@ -1,0 +1,47 @@
+name: Build Preview Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Also build the independent CPU music environment
+        type: boolean
+        default: false
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - run: python scripts/build-local.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-base
+          path: artifacts/*.zip
+      - name: Publish preview
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: gh release create $env:GITHUB_REF_NAME artifacts/*.zip --prerelease --title "Stringcraft $env:GITHUB_REF_NAME" --notes-file docs/RELEASES.md
+      - uses: astral-sh/setup-uv@v6
+        if: inputs.environment
+      - run: ./scripts/build-environment.ps1 -WithModels
+        if: inputs.environment
+      - uses: actions/upload-artifact@v4
+        if: inputs.environment
+        with:
+          name: windows-music-environment
+          path: artifacts/Stringcraft-local-music-*.zip

@@ -1,0 +1,47 @@
+{
+  "name": "stringcraft",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A local-first, extensible music-to-guitar workbench",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && node scripts/build-plugins.mjs && node scripts/build-docs.mjs && node scripts/collect-licenses.mjs && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check": "tsc -b && vitest run && python scripts/check_project.py",
+    "plugins:build": "node scripts/build-plugins.mjs",
+    "quality": "node scripts/evaluate-browser.mjs",
+    "docs:build": "node scripts/build-docs.mjs",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"packages/**/*.ts\" \"plugins/**/*.ts\" \"scripts/*.mjs\" \"tests/**/*.ts\" \"*.{json,ts}\""
+  },
+  "dependencies": {
+    "@coderline/alphatab": "1.9.0",
+    "@spotify/basic-pitch": "1.0.1",
+    "@tensorflow/tfjs": "^3.21.0",
+    "@tensorflow/tfjs-backend-wasm": "^3.21.0",
+    "@tonejs/midi": "2.0.28",
+    "idb-keyval": "^6.2.2",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "esbuild": "^0.25.0",
+    "marked": "^15.0.0",
+    "prettier": "3.6.2",
+    "typescript": "~5.8.3",
+    "vite": "^6.4.0",
+    "vitest": "4.1.12"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

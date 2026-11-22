@@ -1,0 +1,16 @@
+Stringcraft
+Copyright 2026 Stringcraft contributors
+
+Project code is licensed under Apache-2.0. Third-party components retain their
+own licenses. This notice does not relicense third-party code, weights or audio.
+
+Spotify Basic Pitch: Copyright 2022 Spotify AB, Apache-2.0.
+TensorFlow.js: Copyright Google LLC, Apache-2.0.
+alphaTab: Copyright Daniel Kuschny and contributors, MPL-2.0.
+Meta Open Sound instrument samples: CC0-1.0; see public/samples/manifest.json
+and public/samples/LICENSE-CC0.txt for the exact source and sample mapping.
+Demucs: Copyright Meta Platforms and contributors, MIT (optional local plugin).
+
+Distribution builds include generated runtime JavaScript dependency notices.
+Optional environment bundles include Python package licenses separately.
+See docs/LICENSING.md and the corresponding upstream repositories.

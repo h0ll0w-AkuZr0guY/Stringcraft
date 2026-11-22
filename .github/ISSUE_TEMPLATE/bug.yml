@@ -1,0 +1,20 @@
+name: 问题反馈
+description: 可复现的音乐或软件问题
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 版本与浏览器/系统
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤、实际与期望行为
+      description: 请勿上传 Key、私人谱件或无授权歌曲。优先用原创短片段。
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: 输入类别与相关证据

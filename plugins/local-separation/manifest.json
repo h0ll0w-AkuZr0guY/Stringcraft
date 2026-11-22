@@ -1,0 +1,1 @@
+{"id":"local-separation","version":"0.1.0","sdk":1,"runtime":"local","capabilities":["separator","transcriber"],"python":"3.11","models":["htdemucs","basic-pitch-icassp-2022"],"license":"MIT / Apache-2.0"}

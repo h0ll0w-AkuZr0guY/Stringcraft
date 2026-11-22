@@ -1,0 +1,743 @@
+{
+  "source": "Meta Open Sound",
+  "url": "https://github.com/facebookincubator/Meta-open-sound",
+  "license": "CC0-1.0",
+  "samples": [
+    {
+      "instrument": "nylon",
+      "string": 1,
+      "midi": 64,
+      "source_file": "INSGuitarNylon_StringHighE_Vel01Finger_E4_01.ogg",
+      "local_file": "nylon_s1_64.ogg",
+      "bytes": 44864
+    },
+    {
+      "instrument": "nylon",
+      "string": 1,
+      "midi": 67,
+      "source_file": "INSGuitarNylon_StringHighE_Vel01Finger_G4_01.ogg",
+      "local_file": "nylon_s1_67.ogg",
+      "bytes": 35869
+    },
+    {
+      "instrument": "nylon",
+      "string": 1,
+      "midi": 70,
+      "source_file": "INSGuitarNylon_StringHighE_Vel01Finger_As4_01.ogg",
+      "local_file": "nylon_s1_70.ogg",
+      "bytes": 20884
+    },
+    {
+      "instrument": "nylon",
+      "string": 1,
+      "midi": 73,
+      "source_file": "INSGuitarNylon_StringHighE_Vel01Finger_Cs5_01.ogg",
+      "local_file": "nylon_s1_73.ogg",
+      "bytes": 23324
+    },
+    {
+      "instrument": "nylon",
+      "string": 1,
+      "midi": 76,
+      "source_file": "INSGuitarNylon_StringHighE_Vel01Finger_E5_01.ogg",
+      "local_file": "nylon_s1_76.ogg",
+      "bytes": 16869
+    },
+    {
+      "instrument": "nylon",
+      "string": 1,
+      "midi": 79,
+      "source_file": "INSGuitarNylon_StringHighE_Vel01Finger_G5_01.ogg",
+      "local_file": "nylon_s1_79.ogg",
+      "bytes": 18750
+    },
+    {
+      "instrument": "nylon",
+      "string": 1,
+      "midi": 82,
+      "source_file": "INSGuitarNylon_StringHighE_Vel01Finger_As5_01.ogg",
+      "local_file": "nylon_s1_82.ogg",
+      "bytes": 18013
+    },
+    {
+      "instrument": "nylon",
+      "string": 1,
+      "midi": 83,
+      "source_file": "INSGuitarNylon_StringHighE_Vel01Finger_B5_01.ogg",
+      "local_file": "nylon_s1_83.ogg",
+      "bytes": 17627
+    },
+    {
+      "instrument": "nylon",
+      "string": 2,
+      "midi": 59,
+      "source_file": "INSGuitarNylon_StringB_Vel01Finger_B3_01.ogg",
+      "local_file": "nylon_s2_59.ogg",
+      "bytes": 41191
+    },
+    {
+      "instrument": "nylon",
+      "string": 2,
+      "midi": 62,
+      "source_file": "INSGuitarNylon_StringB_Vel01Finger_D4_01.ogg",
+      "local_file": "nylon_s2_62.ogg",
+      "bytes": 48368
+    },
+    {
+      "instrument": "nylon",
+      "string": 2,
+      "midi": 65,
+      "source_file": "INSGuitarNylon_StringB_Vel01Finger_F4_01.ogg",
+      "local_file": "nylon_s2_65.ogg",
+      "bytes": 35944
+    },
+    {
+      "instrument": "nylon",
+      "string": 2,
+      "midi": 68,
+      "source_file": "INSGuitarNylon_StringB_Vel01Finger_Gs4_01.ogg",
+      "local_file": "nylon_s2_68.ogg",
+      "bytes": 38554
+    },
+    {
+      "instrument": "nylon",
+      "string": 2,
+      "midi": 71,
+      "source_file": "INSGuitarNylon_StringB_Vel01Finger_B4_01.ogg",
+      "local_file": "nylon_s2_71.ogg",
+      "bytes": 29031
+    },
+    {
+      "instrument": "nylon",
+      "string": 2,
+      "midi": 74,
+      "source_file": "INSGuitarNylon_StringB_Vel01Finger_D5_01.ogg",
+      "local_file": "nylon_s2_74.ogg",
+      "bytes": 17411
+    },
+    {
+      "instrument": "nylon",
+      "string": 2,
+      "midi": 77,
+      "source_file": "INSGuitarNylon_StringB_Vel01Finger_F5_01.ogg",
+      "local_file": "nylon_s2_77.ogg",
+      "bytes": 18799
+    },
+    {
+      "instrument": "nylon",
+      "string": 3,
+      "midi": 55,
+      "source_file": "INSGuitarNylon_StringG_Vel01Finger_G3_01.ogg",
+      "local_file": "nylon_s3_55.ogg",
+      "bytes": 49013
+    },
+    {
+      "instrument": "nylon",
+      "string": 3,
+      "midi": 58,
+      "source_file": "INSGuitarNylon_StringG_Vel01Finger_As3_01.ogg",
+      "local_file": "nylon_s3_58.ogg",
+      "bytes": 38061
+    },
+    {
+      "instrument": "nylon",
+      "string": 3,
+      "midi": 61,
+      "source_file": "INSGuitarNylon_StringG_Vel01Finger_Cs4_01.ogg",
+      "local_file": "nylon_s3_61.ogg",
+      "bytes": 53892
+    },
+    {
+      "instrument": "nylon",
+      "string": 3,
+      "midi": 64,
+      "source_file": "INSGuitarNylon_StringG_Vel01Finger_E4_01.ogg",
+      "local_file": "nylon_s3_64.ogg",
+      "bytes": 48131
+    },
+    {
+      "instrument": "nylon",
+      "string": 3,
+      "midi": 67,
+      "source_file": "INSGuitarNylon_StringG_Vel01Finger_G4_01.ogg",
+      "local_file": "nylon_s3_67.ogg",
+      "bytes": 27924
+    },
+    {
+      "instrument": "nylon",
+      "string": 3,
+      "midi": 70,
+      "source_file": "INSGuitarNylon_StringG_Vel01Finger_As4_01.ogg",
+      "local_file": "nylon_s3_70.ogg",
+      "bytes": 33071
+    },
+    {
+      "instrument": "nylon",
+      "string": 3,
+      "midi": 73,
+      "source_file": "INSGuitarNylon_StringG_Vel01Finger_Cs5_01.ogg",
+      "local_file": "nylon_s3_73.ogg",
+      "bytes": 17829
+    },
+    {
+      "instrument": "nylon",
+      "string": 4,
+      "midi": 50,
+      "source_file": "INSGuitarNylon_StringD_Vel01Finger_D3_01.ogg",
+      "local_file": "nylon_s4_50.ogg",
+      "bytes": 97995
+    },
+    {
+      "instrument": "nylon",
+      "string": 4,
+      "midi": 53,
+      "source_file": "INSGuitarNylon_StringD_Vel01Finger_F3_01.ogg",
+      "local_file": "nylon_s4_53.ogg",
+      "bytes": 54782
+    },
+    {
+      "instrument": "nylon",
+      "string": 4,
+      "midi": 56,
+      "source_file": "INSGuitarNylon_StringD_Vel01Finger_Gs3_01.ogg",
+      "local_file": "nylon_s4_56.ogg",
+      "bytes": 40506
+    },
+    {
+      "instrument": "nylon",
+      "string": 4,
+      "midi": 59,
+      "source_file": "INSGuitarNylon_StringD_Vel01Finger_B3_01.ogg",
+      "local_file": "nylon_s4_59.ogg",
+      "bytes": 64890
+    },
+    {
+      "instrument": "nylon",
+      "string": 4,
+      "midi": 62,
+      "source_file": "INSGuitarNylon_StringD_Vel01Finger_D4_01.ogg",
+      "local_file": "nylon_s4_62.ogg",
+      "bytes": 48673
+    },
+    {
+      "instrument": "nylon",
+      "string": 4,
+      "midi": 65,
+      "source_file": "INSGuitarNylon_StringD_Vel01Finger_F4_01.ogg",
+      "local_file": "nylon_s4_65.ogg",
+      "bytes": 38073
+    },
+    {
+      "instrument": "nylon",
+      "string": 4,
+      "midi": 68,
+      "source_file": "INSGuitarNylon_StringD_Vel01Finger_Gs4_01.ogg",
+      "local_file": "nylon_s4_68.ogg",
+      "bytes": 20093
+    },
+    {
+      "instrument": "nylon",
+      "string": 5,
+      "midi": 45,
+      "source_file": "INSGuitarNylon_StringA_Vel01Finger_A2_01.ogg",
+      "local_file": "nylon_s5_45.ogg",
+      "bytes": 101583
+    },
+    {
+      "instrument": "nylon",
+      "string": 5,
+      "midi": 48,
+      "source_file": "INSGuitarNylon_StringA_Vel01Finger_C3_01.ogg",
+      "local_file": "nylon_s5_48.ogg",
+      "bytes": 79431
+    },
+    {
+      "instrument": "nylon",
+      "string": 5,
+      "midi": 51,
+      "source_file": "INSGuitarNylon_StringA_Vel01Finger_Ds3_01.ogg",
+      "local_file": "nylon_s5_51.ogg",
+      "bytes": 112551
+    },
+    {
+      "instrument": "nylon",
+      "string": 5,
+      "midi": 54,
+      "source_file": "INSGuitarNylon_StringA_Vel01Finger_Fs3_01.ogg",
+      "local_file": "nylon_s5_54.ogg",
+      "bytes": 49155
+    },
+    {
+      "instrument": "nylon",
+      "string": 5,
+      "midi": 57,
+      "source_file": "INSGuitarNylon_StringA_Vel01Finger_A3_01.ogg",
+      "local_file": "nylon_s5_57.ogg",
+      "bytes": 42270
+    },
+    {
+      "instrument": "nylon",
+      "string": 5,
+      "midi": 60,
+      "source_file": "INSGuitarNylon_StringA_Vel01Finger_C4_01.ogg",
+      "local_file": "nylon_s5_60.ogg",
+      "bytes": 39130
+    },
+    {
+      "instrument": "nylon",
+      "string": 5,
+      "midi": 63,
+      "source_file": "INSGuitarNylon_StringA_Vel01Finger_Ds4_01.ogg",
+      "local_file": "nylon_s5_63.ogg",
+      "bytes": 33237
+    },
+    {
+      "instrument": "nylon",
+      "string": 6,
+      "midi": 40,
+      "source_file": "INSGuitarNylon_StringLowE_Vel01Finger_E2_01.ogg",
+      "local_file": "nylon_s6_40.ogg",
+      "bytes": 77832
+    },
+    {
+      "instrument": "nylon",
+      "string": 6,
+      "midi": 43,
+      "source_file": "INSGuitarNylon_StringLowE_Vel01Finger_G2_01.ogg",
+      "local_file": "nylon_s6_43.ogg",
+      "bytes": 79197
+    },
+    {
+      "instrument": "nylon",
+      "string": 6,
+      "midi": 46,
+      "source_file": "INSGuitarNylon_StringLowE_Vel01Finger_As2_01.ogg",
+      "local_file": "nylon_s6_46.ogg",
+      "bytes": 70070
+    },
+    {
+      "instrument": "nylon",
+      "string": 6,
+      "midi": 49,
+      "source_file": "INSGuitarNylon_StringLowE_Vel01Finger_Cs3_01.ogg",
+      "local_file": "nylon_s6_49.ogg",
+      "bytes": 77618
+    },
+    {
+      "instrument": "nylon",
+      "string": 6,
+      "midi": 52,
+      "source_file": "INSGuitarNylon_StringLowE_Vel01Finger_E3_01.ogg",
+      "local_file": "nylon_s6_52.ogg",
+      "bytes": 51882
+    },
+    {
+      "instrument": "nylon",
+      "string": 6,
+      "midi": 55,
+      "source_file": "INSGuitarNylon_StringLowE_Vel01Finger_G3_01.ogg",
+      "local_file": "nylon_s6_55.ogg",
+      "bytes": 49844
+    },
+    {
+      "instrument": "nylon",
+      "string": 6,
+      "midi": 58,
+      "source_file": "INSGuitarNylon_StringLowE_Vel01Finger_As3_01.ogg",
+      "local_file": "nylon_s6_58.ogg",
+      "bytes": 31081
+    },
+    {
+      "instrument": "nylon",
+      "string": 6,
+      "midi": 59,
+      "source_file": "INSGuitarNylon_StringLowE_Vel01Finger_B3_01.ogg",
+      "local_file": "nylon_s6_59.ogg",
+      "bytes": 33827
+    },
+    {
+      "instrument": "steel",
+      "string": 1,
+      "midi": 64,
+      "source_file": "INSGuitarSteel_StringHighE_Vel02_E4_01.ogg",
+      "local_file": "steel_s1_64.ogg",
+      "bytes": 60165
+    },
+    {
+      "instrument": "steel",
+      "string": 1,
+      "midi": 67,
+      "source_file": "INSGuitarSteel_StringHighE_Vel02_G4_01.ogg",
+      "local_file": "steel_s1_67.ogg",
+      "bytes": 65922
+    },
+    {
+      "instrument": "steel",
+      "string": 1,
+      "midi": 70,
+      "source_file": "INSGuitarSteel_StringHighE_Vel02_As4_01.ogg",
+      "local_file": "steel_s1_70.ogg",
+      "bytes": 46487
+    },
+    {
+      "instrument": "steel",
+      "string": 1,
+      "midi": 73,
+      "source_file": "INSGuitarSteel_StringHighE_Vel02_Cs5_01.ogg",
+      "local_file": "steel_s1_73.ogg",
+      "bytes": 52108
+    },
+    {
+      "instrument": "steel",
+      "string": 1,
+      "midi": 76,
+      "source_file": "INSGuitarSteel_StringHighE_Vel02_E5_01.ogg",
+      "local_file": "steel_s1_76.ogg",
+      "bytes": 42202
+    },
+    {
+      "instrument": "steel",
+      "string": 1,
+      "midi": 79,
+      "source_file": "INSGuitarSteel_StringHighE_Vel02_G5_01.ogg",
+      "local_file": "steel_s1_79.ogg",
+      "bytes": 46503
+    },
+    {
+      "instrument": "steel",
+      "string": 1,
+      "midi": 82,
+      "source_file": "INSGuitarSteel_StringHighE_Vel02_As5_01.ogg",
+      "local_file": "steel_s1_82.ogg",
+      "bytes": 35978
+    },
+    {
+      "instrument": "steel",
+      "string": 1,
+      "midi": 84,
+      "source_file": "INSGuitarSteel_StringHighE_Vel02_C6_01.ogg",
+      "local_file": "steel_s1_84.ogg",
+      "bytes": 25406
+    },
+    {
+      "instrument": "steel",
+      "string": 2,
+      "midi": 59,
+      "source_file": "INSGuitarSteel_StringB_Vel02_B3_01.ogg",
+      "local_file": "steel_s2_59.ogg",
+      "bytes": 73073
+    },
+    {
+      "instrument": "steel",
+      "string": 2,
+      "midi": 62,
+      "source_file": "INSGuitarSteel_StringB_Vel02_D4_01.ogg",
+      "local_file": "steel_s2_62.ogg",
+      "bytes": 81182
+    },
+    {
+      "instrument": "steel",
+      "string": 2,
+      "midi": 65,
+      "source_file": "INSGuitarSteel_StringB_Vel02_F4_01.ogg",
+      "local_file": "steel_s2_65.ogg",
+      "bytes": 59993
+    },
+    {
+      "instrument": "steel",
+      "string": 2,
+      "midi": 68,
+      "source_file": "INSGuitarSteel_StringB_Vel02_Gs4_01.ogg",
+      "local_file": "steel_s2_68.ogg",
+      "bytes": 84919
+    },
+    {
+      "instrument": "steel",
+      "string": 2,
+      "midi": 71,
+      "source_file": "INSGuitarSteel_StringB_Vel02_B4_01.ogg",
+      "local_file": "steel_s2_71.ogg",
+      "bytes": 59652
+    },
+    {
+      "instrument": "steel",
+      "string": 2,
+      "midi": 74,
+      "source_file": "INSGuitarSteel_StringB_Vel02_D5_01.ogg",
+      "local_file": "steel_s2_74.ogg",
+      "bytes": 40416
+    },
+    {
+      "instrument": "steel",
+      "string": 2,
+      "midi": 77,
+      "source_file": "INSGuitarSteel_StringB_Vel02_F5_01.ogg",
+      "local_file": "steel_s2_77.ogg",
+      "bytes": 35563
+    },
+    {
+      "instrument": "steel",
+      "string": 2,
+      "midi": 79,
+      "source_file": "INSGuitarSteel_StringB_Vel02_G5_01.ogg",
+      "local_file": "steel_s2_79.ogg",
+      "bytes": 28459
+    },
+    {
+      "instrument": "steel",
+      "string": 3,
+      "midi": 55,
+      "source_file": "INSGuitarSteel_StringG_Vel02_G3_01.ogg",
+      "local_file": "steel_s3_55.ogg",
+      "bytes": 124996
+    },
+    {
+      "instrument": "steel",
+      "string": 3,
+      "midi": 58,
+      "source_file": "INSGuitarSteel_StringG_Vel02_As3_01.ogg",
+      "local_file": "steel_s3_58.ogg",
+      "bytes": 102975
+    },
+    {
+      "instrument": "steel",
+      "string": 3,
+      "midi": 61,
+      "source_file": "INSGuitarSteel_StringG_Vel02_Cs4_01.ogg",
+      "local_file": "steel_s3_61.ogg",
+      "bytes": 87264
+    },
+    {
+      "instrument": "steel",
+      "string": 3,
+      "midi": 64,
+      "source_file": "INSGuitarSteel_StringG_Vel02_E4_01.ogg",
+      "local_file": "steel_s3_64.ogg",
+      "bytes": 98296
+    },
+    {
+      "instrument": "steel",
+      "string": 3,
+      "midi": 67,
+      "source_file": "INSGuitarSteel_StringG_Vel02_G4_01.ogg",
+      "local_file": "steel_s3_67.ogg",
+      "bytes": 102585
+    },
+    {
+      "instrument": "steel",
+      "string": 3,
+      "midi": 70,
+      "source_file": "INSGuitarSteel_StringG_Vel02_As4_01.ogg",
+      "local_file": "steel_s3_70.ogg",
+      "bytes": 75849
+    },
+    {
+      "instrument": "steel",
+      "string": 3,
+      "midi": 73,
+      "source_file": "INSGuitarSteel_StringG_Vel02_Cs5_01.ogg",
+      "local_file": "steel_s3_73.ogg",
+      "bytes": 33077
+    },
+    {
+      "instrument": "steel",
+      "string": 3,
+      "midi": 75,
+      "source_file": "INSGuitarSteel_StringG_Vel02_Ds5_01.ogg",
+      "local_file": "steel_s3_75.ogg",
+      "bytes": 27710
+    },
+    {
+      "instrument": "steel",
+      "string": 4,
+      "midi": 50,
+      "source_file": "INSGuitarSteel_StringD_Vel02_D3_01.ogg",
+      "local_file": "steel_s4_50.ogg",
+      "bytes": 114382
+    },
+    {
+      "instrument": "steel",
+      "string": 4,
+      "midi": 53,
+      "source_file": "INSGuitarSteel_StringD_Vel02_F3_01.ogg",
+      "local_file": "steel_s4_53.ogg",
+      "bytes": 64183
+    },
+    {
+      "instrument": "steel",
+      "string": 4,
+      "midi": 56,
+      "source_file": "INSGuitarSteel_StringD_Vel02_Gs3_01.ogg",
+      "local_file": "steel_s4_56.ogg",
+      "bytes": 101623
+    },
+    {
+      "instrument": "steel",
+      "string": 4,
+      "midi": 59,
+      "source_file": "INSGuitarSteel_StringD_Vel02_B3_01.ogg",
+      "local_file": "steel_s4_59.ogg",
+      "bytes": 51892
+    },
+    {
+      "instrument": "steel",
+      "string": 4,
+      "midi": 62,
+      "source_file": "INSGuitarSteel_StringD_Vel02_D4_01.ogg",
+      "local_file": "steel_s4_62.ogg",
+      "bytes": 73886
+    },
+    {
+      "instrument": "steel",
+      "string": 4,
+      "midi": 65,
+      "source_file": "INSGuitarSteel_StringD_Vel02_F4_01.ogg",
+      "local_file": "steel_s4_65.ogg",
+      "bytes": 66432
+    },
+    {
+      "instrument": "steel",
+      "string": 4,
+      "midi": 68,
+      "source_file": "INSGuitarSteel_StringD_Vel02_Gs4_01.ogg",
+      "local_file": "steel_s4_68.ogg",
+      "bytes": 51532
+    },
+    {
+      "instrument": "steel",
+      "string": 4,
+      "midi": 70,
+      "source_file": "INSGuitarSteel_StringD_Vel02_As4_01.ogg",
+      "local_file": "steel_s4_70.ogg",
+      "bytes": 39545
+    },
+    {
+      "instrument": "steel",
+      "string": 5,
+      "midi": 45,
+      "source_file": "INSGuitarSteel_StringA_Vel02_A2_01.ogg",
+      "local_file": "steel_s5_45.ogg",
+      "bytes": 141183
+    },
+    {
+      "instrument": "steel",
+      "string": 5,
+      "midi": 48,
+      "source_file": "INSGuitarSteel_StringA_Vel02_C3_01.ogg",
+      "local_file": "steel_s5_48.ogg",
+      "bytes": 112325
+    },
+    {
+      "instrument": "steel",
+      "string": 5,
+      "midi": 51,
+      "source_file": "INSGuitarSteel_StringA_Vel02_Ds3_01.ogg",
+      "local_file": "steel_s5_51.ogg",
+      "bytes": 98195
+    },
+    {
+      "instrument": "steel",
+      "string": 5,
+      "midi": 54,
+      "source_file": "INSGuitarSteel_StringA_Vel02_Fs3_01.ogg",
+      "local_file": "steel_s5_54.ogg",
+      "bytes": 38127
+    },
+    {
+      "instrument": "steel",
+      "string": 5,
+      "midi": 57,
+      "source_file": "INSGuitarSteel_StringA_Vel02_A3_01.ogg",
+      "local_file": "steel_s5_57.ogg",
+      "bytes": 69487
+    },
+    {
+      "instrument": "steel",
+      "string": 5,
+      "midi": 60,
+      "source_file": "INSGuitarSteel_StringA_Vel02_C4_01.ogg",
+      "local_file": "steel_s5_60.ogg",
+      "bytes": 45166
+    },
+    {
+      "instrument": "steel",
+      "string": 5,
+      "midi": 63,
+      "source_file": "INSGuitarSteel_StringA_Vel02_Ds4_01.ogg",
+      "local_file": "steel_s5_63.ogg",
+      "bytes": 70506
+    },
+    {
+      "instrument": "steel",
+      "string": 5,
+      "midi": 65,
+      "source_file": "INSGuitarSteel_StringA_Vel02_F4_01.ogg",
+      "local_file": "steel_s5_65.ogg",
+      "bytes": 23666
+    },
+    {
+      "instrument": "steel",
+      "string": 6,
+      "midi": 40,
+      "source_file": "INSGuitarSteel_StringLowE_Vel02_E2_01.ogg",
+      "local_file": "steel_s6_40.ogg",
+      "bytes": 139615
+    },
+    {
+      "instrument": "steel",
+      "string": 6,
+      "midi": 43,
+      "source_file": "INSGuitarSteel_StringLowE_Vel02_G2_01.ogg",
+      "local_file": "steel_s6_43.ogg",
+      "bytes": 97659
+    },
+    {
+      "instrument": "steel",
+      "string": 6,
+      "midi": 46,
+      "source_file": "INSGuitarSteel_StringLowE_Vel02_As2_01.ogg",
+      "local_file": "steel_s6_46.ogg",
+      "bytes": 81010
+    },
+    {
+      "instrument": "steel",
+      "string": 6,
+      "midi": 50,
+      "source_file": "INSGuitarSteel_StringLowE_Vel02_D3_01.ogg",
+      "local_file": "steel_s6_50.ogg",
+      "bytes": 99573
+    },
+    {
+      "instrument": "steel",
+      "string": 6,
+      "midi": 53,
+      "source_file": "INSGuitarSteel_StringLowE_Vel02_F3_01.ogg",
+      "local_file": "steel_s6_53.ogg",
+      "bytes": 46125
+    },
+    {
+      "instrument": "steel",
+      "string": 6,
+      "midi": 56,
+      "source_file": "INSGuitarSteel_StringLowE_Vel02_Gs3_01.ogg",
+      "local_file": "steel_s6_56.ogg",
+      "bytes": 54013
+    },
+    {
+      "instrument": "steel",
+      "string": 6,
+      "midi": 59,
+      "source_file": "INSGuitarSteel_StringLowE_Vel02_B3_01.ogg",
+      "local_file": "steel_s6_59.ogg",
+      "bytes": 82036
+    },
+    {
+      "instrument": "steel",
+      "string": 6,
+      "midi": 60,
+      "source_file": "INSGuitarSteel_StringLowE_Vel02_C4_01.ogg",
+      "local_file": "steel_s6_60.ogg",
+      "bytes": 44980
+    }
+  ]
+}

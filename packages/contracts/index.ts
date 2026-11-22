@@ -1,0 +1,208 @@
+/** Public SDK v1. Seconds are source time; notation is a separate projection. */
+export const SDK_VERSION = 1;
+export type Difficulty = "easy" | "normal" | "hard" | "expert";
+export interface Pitch {
+  midi: number;
+  cents?: number;
+}
+export interface NoteEvent {
+  id: string;
+  start: number;
+  duration: number;
+  pitch: Pitch;
+  velocity: number;
+  score: number;
+  source: "detected" | "demo" | "manual" | "generated";
+  role?: "melody" | "bass" | "harmony";
+  locked?: boolean;
+}
+export interface GuitarNote extends NoteEvent {
+  string: number;
+  fret: number;
+  technique?: "h" | "p" | "pm";
+}
+export interface InstrumentDefinition {
+  id: string;
+  name: string;
+  pitchRange: [number, number];
+  tuning?: number[];
+  maxFret?: number;
+  notation: string[];
+  techniques: string[];
+}
+export interface Arrangement<N extends NoteEvent = GuitarNote> {
+  id: string;
+  instrumentId: string;
+  difficulty: Difficulty;
+  capo: number;
+  transpose: number;
+  notes: N[];
+  dropped: { noteId: string; reason: string }[];
+  warnings: string[];
+}
+export interface MusicProject<N extends NoteEvent = GuitarNote> {
+  schemaVersion: 1;
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  duration: number;
+  bpm: number;
+  beatOffset: number;
+  sourceOffset: number;
+  notes: NoteEvent[];
+  melody: NoteEvent[];
+  arrangement: Arrangement<N> | null;
+  pluginVersions: Record<string, string>;
+  sourceKind: "audio" | "demo" | "midi" | "musicxml";
+}
+export type Capability =
+  | "transcriber"
+  | "melody"
+  | "instrument"
+  | "renderer"
+  | "exporter"
+  | "advisor"
+  | "separator";
+export interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  sdk: number;
+  description: string;
+  capabilities: Capability[];
+  runtime: "browser" | "local";
+  license: string;
+  entry: string;
+  sha256: string;
+  size: number;
+  dependencies: string[];
+}
+export interface PluginContext {
+  signal?: AbortSignal;
+  progress?: (value: number, message: string) => void;
+}
+export interface ArrangeOptions {
+  difficulty: Difficulty;
+  capo: number;
+  transpose: number;
+  bpm: number;
+  previous?: GuitarNote[];
+}
+export interface MusicPlugin {
+  instrument?: InstrumentDefinition;
+  extractMelody?: (notes: NoteEvent[]) => NoteEvent[];
+  arrange?: (notes: NoteEvent[], options: ArrangeOptions) => Arrangement;
+  exportFile?: (
+    project: MusicProject,
+    format: string,
+  ) => { data: Uint8Array | string; mime: string; extension: string };
+  transcribe?: (
+    samples: Float32Array,
+    modelUrl: string,
+    wasmUrl: string,
+    progress: (value: number) => void,
+  ) => Promise<NoteEvent[]>;
+  scheduleAudio?: (
+    ctx: AudioContext | OfflineAudioContext,
+    notes: NoteEvent[],
+    tone: string,
+    from?: number,
+    to?: number,
+    speed?: number,
+  ) => Promise<{ origin: number; fallback: number }>;
+  renderAudio?: (
+    notes: NoteEvent[],
+    duration: number,
+    tone: string,
+  ) => Promise<{ data: ArrayBuffer; fallback: number }>;
+  advise?: (
+    settings: { key: string; endpoint: string; model: string },
+    candidates: { capo: number; score: number }[],
+    summary: { notes: number; difficulty: string },
+    signal?: AbortSignal,
+  ) => Promise<{ capo: number; reason: string }>;
+}
+export interface Job {
+  id: string;
+  status: "queued" | "running" | "completed" | "failed" | "cancelled";
+  progress: number;
+  message: string;
+  result?: unknown;
+  error?: { code: string; message: string };
+}
+export function validateNotes(value: unknown): asserts value is NoteEvent[] {
+  if (!Array.isArray(value) || value.length > 100000)
+    throw new Error("音符列表无效或过大");
+  const ids = new Set<string>();
+  for (const n of value) {
+    if (
+      !n ||
+      typeof n.id !== "string" ||
+      !n.id ||
+      ids.has(n.id) ||
+      !Number.isFinite(n.start) ||
+      n.start < 0 ||
+      !Number.isFinite(n.duration) ||
+      n.duration <= 0 ||
+      !Number.isInteger(n.pitch?.midi) ||
+      n.pitch.midi < 0 ||
+      n.pitch.midi > 127 ||
+      !Number.isFinite(n.velocity) ||
+      n.velocity < 0 ||
+      n.velocity > 1 ||
+      !Number.isFinite(n.score) ||
+      n.score < 0 ||
+      n.score > 1 ||
+      !["detected", "demo", "manual", "generated"].includes(n.source)
+    )
+      throw new Error("音符数据不符合 SDK v1 契约");
+    ids.add(n.id);
+  }
+}
+export function validateProject(value: unknown): asserts value is MusicProject {
+  const p = value as MusicProject;
+  if (
+    !p ||
+    p.schemaVersion !== 1 ||
+    typeof p.id !== "string" ||
+    typeof p.name !== "string" ||
+    !Number.isFinite(p.duration) ||
+    p.duration <= 0 ||
+    !Number.isFinite(p.bpm) ||
+    p.bpm < 20 ||
+    p.bpm > 300 ||
+    !Number.isFinite(p.sourceOffset) ||
+    p.sourceOffset < 0 ||
+    !Number.isFinite(p.beatOffset)
+  )
+    throw new Error("项目版本或元数据无效");
+  validateNotes(p.notes);
+  validateNotes(p.melody);
+  if (p.arrangement) {
+    validateNotes(p.arrangement.notes);
+    if (
+      !["easy", "normal", "hard", "expert"].includes(
+        p.arrangement.difficulty,
+      ) ||
+      !Number.isInteger(p.arrangement.capo) ||
+      p.arrangement.capo < 0 ||
+      p.arrangement.capo > 12 ||
+      !Number.isInteger(p.arrangement.transpose) ||
+      Math.abs(p.arrangement.transpose) > 12
+    )
+      throw new Error("编配参数无效");
+    const tuning = [64, 59, 55, 50, 45, 40];
+    for (const n of p.arrangement.notes)
+      if (
+        !Number.isInteger(n.string) ||
+        n.string < 1 ||
+        n.string > 6 ||
+        !Number.isInteger(n.fret) ||
+        n.fret < 0 ||
+        n.fret + p.arrangement.capo > 24 ||
+        n.pitch.midi !== tuning[n.string - 1] + p.arrangement.capo + n.fret
+      )
+        throw new Error("吉他弦位与音高不一致");
+  }
+}

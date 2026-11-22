@@ -1,0 +1,400 @@
+[
+  {
+    "id": "clean-melody",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 69
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 62
+      }
+    ]
+  },
+  {
+    "id": "ascending",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 60
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 62
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 65
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 69
+      }
+    ]
+  },
+  {
+    "id": "descending",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 76
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 74
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 72
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 71
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 69
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 67
+      }
+    ]
+  },
+  {
+    "id": "repeated",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 64
+      }
+    ]
+  },
+  {
+    "id": "sustain",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.95,
+        "midi": 64
+      },
+      {
+        "start": 1.35,
+        "duration": 0.95,
+        "midi": 67
+      },
+      {
+        "start": 2.45,
+        "duration": 0.95,
+        "midi": 64
+      }
+    ]
+  },
+  {
+    "id": "low-range",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 40
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 43
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 45
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 47
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 48
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 50
+      }
+    ]
+  },
+  {
+    "id": "high-range",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 76
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 79
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 81
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 79
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 76
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 74
+      }
+    ]
+  },
+  {
+    "id": "leaps",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 76
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 79
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 65
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 77
+      }
+    ]
+  },
+  {
+    "id": "soft-attacks",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 60
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 62
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 60
+      }
+    ]
+  },
+  {
+    "id": "melody-with-bass",
+    "kind": "synthetic-mixture",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 69
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 62
+      }
+    ]
+  },
+  {
+    "id": "melody-with-pad",
+    "kind": "synthetic-mixture",
+    "duration": 4.5,
+    "notes": [
+      {
+        "start": 0.25,
+        "duration": 0.48,
+        "midi": 64
+      },
+      {
+        "start": 0.9,
+        "duration": 0.48,
+        "midi": 65
+      },
+      {
+        "start": 1.55,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 2.2,
+        "duration": 0.48,
+        "midi": 69
+      },
+      {
+        "start": 2.85,
+        "duration": 0.48,
+        "midi": 67
+      },
+      {
+        "start": 3.5,
+        "duration": 0.48,
+        "midi": 64
+      }
+    ]
+  },
+  {
+    "id": "silence",
+    "kind": "synthetic-monophonic",
+    "duration": 4.5,
+    "notes": []
+  }
+]
