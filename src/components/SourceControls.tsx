@@ -184,7 +184,9 @@ export default function SourceControls() {
               {project.sourceKind === "demo"
                 ? "原创示例 · 预先编写，未经识别"
                 : project.sourceKind === "audio"
-                  ? "Basic Pitch · 模型识别"
+                  ? project.pluginVersions["local-separation"]
+                    ? "本地增强 · 模型识别"
+                    : "Basic Pitch · 模型识别"
                   : "乐谱导入"}{" "}
               · {project.duration.toFixed(1)}s
             </span>

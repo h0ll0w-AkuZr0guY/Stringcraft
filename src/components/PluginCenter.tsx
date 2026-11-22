@@ -25,7 +25,13 @@ export default function PluginCenter({
     [states, setStates] = useState<
       Record<
         string,
-        { version: string; enabled: boolean; previous: boolean; code: boolean; sha256:string }
+        {
+          version: string;
+          enabled: boolean;
+          previous: boolean;
+          code: boolean;
+          sha256: string;
+        }
       >
     >({}),
     [busy, setBusy] = useState("");
@@ -40,7 +46,7 @@ export default function PluginCenter({
           p
             ? {
                 version: p.manifest.version,
-                sha256:p.manifest.sha256,
+                sha256: p.manifest.sha256,
                 enabled: p.enabled,
                 previous: !!p.previous?.code,
                 code: !!p.code,
@@ -133,7 +139,9 @@ export default function PluginCenter({
                       disabled={!!busy}
                       onClick={() =>
                         act(m.id, () =>
-                          !p?.code || (p.version !== m.version || p.sha256 !== m.sha256)
+                          !p?.code ||
+                          p.version !== m.version ||
+                          p.sha256 !== m.sha256
                             ? install(m)
                             : enable(m.id, !p.enabled),
                         )
@@ -146,7 +154,7 @@ export default function PluginCenter({
                           <Download size={15} />
                           安装插件
                         </>
-                      ) : (p.version !== m.version || p.sha256 !== m.sha256) ? (
+                      ) : p.version !== m.version || p.sha256 !== m.sha256 ? (
                         "更新插件"
                       ) : p.enabled ? (
                         <>

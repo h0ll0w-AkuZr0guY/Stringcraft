@@ -35,7 +35,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
-        run: gh release create $env:GITHUB_REF_NAME artifacts/*.zip --prerelease --title "Stringcraft $env:GITHUB_REF_NAME" --notes-file docs/RELEASES.md
+        run: |
+          $taskAssets = @(Get-ChildItem -LiteralPath artifacts -Filter '*.zip' | ForEach-Object FullName)
+          gh release view $env:GITHUB_REF_NAME 1>$null 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:GITHUB_REF_NAME @taskAssets
+          } else {
+            gh release create $env:GITHUB_REF_NAME @taskAssets --prerelease --title "Stringcraft $env:GITHUB_REF_NAME" --notes-file docs/RELEASES.md
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Preview publication failed' }
       - uses: astral-sh/setup-uv@v6
         if: inputs.environment
       - run: ./scripts/build-environment.ps1 -WithModels

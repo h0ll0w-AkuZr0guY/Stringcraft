@@ -51,7 +51,7 @@ export function useWorkbench() {
     [ready, setReady] = useState(false),
     [message, setMessage] = useState(""),
     [saved, setSaved] = useState("原创示例 · 尚未修改"),
-    [dirty,setDirty]=useState(false),
+    [dirty, setDirty] = useState(false),
     [projects, setProjects] = useState<MusicProject[]>([]);
   const [difficulty, setDifficulty] = useState<Difficulty>("normal"),
     [capo, setCapo] = useState(0),
@@ -135,7 +135,12 @@ export function useWorkbench() {
           setReady(true);
         }
       })
-      .catch((e) => {if(active){setReady(true);notify(errorMessage(e));}});
+      .catch((e) => {
+        if (active) {
+          setReady(true);
+          notify(errorMessage(e));
+        }
+      });
     return () => {
       active = false;
     };
@@ -151,7 +156,7 @@ export function useWorkbench() {
       500,
     );
     return () => clearTimeout(timer);
-  }, [project, ready,dirty]);
+  }, [project, ready, dirty]);
   useEffect(() => {
     if (!ready || !project.arrangement) return;
     let active = true;
@@ -482,6 +487,15 @@ export function useWorkbench() {
     const changed = notes.map((n) =>
       n.id === id ? { ...n, ...changes, locked: true } : n,
     );
+    try {
+      validateProject({
+        ...project,
+        arrangement: { ...project.arrangement, notes: changed },
+      });
+    } catch (e) {
+      notify(errorMessage(e));
+      return;
+    }
     const errors = violations(changed, {
       difficulty,
       capo: project.arrangement.capo,

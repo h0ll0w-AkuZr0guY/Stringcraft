@@ -12,7 +12,7 @@ Python 3.11+：安装 backend/requirements.txt，先 `npm run build`，再 `pyth
 
 1. 阅读 SDK v1，确认输入输出能否复用 NoteEvent / Arrangement。
 2. 在 plugins 下创建独立目录和类型化默认导出，参考 plugins/template。
-3. 在 scripts/build-plugins.mjs 的目录定义加入 id、入口、能力与描述；构建生成带摘要的独立 ESM 与 catalog。
+3. 在 plugins/catalog.source.json 的目录定义加入 id、入口、能力与描述；构建生成带摘要的独立 ESM 与 catalog。
 4. 添加至少一个能体现新行为和失败边界的测试，检查宿主仍可在插件未安装时运行。
 5. 官方发布构建后，插件中心即可列出并安装。不能要求修改宿主才能识别新目录项；新能力类型或新交互才需要 SDK/应用适配。
 

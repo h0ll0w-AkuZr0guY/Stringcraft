@@ -118,6 +118,16 @@ describe("voice tracking", () => {
   });
 });
 describe("contracts and export", () => {
+  it("rejects malformed timestamps and unbounded notation durations", () => {
+    const p = demoProject();
+    expect(() => validateProject({ ...p, updatedAt: "invalid" })).toThrow();
+    expect(() => validateProject({ ...p, duration: 1e10 })).toThrow();
+  });
+  it("rejects notes that extend beyond the project", () => {
+    const p = demoProject();
+    p.notes[0].duration = 1000;
+    expect(() => validateProject(p)).toThrow("时间范围");
+  });
   it("rejects nonfinite values and duplicate identities", () => {
     expect(() => validateNotes([note("a", 64, NaN)])).toThrow();
     expect(() => validateNotes([note("a", 64), note("a", 65)])).toThrow();

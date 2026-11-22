@@ -154,6 +154,8 @@ export function validateNotes(value: unknown): asserts value is NoteEvent[] {
       !Number.isFinite(n.score) ||
       n.score < 0 ||
       n.score > 1 ||
+      (n.locked !== undefined && typeof n.locked !== "boolean") ||
+      (n.pitch.cents !== undefined && !Number.isFinite(n.pitch.cents)) ||
       !["detected", "demo", "manual", "generated"].includes(n.source)
     )
       throw new Error("音符数据不符合 SDK v1 契约");
@@ -169,6 +171,13 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     typeof p.name !== "string" ||
     !Number.isFinite(p.duration) ||
     p.duration <= 0 ||
+    p.duration > 1800 ||
+    !Number.isFinite(Date.parse(p.createdAt)) ||
+    !Number.isFinite(Date.parse(p.updatedAt)) ||
+    !["audio", "demo", "midi", "musicxml"].includes(p.sourceKind) ||
+    !p.pluginVersions ||
+    typeof p.pluginVersions !== "object" ||
+    Object.values(p.pluginVersions).some((v) => typeof v !== "string") ||
     !Number.isFinite(p.bpm) ||
     p.bpm < 20 ||
     p.bpm > 300 ||
@@ -179,6 +188,10 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
   validateNotes(p.melody);
+  for (const n of [...p.notes, ...p.melody, ...(p.arrangement?.notes ?? [])]) {
+    if (n.start + n.duration > p.duration + 0.01)
+      throw new Error("音符超出项目时间范围");
+  }
   if (p.arrangement) {
     validateNotes(p.arrangement.notes);
     if (

@@ -4,6 +4,7 @@ import {
   writeFile,
   readdir,
   copyFile,
+  cp,
 } from "node:fs/promises";
 import { marked } from "marked";
 await mkdir("public/docs", { recursive: true });
@@ -31,3 +32,5 @@ await writeFile(
   ),
 );
 console.log(`Built ${files.length} documentation pages`);
+
+await cp("docs/assets", "public/docs/assets", { recursive: true });

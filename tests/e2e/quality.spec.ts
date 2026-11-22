@@ -56,7 +56,7 @@ test("measure real browser model on all explicitly synthetic fixtures", async ({
       await readFile("tests/fixtures/audio/truth.json", "utf-8"),
     ),
     results = [];
-  await page.goto("/");
+  await page.goto("./");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();

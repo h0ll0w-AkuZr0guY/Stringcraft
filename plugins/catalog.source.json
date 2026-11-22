@@ -1,0 +1,68 @@
+[
+  {
+    "id": "guitar-standard",
+    "name": "标准吉他",
+    "directory": "guitar",
+    "version": "0.1.0",
+    "capabilities": [
+      "instrument"
+    ],
+    "description": "六弦调弦、分级指弹与指法约束",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "melody-tracker",
+    "name": "旋律追踪",
+    "directory": "melody",
+    "version": "0.1.0",
+    "capabilities": [
+      "melody"
+    ],
+    "description": "结合起音、时长与音高连续性提取主声部",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "standard-exporters",
+    "name": "标准导出",
+    "directory": "exporters",
+    "version": "0.1.0",
+    "capabilities": [
+      "exporter"
+    ],
+    "description": "项目、MIDI 和文本六线谱",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "basic-pitch",
+    "name": "Basic Pitch",
+    "directory": "basic-pitch",
+    "version": "0.1.0",
+    "capabilities": [
+      "transcriber"
+    ],
+    "description": "浏览器神经音符识别，首次需下载模型",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "guitar-samples",
+    "name": "吉他实录音源",
+    "directory": "guitar-samples",
+    "version": "0.1.0",
+    "capabilities": [
+      "renderer"
+    ],
+    "description": "CC0 钢弦、尼龙采样，缺失音域明确回退合成",
+    "license": "CC0-1.0 / Apache-2.0"
+  },
+  {
+    "id": "bailian-advisor",
+    "name": "百炼编配建议",
+    "directory": "bailian-advisor",
+    "version": "0.1.0",
+    "capabilities": [
+      "advisor"
+    ],
+    "description": "使用自己的 API Key 比较本地已验证的候选",
+    "license": "Apache-2.0"
+  }
+]

@@ -27,7 +27,7 @@ SDK v1 的源码定义位于 `packages/contracts/index.ts`。本文件描述语�
 
 插件宿主的 `catalog/installed/install/enable/uninstall/rollback/load` 均异步。load 尊重停用状态，不自动重装用户卸载项。bootstrap 只在首次安装默认插件；Basic Pitch 与建议插件在首次使用时安装。版本升级由插件中心显式更新。
 
-浏览器插件为自包含 ESM；大型模型作为资源分发。新增插件时向构建目录定义加入入口，不将源码 import 到宿主。不可依赖运行时 Node 内置模块。不要在插件导入时执行网络请求或读取 Key。
+浏览器插件为自包含 ESM；大型模型作为资源分发。新增插件时向 plugins/catalog.source.json 加入入口与独立版本，不将源码 import 到宿主。不可依赖运行时 Node 内置模块。不要在插件导入时执行网络请求或读取 Key。
 
 ## 本地 HTTP v1
 

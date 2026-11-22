@@ -46,6 +46,7 @@ if ($WithModels) {
 if ($LASTEXITCODE -ne 0) { throw 'Environment validation failed' }
 $taskArchive = Join-Path $taskRoot 'artifacts\Stringcraft-local-music-0.1.0-windows-x64.zip'
 if (Test-Path -LiteralPath $taskArchive) { throw 'Archive already exists; retain the old artifact and choose a new version before rebuilding' }
-Compress-Archive -LiteralPath (Join-Path $taskStage 'runtime_plugins') -DestinationPath $taskArchive -CompressionLevel Fastest
+& $taskPython (Join-Path $PSScriptRoot 'pack-environment.py') $taskStage $taskArchive
+if ($LASTEXITCODE -ne 0) { throw 'Environment archive verification failed' }
 Get-FileHash -LiteralPath $taskArchive -Algorithm SHA256
 Write-Output $taskArchive

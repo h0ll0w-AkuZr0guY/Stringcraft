@@ -5,7 +5,7 @@ test("real workbench: editing, undo, score, downloads and saved project", async 
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("./");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
@@ -44,7 +44,7 @@ test("real workbench: editing, undo, score, downloads and saved project", async 
 test("plugin lifecycle: disable, refuse execution, enable, uninstall, restore", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
@@ -74,7 +74,7 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   page.on("console", (m) => {
     if (m.type() === "error") console.log("Browser inference:", m.text());
   });
-  await page.goto("/");
+  await page.goto("./");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
@@ -96,7 +96,7 @@ test("real uploaded audio reaches the model and can be arranged", async ({
 });
 test("mobile layout stays within viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("./");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();

@@ -1,53 +1,18 @@
 import { build } from "esbuild";
 import { mkdir, writeFile, readFile, cp, readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
-const defs = [
-  [
-    "guitar-standard",
-    "标准吉他",
-    "guitar",
-    ["instrument"],
-    "六弦调弦、分级指弹与指法约束",
-  ],
-  [
-    "melody-tracker",
-    "旋律追踪",
-    "melody",
-    ["melody"],
-    "结合起音、时长与音高连续性提取主声部",
-  ],
-  [
-    "standard-exporters",
-    "标准导出",
-    "exporters",
-    ["exporter"],
-    "项目、MIDI 和文本六线谱",
-  ],
-  [
-    "basic-pitch",
-    "Basic Pitch",
-    "basic-pitch",
-    ["transcriber"],
-    "浏览器神经音符识别，首次需下载模型",
-  ],
-  [
-    "guitar-samples",
-    "吉他实录音源",
-    "guitar-samples",
-    ["renderer"],
-    "CC0 钢弦、尼龙采样，缺失音域明确回退合成",
-  ],
-  [
-    "bailian-advisor",
-    "百炼编配建议",
-    "bailian-advisor",
-    ["advisor"],
-    "使用自己的 API Key 比较本地已验证的候选",
-  ],
-];
+const defs = JSON.parse(await readFile("plugins/catalog.source.json", "utf8"));
 await mkdir("public/plugins", { recursive: true });
 const catalog = [];
-for (const [id, name, dir, capabilities, description] of defs) {
+for (const {
+  id,
+  name,
+  directory: dir,
+  version,
+  capabilities,
+  description,
+  license,
+} of defs) {
   const result = await build({
     entryPoints: [`plugins/${dir}/index.ts`],
     bundle: true,
@@ -60,7 +25,7 @@ for (const [id, name, dir, capabilities, description] of defs) {
   });
   const data = result.outputFiles[0].contents,
     sha256 = createHash("sha256").update(data).digest("hex");
-  const entry = `plugins/${id}/0.1.0/${sha256.slice(0, 12)}.mjs`;
+  const entry = `plugins/${id}/${version}/${sha256.slice(0, 12)}.mjs`;
   await mkdir(
     entry
       .replace(/^plugins\//, "public/plugins/")
@@ -73,12 +38,12 @@ for (const [id, name, dir, capabilities, description] of defs) {
   catalog.push({
     id,
     name,
-    version: "0.1.0",
+    version,
     sdk: 1,
     description,
     capabilities,
     runtime: "browser",
-    license: "Apache-2.0",
+    license,
     entry,
     sha256,
     size: data.length,
