@@ -4,6 +4,8 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 
 ## SDK v2
 
+- `NoteRefinerPlugin<Options>` 与 `loadRefiner`：选择现有候选，返回保留的 NoteEvent[] 和省略原因。乐器/模型专用参数留在插件。`MusicProject.refinement` 单独保存处理结果，原始 `notes` 不改写；项目校验拒绝清理结果伪造音高或起音。
+
 - `MusicalScore`：quarter-note beat 单位的速度图与拍号图、原音频网格偏移、独立声部事件、显式休止、和弦来源与证据、人工段落。识别的秒时间仍保存在 `NoteEvent`。
 - `ScoreEvent`：稳定 ID、voice、beat、durationBeats、midi（null 为休止）、sourceIds。`tieFrom` 仅可连接同声部相邻同音；`slurFrom` 表示连奏关系，不自动断言原录音用了何种乐器技法。
 - `soundingEvents` 合并延音链为一次起音，保留真正重弹；`beatToSeconds/secondsToBeat` 使用分段速度图。

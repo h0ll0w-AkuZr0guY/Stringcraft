@@ -56,13 +56,11 @@ test("known score preserves independent voices, ties, slurs, rests, meter and te
   const wait = page.waitForEvent("download");
   await page.getByRole("button", { name: "MusicXML", exact: true }).click();
   const download = await wait;
-  await page
-    .getByTestId("audio-input")
-    .setInputFiles({
-      name: "roundtrip.musicxml",
-      mimeType: "application/xml",
-      buffer: await readFile((await download.path())!),
-    });
+  await page.getByTestId("audio-input").setInputFiles({
+    name: "roundtrip.musicxml",
+    mimeType: "application/xml",
+    buffer: await readFile((await download.path())!),
+  });
   await expect(page.getByRole("status")).toContainText("乐谱已导入");
   const restored = await exportedProject();
   expect(restored.score.tempo).toEqual(p.score.tempo);
@@ -91,4 +89,40 @@ test("daily style changes accompaniment pattern and melody mode remains independ
   await page.getByLabel("编配目标", { exact: true }).selectOption("melody");
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("单线练习");
+});
+
+test("musical editor splits intra-bar harmony, pickup and expressive sections without changing raw notes", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await expect(
+    page.getByRole("button", { name: "生成吉他编配", exact: true }),
+  ).toBeEnabled();
+  await page.locator(".structure-panel summary").click();
+  await page
+    .getByRole("button", { name: "小节 1 添加换和弦", exact: true })
+    .click();
+  await page
+    .getByLabel("小节 1 第 3.00 拍 和弦根音", { exact: true })
+    .selectOption("7");
+  await page
+    .getByLabel("小节 1 第 3.00 拍 和弦性质", { exact: true })
+    .selectOption("major");
+  await page.getByLabel("首个完整小节起点", { exact: true }).fill("0.5");
+  await page.getByRole("button", { name: "拆分段落", exact: true }).click();
+  await expect(page.locator(".section-row")).toHaveCount(2);
+  await page.locator(".section-row select").first().selectOption("gentle");
+  const wait = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  const p = JSON.parse(await readFile((await (await wait).path())!, "utf8"));
+  expect(
+    p.score.chords.find((c: { beat: number }) => c.beat === 0).durationBeats,
+  ).toBe(2);
+  expect(p.score.chords.find((c: { beat: number }) => c.beat === 2).root).toBe(
+    7,
+  );
+  expect(p.score.pickupBeats).toBeCloseTo(125 / 120);
+  expect(p.notes[0].start).toBe(0);
+  expect(p.notes[1].start).toBe(0.48);
+  expect(p.score.sections[0].energy).toBe("gentle");
 });

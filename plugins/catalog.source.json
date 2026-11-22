@@ -70,7 +70,9 @@
     "name": "钢琴契约验证包",
     "directory": "piano",
     "version": "0.2.0",
-    "capabilities": ["instrument"],
+    "capabilities": [
+      "instrument"
+    ],
     "description": "SDK v2 开发示例：双手、琴键与跨度。尚未接入工作台，不提供完整钢琴编配。",
     "license": "Apache-2.0"
   },
@@ -83,6 +85,17 @@
       "harmony"
     ],
     "description": "按拍窗估计和弦证据，保留人工校正；速度仅提供候选",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "note-refinement",
+    "name": "弱音候选清理（实验）",
+    "directory": "note-refinement",
+    "version": "0.2.0",
+    "capabilities": [
+      "refiner"
+    ],
+    "description": "可减少误报，也可能漏掉弱和弦音；保留原候选供对照，默认不应用。",
     "license": "Apache-2.0"
   }
 ]

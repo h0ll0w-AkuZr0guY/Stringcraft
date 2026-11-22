@@ -63,7 +63,7 @@ export function musicXML(project: MusicProject): string {
     const meter =
       score.meter.findLast((m) => m.beat <= bar.beat) ?? score.meter[0];
     output.push(
-      `<measure number="${bar.index + 1}"><attributes><divisions>${divisions}</divisions><time><beats>${meter.numerator}</beats><beat-type>${meter.denominator}</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>`,
+      `<measure number="${bar.index + 1}"${bar.index === 0 && score.pickupBeats ? ' implicit="yes"' : ""}><attributes><divisions>${divisions}</divisions><time><beats>${meter.numerator}</beats><beat-type>${meter.denominator}</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>`,
     );
     const tempos = score.tempo.filter(
       (t) => t.beat >= bar.beat && t.beat < bar.endBeat,

@@ -17,6 +17,7 @@ import {
   installed,
   invoke,
   load,
+  loadRefiner,
 } from "../../packages/plugin-host";
 
 import { get, set } from "idb-keyval";
@@ -25,12 +26,19 @@ import { importMidi, importMusicXML } from "../../packages/music/import";
 import { analyzeLocal, localCapabilities } from "../../packages/music/local";
 import { listProjects, saveProject } from "../../packages/storage";
 import { recommend, violations } from "../../plugins/guitar";
-import { recommendForScore } from "../../plugins/guitar/performance";
+import {
+  recommendForScore,
+  syncPerformance,
+} from "../../plugins/guitar/performance";
 import {
   projectScore,
   upgradeProject,
   withReferenceTempo,
 } from "../../packages/music/score";
+import {
+  experimentalGuitarParameters,
+  type RefinementParameters,
+} from "../../plugins/note-refinement";
 
 const labels: Record<Difficulty, string> = {
   easy: "初学",
@@ -69,6 +77,7 @@ export function useWorkbench() {
     [tone, setTone] = useState("steel"),
     [view, setView] = useState<"tab" | "rhythm" | "text">("tab");
   const [file, setFile] = useState<File | null>(null),
+    [refineGuitar, setRefineGuitar] = useState(false),
     [sourceUrl, setSourceUrl] = useState(""),
     [wave, setWave] = useState<number[]>([]),
     [start, setStart] = useState(0),
@@ -105,6 +114,17 @@ export function useWorkbench() {
     playGeneration = useRef(0);
   const notify = useCallback((s: string) => setMessage(s), []);
   const edit = (next: MusicProject) => {
+    try {
+      if (
+        next.arrangement &&
+        next.arrangement !== project.arrangement &&
+        next.arrangement.performance
+      )
+        next = { ...next, arrangement: syncPerformance(next.arrangement) };
+    } catch (error) {
+      notify(errorMessage(error));
+      return;
+    }
     if (next.bpm !== project.bpm && next.score && next.score === project.score)
       next = { ...next, score: withReferenceTempo(next.score, next.bpm) };
     setDirty(true);
@@ -310,11 +330,31 @@ export function useWorkbench() {
         control.signal,
         setProgress,
       );
+      let refinement: MusicProject["refinement"];
+      if (refineGuitar) {
+        if (!(await installed("note-refinement")))
+          await install(
+            (await catalog()).find((m) => m.id === "note-refinement")!,
+          );
+        const plugin =
+          await loadRefiner<RefinementParameters>("note-refinement");
+        const result = plugin.refineNotes(
+          detected,
+          experimentalGuitarParameters,
+        );
+        refinement = {
+          pluginId: "note-refinement",
+          profile: "experimental-guitar-clarity",
+          notes: result.notes,
+          dropped: result.dropped,
+        };
+      }
+      const usable = refinement?.notes ?? detected;
       const tracker = await load("melody-tracker");
       const melody = await invoke<NoteEvent[]>(
         "melody-tracker",
         "extractMelody",
-        [detected],
+        [usable],
         control.signal,
       );
       const p: MusicProject = {
@@ -328,6 +368,7 @@ export function useWorkbench() {
         beatOffset: 0,
         sourceOffset: start,
         notes: detected,
+        refinement,
         melody,
         arrangement: null,
         pluginVersions: {
@@ -336,9 +377,15 @@ export function useWorkbench() {
         sourceKind: "audio",
       };
       const harmony = await load("harmony-analysis");
-      const tempos = harmony.tempoCandidates!(detected);
+      const tempos = harmony.tempoCandidates!(usable);
       if (tempos.length) p.bpm = tempos[0].bpm;
-      p.score = harmony.analyzeHarmony!(detected, projectScore(p));
+      p.score = harmony.analyzeHarmony!(usable, projectScore(p));
+      for (const id of [
+        "melody-tracker",
+        "harmony-analysis",
+        ...(refinement ? ["note-refinement"] : []),
+      ])
+        p.pluginVersions[id] = (await installed(id))!.manifest.version;
       p.schemaVersion = 2;
       sourceBuffer.current.set(p.id, data.buffer);
       if (sourceBuffer.current.size > 3)
@@ -349,7 +396,7 @@ export function useWorkbench() {
       await set("audio:" + p.id, file);
       notify(
         detected.length
-          ? `识别到 ${detected.length} 个候选音、${melody.length} 个旋律候选音。速度与和弦是待校正的候选，请先确认首拍。`
+          ? `识别到 ${detected.length} 个原始候选音${refinement ? `，清理后保留 ${usable.length} 个` : ""}、${melody.length} 个旋律候选音。速度与和弦待校正，请先确认首拍。`
           : "没有检测到可靠音符，请换用更清晰片段或本地增强识别。",
       );
     } catch (e) {
@@ -378,7 +425,7 @@ export function useWorkbench() {
         : await invoke<NoteEvent[]>(
             "melody-tracker",
             "extractMelody",
-            [project.notes],
+            [project.refinement?.notes ?? project.notes],
             control.signal,
           );
       if ((await installed("guitar-standard"))!.manifest.version === "0.1.0")
@@ -387,7 +434,10 @@ export function useWorkbench() {
       const baseScore = projectScore({ ...project, melody });
       const score = baseScore.chords.length
         ? baseScore
-        : harmony.analyzeHarmony!(project.notes, baseScore);
+        : harmony.analyzeHarmony!(
+            project.refinement?.notes ?? project.notes,
+            baseScore,
+          );
       const candidates = (
         goal === "melody"
           ? recommend(melody, difficulty)
@@ -661,6 +711,8 @@ export function useWorkbench() {
         .catch((e) => notify(errorMessage(e)));
   };
   return {
+    refineGuitar,
+    setRefineGuitar,
     goal,
     setGoal,
     pattern,

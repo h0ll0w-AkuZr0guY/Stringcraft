@@ -1952,6 +1952,58 @@ svg {
   gap: 12px;
   padding-top: 12px;
 }
+.chord-change {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e1e6da;
+}
+.section-editor {
+  margin-top: 18px;
+}
+.section-editor h3 {
+  font-size: 14px;
+}
+.section-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.section-row input {
+  max-width: 200px;
+}
+.section-row select {
+  max-width: 145px;
+}
+.refinement-option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.refinement-option span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.refinement-option input {
+  width: auto;
+  margin: 0;
+}
+.refinement-option small {
+  color: #74876d;
+  line-height: 1.6;
+}
+.refinement-summary {
+  margin: 12px 24px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #74876d;
+}
 @media print {
   .tab-pages {
     overflow: visible;

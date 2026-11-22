@@ -85,6 +85,7 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   await page
     .getByTestId("audio-input")
     .setInputFiles("tests/fixtures/audio/clean-melody.wav");
+  await page.getByLabel("清理弱音候选", { exact: true }).check();
   await page.getByRole("button", { name: "分析音乐片段", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("候选音", {
     timeout: 120000,
@@ -92,6 +93,15 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   await page.getByLabel("编配目标").selectOption("melody");
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
+  const projectDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  const result = JSON.parse(
+    await readFile((await (await projectDownload).path())!, "utf8"),
+  );
+  expect(result.refinement.profile).toBe("experimental-guitar-clarity");
+  expect(result.refinement.notes.length).toBeLessThanOrEqual(
+    result.notes.length,
+  );
   expect(
     await page.getByTestId("tablature").locator(".tab-note").count(),
   ).toBeGreaterThan(0);

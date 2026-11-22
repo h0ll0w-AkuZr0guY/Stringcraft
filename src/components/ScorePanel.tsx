@@ -229,6 +229,13 @@ export default function ScorePanel() {
         </p>
       )}
       <MusicalStructure />
+      {project.refinement && (
+        <p className="refinement-summary">
+          原始 {project.notes.length} 个候选均已保留；本次编配使用清理后的{" "}
+          {project.refinement.notes.length}{" "}
+          个候选。弱和弦音可能被省略，关闭清理后可重新分析对照。
+        </p>
+      )}
       <ChordDiagrams />
       {!!project.arrangement?.warnings.length && (
         <details className="arrangement-report">

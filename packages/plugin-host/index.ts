@@ -4,6 +4,7 @@ import {
   type PluginManifest,
   type MusicPlugin,
   type InstrumentPluginV2,
+  type NoteRefinerPlugin,
 } from "../contracts";
 type Installed = {
   manifest: PluginManifest;
@@ -150,6 +151,14 @@ export async function loadInstrument<Options, Action, Notation>(
     ].every((fn) => typeof fn === "function")
   )
     throw new Error("插件未提供完整的 SDK v2 乐器能力");
+  return plugin;
+}
+export async function loadRefiner<Options>(
+  id: string,
+): Promise<NoteRefinerPlugin<Options>> {
+  const plugin = (await load(id)) as unknown as NoteRefinerPlugin<Options>;
+  if (typeof plugin.refineNotes !== "function")
+    throw new Error("插件未提供候选清理能力");
   return plugin;
 }
 export async function bootstrap() {

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "status": "experimental-manual-only",
+  "activationGate": "GuitarSet holdout improved; Qing Tian published-riff string agreement regressed. Default weights retained.",
+  "weights": {
+    "fret": 1,
+    "movement": 12,
+    "stringChange": 10,
+    "open": 4
+  },
+  "evaluation": "../../benchmarks/guitarset-calibration.json",
+  "trainingInputSha256": "6e180f8629ba71b360b3a1edd9008651ec88259b8836547e409e1a4049f72f8d",
+  "hardConstraintsLearned": false
+}

@@ -33,6 +33,8 @@ export default function SourceControls() {
     progress,
     abortRef,
     project,
+    refineGuitar,
+    setRefineGuitar,
     difficulty,
     setDifficulty,
     goal,
@@ -103,6 +105,22 @@ export default function SourceControls() {
         />
         {file && (
           <>
+            {localMode === "browser" && (
+              <label className="refinement-option">
+                <span>
+                  <input
+                    type="checkbox"
+                    aria-label="清理弱音候选"
+                    checked={refineGuitar}
+                    onChange={(e) => setRefineGuitar(e.target.checked)}
+                  />{" "}
+                  清理弱音候选（实验）
+                </span>
+                <small>
+                  适合清晰吉他录音，可能漏掉弱和弦音。下次分析应用，原候选始终保留。
+                </small>
+              </label>
+            )}
             {local && (
               <label className="local-mode">
                 分析方式

@@ -12,6 +12,7 @@ import {
   arrangeMusicalScore,
   assignFingers,
   validatePerformance,
+  syncPerformance,
 } from "../plugins/guitar/performance";
 import { analyzeHarmony, tempoCandidates } from "../plugins/harmony";
 import { demoProject } from "../packages/music/demo";
@@ -163,6 +164,69 @@ describe("musical score and evidence", () => {
   });
 });
 describe("guitar actions rather than density", () => {
+  it("sparse fingerstyle adds a quiet inner voice without changing protected melody", () => {
+    const s = score();
+    s.durationBeats = 4;
+    s.chords = s.chords.slice(0, 1);
+    s.chords[0] = { ...s.chords[0], root: 0, quality: "major" };
+    s.events = [
+      {
+        id: "held-melody",
+        voice: "melody",
+        beat: 0,
+        durationBeats: 4,
+        midi: 64,
+        velocity: 0.8,
+        sourceIds: [],
+      },
+    ];
+    const hard = arrangeScore(s, {
+      ...options,
+      goal: "fingerstyle",
+      difficulty: "hard",
+    });
+    const expert = arrangeScore(s, {
+      ...options,
+      goal: "fingerstyle",
+      difficulty: "expert",
+    });
+    expect(
+      hard.actions.filter((a) => a.role === "melody").map((a) => a.id),
+    ).toEqual(["held-melody"]);
+    expect(hard.actions.some((a) => a.role === "harmony")).toBe(true);
+    expect(
+      hard.actions
+        .filter((a) => a.role === "harmony")
+        .every((a) => a.velocity < 0.5),
+    ).toBe(true);
+    expect(expert.actions.length).toBe(hard.actions.length);
+  });
+  it("selects a higher chord grip to support a high sustained melody and its bass", () => {
+    const s = score();
+    s.durationBeats = 4;
+    s.chords = [{ ...s.chords[0], root: 0, quality: "major" }];
+    s.events = [
+      {
+        id: "high-c",
+        voice: "melody",
+        beat: 0,
+        durationBeats: 4,
+        midi: 72,
+        velocity: 0.8,
+        sourceIds: [],
+      },
+    ];
+    const plan = arrangeScore(s, {
+      ...options,
+      goal: "fingerstyle",
+      difficulty: "hard",
+    });
+    expect(
+      plan.grips[0].shape.frets.filter((f) => f >= 0).every((f) => f >= 8),
+    ).toBe(true);
+    expect(plan.actions.some((a) => a.role === "bass")).toBe(true);
+    expect(plan.issues.filter((i) => i.severity === "error")).toEqual([]);
+  });
   it("beginner can play a full six-string Em with two fretting fingers", () => {
     const plan = arrangeScore(score(), { ...options, difficulty: "easy" });
     const first = plan.actions.filter(
@@ -222,6 +286,58 @@ describe("guitar actions rather than density", () => {
   });
 });
 describe("sound and notation share musical meaning", () => {
+  it("deleting an unlocked legato origin updates sound actions rather than leaving an orphan", () => {
+    const s = score();
+    s.events = [
+      {
+        id: "a",
+        voice: "melody",
+        beat: 0,
+        durationBeats: 1,
+        midi: 64,
+        velocity: 0.7,
+        sourceIds: [],
+      },
+      {
+        id: "b",
+        voice: "melody",
+        beat: 1,
+        durationBeats: 1,
+        midi: 67,
+        velocity: 0.7,
+        sourceIds: [],
+        slurFrom: "a",
+      },
+    ];
+    const a = arrangeMusicalScore(s, {
+      ...options,
+      goal: "fingerstyle",
+      difficulty: "hard",
+      bpm: 120,
+    });
+    const b = a.notes.find((n) => n.id === "b")!;
+    expect(b.linkFrom).toBe("a");
+    const next = syncPerformance({
+      ...a,
+      notes: a.notes.filter((n) => n.id !== "a"),
+    });
+    expect(next.notes.find((n) => n.id === "b")!.attack).toBe("pluck");
+    expect(
+      next.performance!.actions.some(
+        (n) =>
+          (n as { id: string; from?: string }).id === "b" &&
+          (n as { from?: string }).from === "a",
+      ),
+    ).toBe(false);
+    expect(() =>
+      syncPerformance({
+        ...a,
+        notes: a.notes
+          .filter((n) => n.id !== "a")
+          .map((n) => (n.id === "b" ? { ...n, locked: true } : n)),
+      }),
+    ).toThrow("已锁定");
+  });
   it("piano package uses hands and keyboard spans without tuning or frets", () => {
     const s = score();
     s.events = [48, 72].map((midi, i) => ({

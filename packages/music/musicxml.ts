@@ -176,6 +176,14 @@ export function readMusicXML(text: string): MusicalScore {
           cursor += duration;
         }
       }
+      if (
+        partIndex === 0 &&
+        barStart === 0 &&
+        measure.getAttribute("implicit") === "yes" &&
+        maximum > 0 &&
+        maximum < beatsPerBar
+      )
+        score.pickupBeats = maximum;
       barStart =
         measure.getAttribute("implicit") === "yes"
           ? maximum

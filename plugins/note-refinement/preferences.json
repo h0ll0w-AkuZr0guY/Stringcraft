@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "status": "experimental-opt-in-only",
+  "parameters": {
+    "activationCeiling": 0.55,
+    "relativeFloor": 0.7,
+    "minimumDuration": 0.04
+  },
+  "reason": "Held-out macro F1 improved, but one dense chord excerpt regressed beyond the preregistered 0.03 limit. No global promotion.",
+  "evaluation": "../../benchmarks/refinement-calibration.json"
+}

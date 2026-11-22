@@ -1,6 +1,7 @@
 import type { GuitarNote, MusicProject } from "../../packages/contracts";
 import { beatToSeconds, secondsToBeat } from "../../packages/contracts/score";
 import { projectScore } from "../../packages/music/score";
+import { measureGrid } from "../../packages/music/structure";
 export interface TabColumn {
   key: string;
   beat: number;
@@ -21,15 +22,7 @@ export function tabMeasures(project: MusicProject): TabMeasure[] {
   const score = project.arrangement?.score ?? projectScore(project),
     notes = project.arrangement?.notes ?? [];
   const measures: TabMeasure[] = [];
-  let beat = 0;
-  while (beat < score.durationBeats - 0.001) {
-    const meter = score.meter.findLast((m) => m.beat <= beat) ?? score.meter[0];
-    const nextMeter = score.meter.find((m) => m.beat > beat)?.beat ?? Infinity;
-    const endBeat = Math.min(
-      beat + (meter.numerator * 4) / meter.denominator,
-      nextMeter,
-      score.durationBeats,
-    );
+  for (const { beat, endBeat } of measureGrid(score)) {
     const group = new Map<string, TabColumn>();
     for (const n of notes) {
       const b = secondsToBeat(score, n.start);
@@ -58,7 +51,6 @@ export function tabMeasures(project: MusicProject): TabMeasure[] {
       width: Math.max(width, last + 38),
       columns,
     });
-    beat = endBeat;
   }
   return measures;
 }

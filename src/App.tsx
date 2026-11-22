@@ -131,7 +131,7 @@ function WorkbenchView({
           >
             GitHub 开源项目 <ArrowUpRight size={14} />
           </a>
-          <span className="version">v0.1.0-preview · 为每一次练习而作</span>
+          <span className="version">v0.2.0-dev · 参考谱评估中</span>
         </div>
       </aside>
       <div className="main-shell">

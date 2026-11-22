@@ -46,6 +46,8 @@ export interface MusicalScore {
   tempo: TempoPoint[];
   meter: MeterPoint[];
   beatOffsetSeconds: number;
+  /** Length of the initial incomplete bar, in quarter-note beats. */
+  pickupBeats?: number;
   timing: "manual" | "imported" | "estimated" | "unconfirmed";
   events: ScoreEvent[];
   chords: ChordSymbol[];
@@ -55,6 +57,7 @@ export interface MusicalScore {
     endBeat: number;
     label: string;
     origin: "manual" | "imported";
+    energy?: "gentle" | "steady" | "emphatic";
   }[];
   warnings: string[];
 }
@@ -130,9 +133,23 @@ export function validateScore(score: MusicalScore): void {
     score.meter[0].beat !== 0 ||
     !Array.isArray(score.events) ||
     !Array.isArray(score.chords) ||
+    !Array.isArray(score.warnings) ||
+    score.warnings.some((w) => typeof w !== "string") ||
+    !Array.isArray(score.sections) ||
+    !["manual", "imported", "estimated", "unconfirmed"].includes(
+      score.timing,
+    ) ||
     score.events.length > 100000
   )
     throw new Error("音乐结构无效");
+  const barLength = (score.meter[0].numerator * 4) / score.meter[0].denominator;
+  if (
+    score.pickupBeats !== undefined &&
+    (!finite(score.pickupBeats) ||
+      score.pickupBeats <= 0 ||
+      score.pickupBeats >= barLength)
+  )
+    throw new Error("弱起长度必须小于完整小节");
   for (const [i, p] of score.tempo.entries())
     if (
       !finite(p.beat) ||
@@ -209,6 +226,31 @@ export function validateScore(score: MusicalScore): void {
     )
       throw new Error("和弦事件无效");
     chordIds.add(c.id);
+  }
+  const ordered = [...score.chords].sort((a, b) => a.beat - b.beat);
+  if (
+    ordered.some(
+      (c, i) =>
+        i > 0 &&
+        ordered[i - 1].beat + ordered[i - 1].durationBeats > c.beat + 0.001,
+    )
+  )
+    throw new Error("和弦区间重叠，请先明确换和弦位置");
+  const sectionIds = new Set<string>();
+  for (const s of score.sections) {
+    if (
+      !s.id ||
+      sectionIds.has(s.id) ||
+      typeof s.label !== "string" ||
+      !finite(s.beat) ||
+      s.beat < 0 ||
+      !finite(s.endBeat) ||
+      s.endBeat <= s.beat ||
+      s.endBeat > score.durationBeats + 0.001 ||
+      !["manual", "imported"].includes(s.origin)
+    )
+      throw new Error("乐段区间无效");
+    sectionIds.add(s.id);
   }
 }
 

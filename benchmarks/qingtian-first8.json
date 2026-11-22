@@ -1,0 +1,211 @@
+{
+  "version": 1,
+  "source": {
+    "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+    "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+    "page": 1,
+    "bars": [1, 8],
+    "arranger": "Steven Law",
+    "license": "Copyrighted reference; no score or note sequence redistributed. Aggregate evaluation only.",
+    "annotation": "Manually transcribed from visible six-line tab and rhythm beams; harmony labels derived from displayed triadic voicings, not printed chord symbols",
+    "review": "Single-pass visual annotation; second independent review pending",
+    "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth"
+  },
+  "inputSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+  "task": "Published tablature comparison, not recording recognition; tempo is an illustrative beat projection",
+  "riff": {
+    "baseline": {
+      "reference": 35,
+      "prediction": 35,
+      "matched": 35,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "onsetMae": 0,
+      "durationMae": 0,
+      "referenceStringAgreement": 0.6,
+      "hardErrors": 0,
+      "referenceLegato": 2,
+      "generatedLegato": 2,
+      "texture": [
+        {
+          "bar": 1,
+          "notes": 9,
+          "gestures": 9,
+          "maxChordSize": 1,
+          "legato": 1
+        },
+        {
+          "bar": 2,
+          "notes": 8,
+          "gestures": 8,
+          "maxChordSize": 1,
+          "legato": 0
+        },
+        {
+          "bar": 3,
+          "notes": 9,
+          "gestures": 9,
+          "maxChordSize": 1,
+          "legato": 1
+        },
+        {
+          "bar": 4,
+          "notes": 9,
+          "gestures": 9,
+          "maxChordSize": 1,
+          "legato": 0
+        }
+      ]
+    },
+    "learned": {
+      "reference": 35,
+      "prediction": 35,
+      "matched": 35,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "onsetMae": 0,
+      "durationMae": 0,
+      "referenceStringAgreement": 0.5428571428571428,
+      "hardErrors": 0,
+      "referenceLegato": 2,
+      "generatedLegato": 2,
+      "texture": [
+        {
+          "bar": 1,
+          "notes": 9,
+          "gestures": 9,
+          "maxChordSize": 1,
+          "legato": 1
+        },
+        {
+          "bar": 2,
+          "notes": 8,
+          "gestures": 8,
+          "maxChordSize": 1,
+          "legato": 0
+        },
+        {
+          "bar": 3,
+          "notes": 9,
+          "gestures": 9,
+          "maxChordSize": 1,
+          "legato": 1
+        },
+        {
+          "bar": 4,
+          "notes": 9,
+          "gestures": 9,
+          "maxChordSize": 1,
+          "legato": 0
+        }
+      ]
+    },
+    "referenceTexture": [
+      {
+        "bar": 1,
+        "notes": 9,
+        "gestures": 9,
+        "maxChordSize": 1,
+        "legato": 1
+      },
+      {
+        "bar": 2,
+        "notes": 8,
+        "gestures": 8,
+        "maxChordSize": 1,
+        "legato": 0
+      },
+      {
+        "bar": 3,
+        "notes": 9,
+        "gestures": 9,
+        "maxChordSize": 1,
+        "legato": 1
+      },
+      {
+        "bar": 4,
+        "notes": 9,
+        "gestures": 9,
+        "maxChordSize": 1,
+        "legato": 0
+      }
+    ]
+  },
+  "accompaniment": {
+    "comparisonMode": "harmonic/texture reference; daily simplification is not required to duplicate the arranger's exact rhythm",
+    "referenceTexture": [
+      {
+        "bar": 1,
+        "notes": 48,
+        "gestures": 9,
+        "maxChordSize": 6,
+        "legato": 0
+      },
+      {
+        "bar": 2,
+        "notes": 48,
+        "gestures": 9,
+        "maxChordSize": 6,
+        "legato": 0
+      },
+      {
+        "bar": 3,
+        "notes": 48,
+        "gestures": 9,
+        "maxChordSize": 6,
+        "legato": 0
+      },
+      {
+        "bar": 4,
+        "notes": 40,
+        "gestures": 7,
+        "maxChordSize": 6,
+        "legato": 0
+      }
+    ],
+    "generatedTexture": [
+      {
+        "bar": 1,
+        "notes": 28,
+        "gestures": 6,
+        "maxChordSize": 6,
+        "legato": 0
+      },
+      {
+        "bar": 2,
+        "notes": 22,
+        "gestures": 5,
+        "maxChordSize": 6,
+        "legato": 0
+      },
+      {
+        "bar": 3,
+        "notes": 28,
+        "gestures": 6,
+        "maxChordSize": 6,
+        "legato": 0
+      },
+      {
+        "bar": 4,
+        "notes": 22,
+        "gestures": 5,
+        "maxChordSize": 6,
+        "legato": 0
+      }
+    ],
+    "harmonicFit": {
+      "soundingSeconds": 43.171999999999976,
+      "chordToneFraction": 1
+    },
+    "hardErrors": 0,
+    "warnings": []
+  },
+  "limitations": [
+    "Single-pass visual annotation needs independent review",
+    "Only bars 1-8 of this specific arranger version; verse/chorus alignment still pending",
+    "String agreement is not a unique definition of a good fingering",
+    "No audio recognition or listening-quality claim from this symbolic comparison"
+  ]
+}

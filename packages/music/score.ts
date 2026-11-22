@@ -25,12 +25,20 @@ export function withReferenceTempo(
         beat,
     };
   });
-  next.chords = next.chords
-    .filter((c) => c.beat < next.durationBeats)
-    .map((c) => ({
-      ...c,
-      durationBeats: Math.min(c.durationBeats, next.durationBeats - c.beat),
-    }));
+  const mapped = (beat: number) =>
+    secondsToBeat(next, beatToSeconds(score, beat));
+  next.chords = score.chords.map((c) => ({
+    ...c,
+    beat: mapped(c.beat),
+    durationBeats: mapped(c.beat + c.durationBeats) - mapped(c.beat),
+  }));
+  next.sections = score.sections.map((s) => ({
+    ...s,
+    beat: mapped(s.beat),
+    endBeat: mapped(s.endBeat),
+  }));
+  // A tempo correction can shift the notated bar grid, so the pickup needs reconfirming.
+  if (next.pickupBeats) delete next.pickupBeats;
   return next;
 }
 

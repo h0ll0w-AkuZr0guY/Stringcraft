@@ -61,6 +61,12 @@ export interface MusicProject<N extends NoteEvent = GuitarNote> {
   schemaVersion: 1 | 2;
   score?: MusicalScore;
   migratedFrom?: string;
+  refinement?: {
+    pluginId: string;
+    profile: string;
+    notes: NoteEvent[];
+    dropped: { noteId: string; reason: string }[];
+  };
   id: string;
   name: string;
   createdAt: string;
@@ -79,6 +85,7 @@ export type Capability =
   | "transcriber"
   | "melody"
   | "harmony"
+  | "refiner"
   | "instrument"
   | "renderer"
   | "exporter"
@@ -148,6 +155,12 @@ export interface MusicPlugin {
     signal?: AbortSignal,
   ) => Promise<{ capo: number; reason: string }>;
 }
+export interface NoteRefinerPlugin<Options> {
+  refineNotes(
+    notes: NoteEvent[],
+    options?: Options,
+  ): { notes: NoteEvent[]; dropped: { noteId: string; reason: string }[] };
+}
 export interface Job {
   id: string;
   status: "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -213,6 +226,34 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
   validateNotes(p.melody);
+  if (p.refinement) {
+    validateNotes(p.refinement.notes);
+    const originals = new Map(p.notes.map((n) => [n.id, n])),
+      kept = new Set(p.refinement.notes.map((n) => n.id));
+    for (const note of p.refinement.notes) {
+      const original = originals.get(note.id);
+      if (
+        !original ||
+        note.start !== original.start ||
+        note.duration !== original.duration ||
+        note.pitch.midi !== original.pitch.midi ||
+        note.source !== original.source ||
+        note.score !== original.score ||
+        note.velocity !== original.velocity
+      )
+        throw new Error("清理结果不能更改或伪造原始候选");
+    }
+    if (
+      !Array.isArray(p.refinement.dropped) ||
+      p.refinement.dropped.some(
+        (d) =>
+          !originals.has(d.noteId) ||
+          kept.has(d.noteId) ||
+          typeof d.reason !== "string",
+      )
+    )
+      throw new Error("候选清理省略记录无效");
+  }
   if (p.schemaVersion === 2 && !p.score) throw new Error("v2 项目缺少音乐结构");
   if (p.score) validateScore(p.score);
   for (const n of [...p.notes, ...p.melody, ...(p.arrangement?.notes ?? [])]) {

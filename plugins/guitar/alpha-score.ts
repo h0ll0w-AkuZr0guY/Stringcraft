@@ -30,6 +30,7 @@ export function alphaScore(alpha: typeof Alpha, project: MusicProject) {
     const meter =
       musical.meter.findLast((t) => t.beat <= measure.beat) ?? musical.meter[0];
     master.timeSignatureNumerator = meter.numerator;
+    master.isAnacrusis = measure.index === 0 && !!musical.pickupBeats;
     master.timeSignatureDenominator = meter.denominator;
     const tempo =
       musical.tempo.findLast((t) => t.beat <= measure.beat) ?? musical.tempo[0];
