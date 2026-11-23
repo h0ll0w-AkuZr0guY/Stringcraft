@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { type GuitarNote } from "../../packages/contracts";
+import { useRef, useState, useEffect } from "react";
 import { noteName } from "../../packages/music/demo";
 
 import { violations } from "../../plugins/guitar";
@@ -21,6 +22,8 @@ import { RhythmScore, Tablature } from "./Tablature";
 
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 import { labels } from "../hooks/useWorkbench";
+import MusicalStructure from "./MusicalStructure";
+import ChordDiagrams from "./ChordDiagrams";
 export default function ScorePanel() {
   const {
     section,
@@ -63,7 +66,20 @@ export default function ScorePanel() {
     edit,
     transpose,
     exportAs,
+    bindRecording,
+    updateReferenceOffset,
   } = useWorkbenchContext();
+  const referenceInput = useRef<HTMLInputElement>(null),
+    [referenceOffset, setReferenceOffset] = useState(
+      project.audioReference?.offsetSeconds ?? project.sourceOffset,
+    );
+  useEffect(
+    () =>
+      setReferenceOffset(
+        project.audioReference?.offsetSeconds ?? project.sourceOffset,
+      ),
+    [project.id, project.audioReference?.offsetSeconds, project.sourceOffset],
+  );
   return (
     <section className="panel score-panel">
       <div className="score-heading">
@@ -81,7 +97,7 @@ export default function ScorePanel() {
             <span className="tag">
               Capo {project.arrangement?.capo ?? capo}
             </span>
-            <span className="tag">{project.bpm} BPM</span>
+            <span className="tag">{Number(project.bpm.toFixed(1))} BPM</span>
             {project.sourceKind === "demo" && (
               <span className="tag gold">原创演示</span>
             )}
@@ -97,7 +113,7 @@ export default function ScorePanel() {
           <button
             className="play-button"
             aria-label={playing ? "停止播放" : "播放编配"}
-            disabled={!notes.length || !!busy}
+            disabled={!playing && (!notes.length || !!busy)}
             onClick={() => (playing ? stop() : void play())}
           >
             {playing ? (
@@ -119,8 +135,59 @@ export default function ScorePanel() {
             disabled={!!busy}
             onClick={() => void play(true)}
           >
-            原曲对照
+            {project.audioReference?.kind === "reference"
+              ? "参考录音对照"
+              : "原曲对照"}
           </button>
+        </div>
+        <div className="reference-controls">
+          <button
+            className="text-button"
+            disabled={!!busy}
+            onClick={() => referenceInput.current?.click()}
+          >
+            关联录音
+          </button>
+          <input
+            ref={referenceInput}
+            type="file"
+            accept="audio/*,video/mp4,.flac"
+            className="visually-hidden"
+            data-testid="reference-audio-input"
+            aria-label="关联录音文件"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void bindRecording(file, referenceOffset);
+              e.target.value = "";
+            }}
+          />
+          <label>
+            对照起点（秒）
+            <input
+              aria-label="录音对照起点"
+              type="number"
+              min={0}
+              step={0.01}
+              disabled={!!busy}
+              value={Number(referenceOffset.toFixed(3))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (
+                  value >= 0 &&
+                  Number.isFinite(value) &&
+                  (!project.audioReference || updateReferenceOffset(value))
+                )
+                  setReferenceOffset(value);
+              }}
+            />
+          </label>
+          <small>
+            {project.audioReference?.kind === "original"
+              ? "已记录原文件摘要，可重新关联文件"
+              : project.audioReference
+                ? "已记录参考录音，可重新关联文件"
+                : "可重新关联录音，保留已有谱面"}
+          </small>
         </div>
         <div
           className="waveform"
@@ -216,13 +283,36 @@ export default function ScorePanel() {
           </>
         )}
         <span className="muted">
-          {project.melody.length} 个主旋律音 · {notes.length} 个编配音符
+          {project.arrangement?.goal === "accompaniment"
+            ? `${new Set(notes.map((n) => n.strokeId ?? n.id)).size} 次扫拨动作 · 和弦伴奏`
+            : `${project.melody.length} 个旋律候选 · ${notes.length} 个编配音符`}
         </span>
       </div>
       {stale && (
         <p className="stale-note">
           设置已改变，谱面仍为上次结果。重新生成后应用新设置。
         </p>
+      )}
+      <MusicalStructure />
+      {project.refinement && (
+        <p className="refinement-summary">
+          原始 {project.notes.length} 个候选均已保留；本次编配使用清理后的{" "}
+          {project.refinement.notes.length}{" "}
+          个候选。弱和弦音可能被省略，关闭清理后可重新分析对照。
+        </p>
+      )}
+      <ChordDiagrams />
+      {!!project.arrangement?.warnings.length && (
+        <details className="arrangement-report">
+          <summary>编配说明与待核对项</summary>
+          {project.arrangement.warnings.map((w) => (
+            <p key={w}>{w}</p>
+          ))}
+          <p>
+            省略 {project.arrangement.dropped.length}{" "}
+            个输入事件。演奏约束通过不代表真人试弹已通过。
+          </p>
+        </details>
       )}
       <div className="notation-toolbar">
         <div className="tabs">
@@ -309,7 +399,10 @@ export default function ScorePanel() {
         <div className="note-editor">
           <div className="note-editor-heading">
             <strong>
-              {noteName(chosen.pitch.midi)} <small>音符编辑</small>
+              {chosen.dead
+                ? `${chosen.string}弦闷音`
+                : noteName(chosen.pitch.midi)}{" "}
+              <small>音符编辑</small>
             </strong>
             <button
               className="icon-button"
@@ -355,11 +448,23 @@ export default function ScorePanel() {
                 aria-label="编辑弦号"
                 value={chosen.string}
                 onChange={(e) => {
-                  const string = Number(e.target.value),
-                    fret =
-                      chosen.pitch.midi -
-                      [64, 59, 55, 50, 45, 40][string - 1] -
-                      (project.arrangement?.capo ?? 0);
+                  const string = Number(e.target.value);
+                  if (chosen.dead) {
+                    updateNote(chosen.id, {
+                      string,
+                      fret: 0,
+                      pitch: {
+                        midi:
+                          [64, 59, 55, 50, 45, 40][string - 1] +
+                          (project.arrangement?.capo ?? 0),
+                      },
+                    });
+                    return;
+                  }
+                  const fret =
+                    chosen.pitch.midi -
+                    [64, 59, 55, 50, 45, 40][string - 1] -
+                    (project.arrangement?.capo ?? 0);
                   if (fret < 0) {
                     notify("该音高在所选弦不可弹");
                     return;
@@ -378,6 +483,7 @@ export default function ScorePanel() {
               品
               <input
                 type="number"
+                disabled={!!chosen.dead}
                 min="0"
                 max="24"
                 value={chosen.fret}
@@ -394,6 +500,74 @@ export default function ScorePanel() {
                   });
                 }}
               />
+            </label>
+            <label>
+              演奏动作
+              <select
+                aria-label="编辑演奏动作"
+                value={chosen.dead ? "dead" : (chosen.attack ?? "pluck")}
+                onChange={(e) => {
+                  const attack = e.target.value as GuitarNote["attack"];
+                  const linked =
+                    attack === "hammer" ||
+                    attack === "pull" ||
+                    attack === "slide";
+                  const previous = linked
+                    ? notes
+                        .filter(
+                          (n) =>
+                            n.id !== chosen.id &&
+                            !n.dead &&
+                            n.string === chosen.string &&
+                            n.start < chosen.start &&
+                            Math.abs(n.start + n.duration - chosen.start) <
+                              0.001,
+                        )
+                        .sort((a, b) => b.start - a.start)[0]
+                    : undefined;
+                  if (linked && !previous) {
+                    notify(
+                      "请先让前一个同弦音的结束时间与当前起音相接，再设置连奏。",
+                    );
+                    return;
+                  }
+                  updateNote(chosen.id, {
+                    attack,
+                    dead: attack === "dead" ? true : undefined,
+                    linkFrom: previous?.id,
+                    technique:
+                      attack === "hammer"
+                        ? "h"
+                        : attack === "pull"
+                          ? "p"
+                          : undefined,
+                    stroke: undefined,
+                    strokeId: undefined,
+                    ...(attack === "dead"
+                      ? {
+                          fret: 0,
+                          leftFinger: 0,
+                          pitch: {
+                            midi:
+                              [64, 59, 55, 50, 45, 40][chosen.string - 1] +
+                              (project.arrangement?.capo ?? 0),
+                          },
+                        }
+                      : {}),
+                  });
+                }}
+              >
+                <option value="pluck">独立拨弦</option>
+                <option value="hammer">击弦 h</option>
+                <option value="pull">勾弦 p</option>
+                <option value="slide">滑音 /</option>
+                <option value="dead">闷音 ×</option>
+                {chosen.attack === "strum" && (
+                  <option value="strum" disabled>
+                    扫弦组（当前）
+                  </option>
+                )}
+              </select>
             </label>
             <button
               className={`icon-button ${chosen.locked ? "locked" : ""}`}
@@ -465,6 +639,8 @@ export default function ScorePanel() {
               capo,
               transpose,
               bpm: project.bpm,
+              goal: project.arrangement?.goal,
+              score: project.arrangement?.score,
             });
             if (errors.length) {
               notify("请先删去末尾冲突音符，再添加新音符");
@@ -484,6 +660,13 @@ export default function ScorePanel() {
           添加音符
         </button>
         <div className="download-actions">
+          <button
+            className="text-button"
+            disabled={!notes.length}
+            onClick={() => exportAs("musicxml")}
+          >
+            MusicXML
+          </button>
           <button
             className="text-button"
             disabled={!notes.length || !!busy}
@@ -513,7 +696,7 @@ export default function ScorePanel() {
               setTimeout(() => window.print(), 100);
             }}
           >
-            打印 PDF
+            打印六线谱 PDF
           </button>
           <button
             className="button secondary small"

@@ -5,6 +5,7 @@ self.onmessage = async (
     samples: Float32Array;
     modelUrl: string;
     wasmUrl: string;
+    streaming?: boolean;
   }>,
 ) => {
   const url = URL.createObjectURL(
@@ -18,6 +19,9 @@ self.onmessage = async (
       event.data.modelUrl,
       event.data.wasmUrl,
       (value) => self.postMessage({ type: "progress", value }),
+      event.data.streaming
+        ? (chunk) => self.postMessage({ type: "chunk", chunk })
+        : undefined,
     );
     self.postMessage({ type: "result", notes });
   } catch (error) {

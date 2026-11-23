@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "task": "Detector-based riff grid alignment diagnostic, not verified recording ground truth",
+  "source": {
+    "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+    "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+    "page": 1,
+    "bars": [1, 8],
+    "arranger": "Steven Law",
+    "license": "Copyrighted score: private local evaluation only",
+    "annotation": "Manually transcribed from visible six-line tab and rhythm beams; harmony labels derived from displayed triadic voicings, not printed chord symbols",
+    "review": "Single-pass visual annotation; second independent review pending",
+    "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth"
+  },
+  "referenceSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+  "recordingCacheSha256": "937781e91c2f5fd2cce781de007ab6c61f9bd7e275cff079d4f4cfa14d040f7c",
+  "workbenchProposal": {
+    "bpm": 145,
+    "beatOffset": 0,
+    "timing": "unconfirmed"
+  },
+  "search": {
+    "bpm": [60, 180],
+    "bpmStep": 0.25,
+    "offsetSeconds": [0, 4],
+    "offsetStep": 0.02,
+    "onsetTolerance": 0.05,
+    "matching": "maximum one-to-one exact pitch/onset coverage",
+    "selectionBeats": [0, 8],
+    "checkBeats": [8, 16]
+  },
+  "selected": {
+    "bpm": 68.25,
+    "offset": 0.78,
+    "train": {
+      "referenceAttacks": 17,
+      "matched": 17,
+      "coverage": 1,
+      "matchedOnsetMae": 0.010716709247801666
+    },
+    "check": {
+      "referenceAttacks": 18,
+      "matched": 14,
+      "coverage": 0.7777777777777778,
+      "matchedOnsetMae": 0.020050013705115166
+    }
+  },
+  "alternatives": [
+    {
+      "bpm": 68.5,
+      "offset": 0.8,
+      "train": {
+        "referenceAttacks": 17,
+        "matched": 17,
+        "coverage": 1,
+        "matchedOnsetMae": 0.011588090223924282
+      }
+    },
+    {
+      "bpm": 68,
+      "offset": 0.78,
+      "train": {
+        "referenceAttacks": 17,
+        "matched": 17,
+        "coverage": 1,
+        "matchedOnsetMae": 0.014530775447434
+      }
+    },
+    {
+      "bpm": 68.75,
+      "offset": 0.8,
+      "train": {
+        "referenceAttacks": 17,
+        "matched": 17,
+        "coverage": 1,
+        "matchedOnsetMae": 0.014583622539925109
+      }
+    },
+    {
+      "bpm": 68.75,
+      "offset": 0.8200000000000001,
+      "train": {
+        "referenceAttacks": 17,
+        "matched": 17,
+        "coverage": 1,
+        "matchedOnsetMae": 0.016630894782155296
+      }
+    },
+    {
+      "bpm": 68.25,
+      "offset": 0.8,
+      "train": {
+        "referenceAttacks": 17,
+        "matched": 17,
+        "coverage": 1,
+        "matchedOnsetMae": 0.01705035244867184
+      }
+    }
+  ],
+  "status": "unconfirmed",
+  "limitations": [
+    "Arranger score and commercial recording may differ",
+    "Selection on detector output can fit detector errors; this does not establish transcription accuracy",
+    "Repeat-pattern check is within one recording, not independent cross-song validation",
+    "Needs independent beat/section annotation before use as evaluation truth"
+  ]
+}

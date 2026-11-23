@@ -1,5 +1,6 @@
 import { installed, install, catalog } from "../plugin-host";
-import type { NoteEvent } from "../contracts";
+import type { NoteEvent, TranscriptionChunk } from "../contracts";
+import { readAudioFile } from "./media";
 export async function decode(
   file: File,
   start: number,
@@ -10,6 +11,7 @@ export async function decode(
   buffer: AudioBuffer;
   duration: number;
   waveform: number[];
+  sourceSha256: string;
 }> {
   if (file.size > 50 * 1024 * 1024)
     throw new Error("在线文件上限为 50 MB，请使用本地增强包");
@@ -21,42 +23,62 @@ export async function decode(
     length > 60
   )
     throw new Error("请选择 1–60 秒的分析片段");
-  const ctx = new AudioContext();
-  try {
-    const buffer = await ctx.decodeAudioData(await file.arrayBuffer());
-    signal?.throwIfAborted();
-    if (start >= buffer.duration) throw new Error("片段起点超出音频时长");
-    const duration = Math.min(length, buffer.duration - start),
-      off = new OfflineAudioContext(1, Math.ceil(duration * 22050), 22050);
-    const source = off.createBufferSource();
-    source.buffer = buffer;
-    source.connect(off.destination);
-    source.start(0, start, duration);
-    const rendered = await off.startRendering();
-    signal?.throwIfAborted();
-    const samples = rendered.getChannelData(0).slice();
-    const waveform = Array.from({ length: 120 }, (_, i) => {
-      const a = Math.floor((i * samples.length) / 120),
-        b = Math.floor(((i + 1) * samples.length) / 120);
-      let v = 0;
-      for (let j = a; j < b; j++) v = Math.max(v, Math.abs(samples[j]));
-      return v;
-    });
-    return { samples, buffer, duration, waveform };
-  } finally {
-    await ctx.close();
-  }
+  const { buffer, sha256 } = await readAudioFile(file, 50, signal);
+  signal?.throwIfAborted();
+  if (start >= buffer.duration) throw new Error("片段起点超出音频时长");
+  const duration = Math.min(length, buffer.duration - start),
+    off = new OfflineAudioContext(1, Math.ceil(duration * 22050), 22050);
+  const source = off.createBufferSource();
+  source.buffer = buffer;
+  source.connect(off.destination);
+  source.start(0, start, duration);
+  const rendered = await off.startRendering();
+  signal?.throwIfAborted();
+  const samples = rendered.getChannelData(0).slice();
+  const waveform = Array.from({ length: 120 }, (_, i) => {
+    const a = Math.floor((i * samples.length) / 120),
+      b = Math.floor(((i + 1) * samples.length) / 120);
+    let v = 0;
+    for (let j = a; j < b; j++) v = Math.max(v, Math.abs(samples[j]));
+    return v;
+  });
+  return { samples, buffer, duration, waveform, sourceSha256: sha256 };
+}
+export async function decodeWhole(file: File, signal: AbortSignal) {
+  const { buffer, sha256 } = await readAudioFile(file, 50, signal);
+  signal.throwIfAborted();
+  if (buffer.duration > 300)
+    throw new Error("在线整曲上限为 5 分钟，请使用本地增强或裁剪文件。");
+  const offline = new OfflineAudioContext(
+      1,
+      Math.ceil(buffer.duration * 22050),
+      22050,
+    ),
+    source = offline.createBufferSource();
+  source.buffer = buffer;
+  source.connect(offline.destination);
+  source.start();
+  const rendered = await offline.startRendering();
+  signal.throwIfAborted();
+  return {
+    buffer,
+    samples: rendered.getChannelData(0).slice(),
+    duration: buffer.duration,
+    sourceSha256: sha256,
+  };
 }
 export async function transcribe(
   samples: Float32Array,
   signal: AbortSignal,
   progress: (n: number) => void,
+  chunk?: (chunk: TranscriptionChunk) => void,
 ): Promise<NoteEvent[]> {
-  let p = await installed("basic-pitch");
+  const id = chunk ? "basic-pitch-stream" : "basic-pitch";
+  let p = await installed(id);
   if (!p) {
-    const m = (await catalog()).find((x) => x.id === "basic-pitch")!;
+    const m = (await catalog()).find((x) => x.id === id)!;
     await install(m);
-    p = await installed("basic-pitch");
+    p = await installed(id);
   }
   if (!p?.enabled) throw new Error("请在插件中心启用 Basic Pitch");
   signal.throwIfAborted();
@@ -82,6 +104,7 @@ export async function transcribe(
     signal.addEventListener("abort", abort, { once: true });
     worker.onmessage = (e) => {
       if (e.data.type === "progress") progress(e.data.value);
+      else if (e.data.type === "chunk") chunk?.(e.data.chunk);
       else if (e.data.type === "result") {
         done();
         resolve(e.data.notes);
@@ -94,14 +117,18 @@ export async function transcribe(
       done();
       reject(new Error(e.message || "浏览器识别环境不可用"));
     };
+    // Other analysis plugins may reuse the decoded clip after transcription.
+    // Transfer a private copy rather than detaching the caller's array.
+    const transferable = samples.slice();
     worker.postMessage(
       {
         code: p!.code,
-        samples,
+        samples: transferable,
         modelUrl: new URL("models/basic-pitch/model.json", base).href,
         wasmUrl: new URL("wasm/", base).href,
+        streaming: !!chunk,
       },
-      [samples.buffer],
+      [transferable.buffer],
     );
   });
 }

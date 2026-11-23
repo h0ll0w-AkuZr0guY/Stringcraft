@@ -1,4 +1,5 @@
 import type { GuitarNote, NoteEvent } from "../contracts";
+import { audioGestures, type AudioGesture } from "./performance-audio";
 type AudioCtx = AudioContext | OfflineAudioContext;
 type Sample = {
   instrument: string;
@@ -52,7 +53,44 @@ async function getSample(ctx: AudioCtx, n: NoteEvent, tone: string) {
     return null;
   }
 }
-function synth(ctx: AudioCtx, n: NoteEvent, when: number, duration: number) {
+function synth(
+  ctx: AudioCtx,
+  n: NoteEvent,
+  when: number,
+  duration: number,
+  destination: AudioNode,
+  changes: AudioGesture["changes"],
+  from: number,
+  origin: number,
+  speed: number,
+) {
+  if ((n as GuitarNote).dead) {
+    const length = Math.max(0.02, Math.min(0.07, duration)),
+      buffer = ctx.createBuffer(
+        1,
+        Math.ceil(ctx.sampleRate * length),
+        ctx.sampleRate,
+      ),
+      channel = buffer.getChannelData(0);
+    let state = 17;
+    for (let i = 0; i < channel.length; i++) {
+      state = (Math.imul(state, 1664525) + 1013904223) | 0;
+      channel[i] =
+        (state / 2147483648) *
+        Math.exp((-i / channel.length) * 7) *
+        n.velocity *
+        0.45;
+    }
+    const source = ctx.createBufferSource(),
+      filter = ctx.createBiquadFilter();
+    source.buffer = buffer;
+    filter.type = "lowpass";
+    filter.frequency.value = 1100;
+    source.connect(filter);
+    filter.connect(destination);
+    source.start(when);
+    return;
+  }
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.0001, when);
   gain.gain.exponentialRampToValueAtTime(
@@ -63,7 +101,7 @@ function synth(ctx: AudioCtx, n: NoteEvent, when: number, duration: number) {
     0.0001,
     when + Math.max(0.02, duration),
   );
-  gain.connect(ctx.destination);
+  gain.connect(destination);
   for (const [harmonic, volume] of [
     [1, 1],
     [2, 0.28],
@@ -73,6 +111,12 @@ function synth(ctx: AudioCtx, n: NoteEvent, when: number, duration: number) {
       amp = ctx.createGain();
     osc.type = "triangle";
     osc.frequency.value = 440 * 2 ** ((n.pitch.midi - 69) / 12) * harmonic;
+    for (const change of changes)
+      osc.frequency.setTargetAtTime(
+        440 * 2 ** ((change.midi - 69) / 12) * harmonic,
+        origin + (change.time - from) / speed,
+        change.kind === "slide" ? 0.045 : 0.007,
+      );
     amp.gain.value = volume;
     osc.connect(amp);
     amp.connect(gain);
@@ -89,28 +133,55 @@ export async function schedule(
   speed = 1,
 ) {
   const prepared = await Promise.all(
-    notes
-      .filter((n) => n.start >= from && n.start < to)
-      .map(async (n) => ({
-        n,
-        sample: tone === "synth" ? null : await getSample(ctx, n, tone),
-      })),
+    audioGestures(notes, from, to).map(async (gesture) => ({
+      gesture,
+      sample:
+        tone === "synth" || (gesture.note as GuitarNote).dead
+          ? null
+          : await getSample(ctx, gesture.note, tone),
+    })),
   );
   const origin =
     ctx instanceof OfflineAudioContext ? 0 : ctx.currentTime + 0.06;
   let fallback = 0;
-  for (const { n, sample } of prepared) {
+  const mix = ctx.createGain(),
+    compressor = ctx.createDynamicsCompressor();
+  mix.gain.value = 0.7;
+  compressor.threshold.value = -10;
+  compressor.knee.value = 6;
+  compressor.ratio.value = 12;
+  compressor.attack.value = 0.003;
+  compressor.release.value = 0.12;
+  mix.connect(compressor);
+  compressor.connect(ctx.destination);
+  for (const { gesture, sample } of prepared) {
+    const n = {
+      ...gesture.note,
+      velocity:
+        gesture.note.velocity *
+        (gesture.note.role === "melody"
+          ? 1
+          : gesture.note.role === "bass"
+            ? 0.85
+            : 0.7),
+    };
     const when = origin + (n.start - from) / speed,
       duration = Math.max(0.03, Math.min(n.duration, to - n.start) / speed);
     if (!sample) {
-      synth(ctx, n, when, duration);
-      fallback++;
+      synth(ctx, n, when, duration, mix, gesture.changes, from, origin, speed);
+      if (!(n as GuitarNote).dead) fallback++;
       continue;
     }
     const source = ctx.createBufferSource(),
       gain = ctx.createGain();
     source.buffer = sample.buffer;
     source.playbackRate.value = 2 ** ((n.pitch.midi - sample.midi) / 12);
+    for (const change of gesture.changes)
+      source.playbackRate.setTargetAtTime(
+        2 ** ((change.midi - sample.midi) / 12),
+        origin + (change.time - from) / speed,
+        change.kind === "slide" ? 0.045 : 0.007,
+      );
     gain.gain.setValueAtTime(0.0001, when);
     gain.gain.exponentialRampToValueAtTime(
       Math.max(0.01, n.velocity * 0.7),
@@ -122,7 +193,7 @@ export async function schedule(
       0.012,
     );
     source.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(mix);
     source.start(when);
     source.stop(when + duration + 0.15);
   }

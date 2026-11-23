@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "source": "Steven Law published arranger score",
+  "bars": [25, 32],
+  "previousSha256": "a957dbb983d94de5de518c80281e9758ab1ac1597cbac697685117667020a821",
+  "correctedSha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4",
+  "corrections": [
+    {
+      "bar": 32,
+      "beatWithinBar": 2.5,
+      "string": 3,
+      "field": "role",
+      "before": "melody",
+      "after": "harmony",
+      "evidence": "The stem-down eighth belongs to the lower voice beneath a held stem-up dotted eighth in the printed staff. Choosing the highest note at every attack incorrectly assigns support notes to melody."
+    }
+  ],
+  "unchanged": [
+    "TAB glyphs",
+    "pitch",
+    "onset beats",
+    "durations",
+    "ties",
+    "unpitched events"
+  ],
+  "reviewScope": "Second visual pass across staff and TAB; not an independent human annotation or recording alignment."
+}

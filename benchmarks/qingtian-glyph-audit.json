@@ -1,0 +1,54 @@
+{
+  "method": "Independent direct PDF text-glyph extraction: system TAB row y positions and drawn bar boundaries; compares ordered string/fret pairs, not duration or voice claims",
+  "bars": [
+    {
+      "bar": 1,
+      "pdfGlyphNotes": 9,
+      "annotationNotes": 9,
+      "sequenceMatches": true
+    },
+    {
+      "bar": 2,
+      "pdfGlyphNotes": 8,
+      "annotationNotes": 8,
+      "sequenceMatches": true
+    },
+    {
+      "bar": 3,
+      "pdfGlyphNotes": 9,
+      "annotationNotes": 9,
+      "sequenceMatches": true
+    },
+    {
+      "bar": 4,
+      "pdfGlyphNotes": 9,
+      "annotationNotes": 9,
+      "sequenceMatches": true
+    },
+    {
+      "bar": 5,
+      "pdfGlyphNotes": 48,
+      "annotationNotes": 48,
+      "sequenceMatches": true
+    },
+    {
+      "bar": 6,
+      "pdfGlyphNotes": 48,
+      "annotationNotes": 48,
+      "sequenceMatches": true
+    },
+    {
+      "bar": 7,
+      "pdfGlyphNotes": 48,
+      "annotationNotes": 48,
+      "sequenceMatches": true
+    },
+    {
+      "bar": 8,
+      "pdfGlyphNotes": 40,
+      "annotationNotes": 40,
+      "sequenceMatches": true
+    }
+  ],
+  "matched": true
+}

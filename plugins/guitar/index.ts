@@ -6,6 +6,11 @@ import type {
   MusicPlugin,
   NoteEvent,
 } from "../../packages/contracts";
+import {
+  arrangeMusicalScore,
+  validateProjectedNotes,
+  guitarPerformancePlugin,
+} from "./performance";
 export const guitar: InstrumentDefinition = {
   id: "guitar",
   name: "标准六弦吉他",
@@ -13,7 +18,7 @@ export const guitar: InstrumentDefinition = {
   tuning: [64, 59, 55, 50, 45, 40],
   maxFret: 24,
   notation: ["tablature", "staff"],
-  techniques: ["h", "p", "pm"],
+  techniques: ["h", "p", "pm", "dead"],
 };
 export const levels = {
   easy: { voices: 1, fret: 5, span: 3, gap: 0.3, speed: 6 },
@@ -33,6 +38,8 @@ export function violations(
   notes: GuitarNote[],
   options: ArrangeOptions,
 ): string[] {
+  if (options.score && options.goal !== "melody")
+    return validateProjectedNotes(notes, options);
   const c = levels[options.difficulty],
     errors = new Set<string>();
   let active: GuitarNote[] = [];
@@ -60,6 +67,8 @@ export function arrange(
   input: NoteEvent[],
   options: ArrangeOptions,
 ): Arrangement {
+  if (options.score && options.goal !== "melody")
+    return arrangeMusicalScore(options.score, options);
   const c = levels[options.difficulty];
   if (
     !c ||
@@ -248,4 +257,8 @@ export function recommend(
     score: score(capo),
   })).sort((a, b) => b.score - a.score);
 }
-export default { instrument: guitar, arrange } satisfies MusicPlugin;
+export default {
+  ...guitarPerformancePlugin,
+  instrument: guitar,
+  arrange,
+} satisfies MusicPlugin;

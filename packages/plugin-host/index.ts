@@ -3,6 +3,8 @@ import {
   SDK_VERSION,
   type PluginManifest,
   type MusicPlugin,
+  type InstrumentPluginV2,
+  type NoteRefinerPlugin,
 } from "../contracts";
 type Installed = {
   manifest: PluginManifest;
@@ -26,7 +28,10 @@ export async function install(
   manifest: PluginManifest,
   trail = new Set<string>(),
 ): Promise<void> {
-  if (manifest.sdk !== SDK_VERSION || manifest.runtime !== "browser")
+  if (
+    ![1, SDK_VERSION].includes(manifest.sdk) ||
+    manifest.runtime !== "browser"
+  )
     throw new Error("此插件需要本地环境或不兼容的 SDK");
   if (!/^[a-z][a-z0-9-]+$/.test(manifest.id) || trail.has(manifest.id))
     throw new Error("插件标识或依赖无效");
@@ -127,23 +132,58 @@ export async function load(id: string): Promise<MusicPlugin> {
     URL.revokeObjectURL(url);
   }
 }
+/** Typed entry point for instrument-owned v2 options/actions, with no concrete instrument dependency. */
+export async function loadInstrument<Options, Action, Notation>(
+  id: string,
+): Promise<InstrumentPluginV2<Options, Action, Notation>> {
+  const plugin = (await load(id)) as unknown as InstrumentPluginV2<
+    Options,
+    Action,
+    Notation
+  >;
+  if (
+    !plugin.id ||
+    ![
+      plugin.arrangeScore,
+      plugin.validatePerformance,
+      plugin.soundEvents,
+      plugin.notation,
+    ].every((fn) => typeof fn === "function")
+  )
+    throw new Error("插件未提供完整的 SDK v2 乐器能力");
+  return plugin;
+}
+export async function loadRefiner<Options>(
+  id: string,
+): Promise<NoteRefinerPlugin<Options>> {
+  const plugin = (await load(id)) as unknown as NoteRefinerPlugin<Options>;
+  if (typeof plugin.refineNotes !== "function")
+    throw new Error("插件未提供候选清理能力");
+  return plugin;
+}
 export async function bootstrap() {
   const list = await catalog();
   for (const id of [
+    "piano-roll",
+    "note-audio",
+    "note-exporters",
     "melody-tracker",
     "guitar-standard",
     "standard-exporters",
     "guitar-samples",
+    "harmony-analysis",
+    "rhythm-analysis",
   ]) {
     const p = await installed(id);
     if (!p) await install(list.find((m) => m.id === id)!);
   }
+  return list;
 }
 
 /** Pure musical computations run outside the UI; cancellation terminates the worker. */
 export async function invoke<T>(
   id: string,
-  method: "extractMelody" | "arrange",
+  method: "extractMelody" | "arrange" | "analyzeTiming",
   args: unknown[],
   signal?: AbortSignal,
 ): Promise<T> {

@@ -1,0 +1,39 @@
+{
+  "verse8": {
+    "source": {
+      "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+      "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+      "page": 1,
+      "bars": [9, 16],
+      "arranger": "Steven Law",
+      "license": "Copyrighted score: private local evaluation only",
+      "annotation": "Manual voice/rhythm transcription with original string/fret glyphs. Supporting voices normalized on same-string reattacks for sound comparison.",
+      "review": "Pitch/string order to be checked programmatically; voice/rhythm visual transcription, independent review pending",
+      "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth"
+    },
+    "check": "Ordered PDF TAB glyphs vs annotation: string, fret and muted X. No rhythm or voice verification.",
+    "referenceGlyphs": 105,
+    "annotatedGlyphs": 105,
+    "mismatches": [],
+    "pass": true
+  },
+  "chorus8": {
+    "source": {
+      "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+      "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+      "page": [2, 3],
+      "bars": [25, 32],
+      "arranger": "Steven Law",
+      "license": "Copyrighted score: private local evaluation only",
+      "annotation": "Visual rhythm/tie annotation; fret and muted-string glyphs extracted independently from PDF text geometry. Voice roles are provisional.",
+      "review": "All string/fret/X glyphs checked; rhythm/voice independent review pending",
+      "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth",
+      "sectionLabel": "Chorus-like texture only; formal section and recording alignment unconfirmed"
+    },
+    "check": "Ordered PDF TAB glyphs vs annotation: string, fret and muted X. No rhythm or voice verification.",
+    "referenceGlyphs": 148,
+    "annotatedGlyphs": 148,
+    "mismatches": [],
+    "pass": true
+  }
+}

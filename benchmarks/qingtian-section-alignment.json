@@ -1,0 +1,1097 @@
+{
+  "version": 1,
+  "task": "Actual private commercial mix versus a separately authored arranger score: alignment diagnostics only",
+  "status": "unconfirmed",
+  "dataUse": "Development diagnostics; all three windows now observed, none is a held-out accuracy test",
+  "externalAudioUploads": 0,
+  "conclusion": "Short-phrase exact-pitch tempo fitting overfits; a shared independent waveform pulse improves continuation coverage but does not verify recording alignment or transcription accuracy.",
+  "records": [
+    {
+      "id": "intro-window",
+      "freeTempo": {
+        "version": 2,
+        "task": "Detector-based disjoint-phrase alignment diagnostic, not recording ground truth",
+        "source": {
+          "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+          "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+          "page": 1,
+          "bars": [1, 8],
+          "arranger": "Steven Law",
+          "license": "Copyrighted score: private local evaluation only",
+          "annotation": "Manually transcribed from visible six-line tab and rhythm beams; harmony labels derived from displayed triadic voicings, not printed chord symbols",
+          "review": "Single-pass visual annotation; second independent review pending",
+          "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth"
+        },
+        "referenceSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+        "recordingCacheSha256": "7110d3820743094383caf914663ba50e529930ac35b39c418635ab40ced9a481",
+        "recordingFileSha256": "69057d49ba210910427a5bc8c433e0cbf4fc62030f9dffb983819de4bc6ecadf",
+        "searchConfigSha256": "60cc77c029960d112b56f7807d8d05ab9f61e9299ef53b59c9a2c82f161a33f9",
+        "workbenchProposal": {
+          "bpm": 145,
+          "beatOffset": 0,
+          "timing": "unconfirmed"
+        },
+        "search": {
+          "bpm": [60, 80, 0.25],
+          "offsetSeconds": [0, 4, 0.02],
+          "transpose": [0, 12, -12],
+          "selectionBeats": [0, 8],
+          "checkBeats": [8, 16],
+          "onsetTolerance": 0.05,
+          "recordingBounds": [0, 40]
+        },
+        "status": "unconfirmed",
+        "evaluated": 48843,
+        "selected": {
+          "bpm": 68.25,
+          "offset": 0.78,
+          "transpose": 0,
+          "selection": {
+            "referenceAttacks": 17,
+            "matched": 17,
+            "coverage": 1,
+            "matchedOnsetMae": 0.01071670924780173
+          },
+          "check": {
+            "referenceAttacks": 18,
+            "matched": 14,
+            "coverage": 0.7777777777777778,
+            "matchedOnsetMae": 0.020050013705115166
+          }
+        },
+        "alternatives": [
+          {
+            "bpm": 68.5,
+            "offset": 0.8,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 17,
+              "coverage": 1,
+              "matchedOnsetMae": 0.01158809022392433
+            }
+          },
+          {
+            "bpm": 68,
+            "offset": 0.78,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 17,
+              "coverage": 1,
+              "matchedOnsetMae": 0.014530775447434014
+            }
+          },
+          {
+            "bpm": 68.75,
+            "offset": 0.8,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 17,
+              "coverage": 1,
+              "matchedOnsetMae": 0.01458362253992506
+            }
+          },
+          {
+            "bpm": 68.75,
+            "offset": 0.8200000000000001,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 17,
+              "coverage": 1,
+              "matchedOnsetMae": 0.016630894782155285
+            }
+          },
+          {
+            "bpm": 68.25,
+            "offset": 0.8,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 17,
+              "coverage": 1,
+              "matchedOnsetMae": 0.017050352448671827
+            }
+          }
+        ],
+        "diagnostics": {
+          "checkAt100ms": {
+            "referenceAttacks": 18,
+            "matched": 17,
+            "coverage": 0.9444444444444444,
+            "matchedOnsetMae": 0.03145329926842479
+          },
+          "checkAt200ms": {
+            "referenceAttacks": 18,
+            "matched": 17,
+            "coverage": 0.9444444444444444,
+            "matchedOnsetMae": 0.03145329926842479
+          },
+          "checkPitchClassAt100ms": {
+            "referenceAttacks": 18,
+            "matched": 17,
+            "coverage": 0.9444444444444444,
+            "matchedOnsetMae": 0.030191317552661853
+          },
+          "checkOnsetsOnlyAt50ms": {
+            "referenceAttacks": 18,
+            "matched": 18,
+            "coverage": 1,
+            "matchedOnsetMae": 0.017510394015155552
+          },
+          "checkFourBeatWindows": [
+            {
+              "from": 8,
+              "to": 12,
+              "referenceAttacks": 9,
+              "matched": 8,
+              "coverage": 0.8888888888888888,
+              "matchedOnsetMae": 0.023967979242978665
+            },
+            {
+              "from": 12,
+              "to": 16,
+              "referenceAttacks": 9,
+              "matched": 6,
+              "coverage": 0.6666666666666666,
+              "matchedOnsetMae": 0.0148260596546305
+            }
+          ]
+        },
+        "limitations": [
+          "Selection uses detector output and may fit detector errors.",
+          "Check attacks were excluded from search ranking; they are not an independent song or human truth.",
+          "Coverage of a sparse arranger melody is not precision, recall or transcription accuracy for a commercial mix."
+        ]
+      },
+      "sharedWaveformTempo": {
+        "version": 2,
+        "task": "Detector-based disjoint-phrase alignment diagnostic, not recording ground truth",
+        "source": {
+          "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+          "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+          "page": 1,
+          "bars": [1, 8],
+          "arranger": "Steven Law",
+          "license": "Copyrighted score: private local evaluation only",
+          "annotation": "Manually transcribed from visible six-line tab and rhythm beams; harmony labels derived from displayed triadic voicings, not printed chord symbols",
+          "review": "Single-pass visual annotation; second independent review pending",
+          "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth"
+        },
+        "referenceSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+        "recordingCacheSha256": "7110d3820743094383caf914663ba50e529930ac35b39c418635ab40ced9a481",
+        "recordingFileSha256": "69057d49ba210910427a5bc8c433e0cbf4fc62030f9dffb983819de4bc6ecadf",
+        "searchConfigSha256": "1ba9416641c74b42caab3723973063559b4a0f5003ddd29ff3877ab415312deb",
+        "workbenchProposal": {
+          "bpm": 145,
+          "beatOffset": 0,
+          "timing": "unconfirmed"
+        },
+        "search": {
+          "bpm": [68.55146550782214, 68.55146550782214, 1],
+          "offsetSeconds": [0, 4, 0.02],
+          "transpose": [0, 12, -12],
+          "selectionBeats": [0, 8],
+          "checkBeats": [8, 16],
+          "onsetTolerance": 0.05,
+          "recordingBounds": [0, 40]
+        },
+        "status": "unconfirmed",
+        "evaluated": 603,
+        "selected": {
+          "bpm": 68.55146550782214,
+          "offset": 0.8,
+          "transpose": 0,
+          "selection": {
+            "referenceAttacks": 17,
+            "matched": 17,
+            "coverage": 1,
+            "matchedOnsetMae": 0.011729569585146718
+          },
+          "check": {
+            "referenceAttacks": 18,
+            "matched": 15,
+            "coverage": 0.8333333333333334,
+            "matchedOnsetMae": 0.01592290627945143
+          }
+        },
+        "alternatives": [
+          {
+            "bpm": 68.55146550782214,
+            "offset": 0.8200000000000001,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 17,
+              "coverage": 1,
+              "matchedOnsetMae": 0.019918150782976013
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 0.78,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 17,
+              "coverage": 1,
+              "matchedOnsetMae": 0.02058871863145646
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 0.76,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 12,
+              "coverage": 0.7058823529411765,
+              "matchedOnsetMae": 0.03321918310174604
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 0.84,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 11,
+              "coverage": 0.6470588235294118,
+              "matchedOnsetMae": 0.032056332819268965
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 3,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 17,
+              "matched": 10,
+              "coverage": 0.5882352941176471,
+              "matchedOnsetMae": 0.00987172802345051
+            }
+          }
+        ],
+        "diagnostics": {
+          "checkAt100ms": {
+            "referenceAttacks": 18,
+            "matched": 16,
+            "coverage": 0.8888888888888888,
+            "matchedOnsetMae": 0.018300862662004758
+          },
+          "checkAt200ms": {
+            "referenceAttacks": 18,
+            "matched": 17,
+            "coverage": 0.9444444444444444,
+            "matchedOnsetMae": 0.02408479537234342
+          },
+          "checkPitchClassAt100ms": {
+            "referenceAttacks": 18,
+            "matched": 16,
+            "coverage": 0.8888888888888888,
+            "matchedOnsetMae": 0.018300862662004758
+          },
+          "checkOnsetsOnlyAt50ms": {
+            "referenceAttacks": 18,
+            "matched": 18,
+            "coverage": 1,
+            "matchedOnsetMae": 0.011009161787360937
+          },
+          "checkFourBeatWindows": [
+            {
+              "from": 8,
+              "to": 12,
+              "referenceAttacks": 9,
+              "matched": 8,
+              "coverage": 0.8888888888888888,
+              "matchedOnsetMae": 0.011741114380862894
+            },
+            {
+              "from": 12,
+              "to": 16,
+              "referenceAttacks": 9,
+              "matched": 7,
+              "coverage": 0.7777777777777778,
+              "matchedOnsetMae": 0.020702097020695476
+            }
+          ]
+        },
+        "limitations": [
+          "Selection uses detector output and may fit detector errors.",
+          "Check attacks were excluded from search ranking; they are not an independent song or human truth.",
+          "Coverage of a sparse arranger melody is not precision, recall or transcription accuracy for a commercial mix."
+        ]
+      }
+    },
+    {
+      "id": "verse-window",
+      "freeTempo": {
+        "version": 2,
+        "task": "Detector-based disjoint-phrase alignment diagnostic, not recording ground truth",
+        "source": {
+          "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+          "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+          "page": 1,
+          "bars": [9, 16],
+          "arranger": "Steven Law",
+          "license": "Copyrighted score: private local evaluation only",
+          "annotation": "Manual voice/rhythm transcription with original string/fret glyphs. Supporting voices normalized on same-string reattacks for sound comparison.",
+          "review": "All 105 string/fret glyphs checked against independent PDF text geometry; rhythm/voice visual transcription, independent review pending",
+          "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth"
+        },
+        "referenceSha256": "1c98d7e5d2b0a95b435f18588aa88f73dcf49f270895a9e5a03b961b6953a59f",
+        "recordingCacheSha256": "ed8470ee928bdecfcdbc57e93e805cd92b4b97bdc6c1adf2f431ba91f4628882",
+        "recordingFileSha256": "69057d49ba210910427a5bc8c433e0cbf4fc62030f9dffb983819de4bc6ecadf",
+        "searchConfigSha256": "a4cd49e00a33bfc848abe58fa26da34ef177f8aa3f669434bd37e6c3110c6fcc",
+        "workbenchProposal": {
+          "bpm": 198,
+          "beatOffset": 0,
+          "timing": "unconfirmed"
+        },
+        "search": {
+          "bpm": [60, 80, 0.25],
+          "offsetSeconds": [27, 33, 0.02],
+          "transpose": [0, 12, -12],
+          "selectionBeats": [0, 8],
+          "checkBeats": [8, 32],
+          "onsetTolerance": 0.05,
+          "recordingBounds": [27, 67]
+        },
+        "status": "unconfirmed",
+        "evaluated": 73143,
+        "selected": {
+          "bpm": 68.75,
+          "offset": 28.82,
+          "transpose": 0,
+          "selection": {
+            "referenceAttacks": 15,
+            "matched": 12,
+            "coverage": 0.8,
+            "matchedOnsetMae": 0.01725469319040851
+          },
+          "check": {
+            "referenceAttacks": 49,
+            "matched": 14,
+            "coverage": 0.2857142857142857,
+            "matchedOnsetMae": 0.03101856760019877
+          }
+        },
+        "alternatives": [
+          {
+            "bpm": 69,
+            "offset": 28.84,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 12,
+              "coverage": 0.8,
+              "matchedOnsetMae": 0.017303544316277748
+            }
+          },
+          {
+            "bpm": 69.25,
+            "offset": 28.86,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 12,
+              "coverage": 0.8,
+              "matchedOnsetMae": 0.0187058914620802
+            }
+          },
+          {
+            "bpm": 69.25,
+            "offset": 28.84,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 12,
+              "coverage": 0.8,
+              "matchedOnsetMae": 0.023774538640166654
+            }
+          },
+          {
+            "bpm": 69,
+            "offset": 28.82,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 12,
+              "coverage": 0.8,
+              "matchedOnsetMae": 0.025272471983962912
+            }
+          },
+          {
+            "bpm": 68,
+            "offset": 28.8,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 12,
+              "coverage": 0.8,
+              "matchedOnsetMae": 0.027203074563158996
+            }
+          }
+        ],
+        "diagnostics": {
+          "checkAt100ms": {
+            "referenceAttacks": 49,
+            "matched": 28,
+            "coverage": 0.5714285714285714,
+            "matchedOnsetMae": 0.05265830903790076
+          },
+          "checkAt200ms": {
+            "referenceAttacks": 49,
+            "matched": 40,
+            "coverage": 0.8163265306122449,
+            "matchedOnsetMae": 0.07638524840239143
+          },
+          "checkPitchClassAt100ms": {
+            "referenceAttacks": 49,
+            "matched": 31,
+            "coverage": 0.6326530612244898,
+            "matchedOnsetMae": 0.050425081626002795
+          },
+          "checkOnsetsOnlyAt50ms": {
+            "referenceAttacks": 49,
+            "matched": 37,
+            "coverage": 0.7551020408163265,
+            "matchedOnsetMae": 0.026572625315482528
+          },
+          "checkFourBeatWindows": [
+            {
+              "from": 8,
+              "to": 12,
+              "referenceAttacks": 6,
+              "matched": 2,
+              "coverage": 0.3333333333333333,
+              "matchedOnsetMae": 0.01636093588950871
+            },
+            {
+              "from": 12,
+              "to": 16,
+              "referenceAttacks": 9,
+              "matched": 3,
+              "coverage": 0.3333333333333333,
+              "matchedOnsetMae": 0.04101037586751725
+            },
+            {
+              "from": 16,
+              "to": 20,
+              "referenceAttacks": 8,
+              "matched": 5,
+              "coverage": 0.625,
+              "matchedOnsetMae": 0.040002993197275315
+            },
+            {
+              "from": 20,
+              "to": 24,
+              "referenceAttacks": 8,
+              "matched": 0,
+              "coverage": 0,
+              "matchedOnsetMae": null
+            },
+            {
+              "from": 24,
+              "to": 28,
+              "referenceAttacks": 9,
+              "matched": 3,
+              "coverage": 0.3333333333333333,
+              "matchedOnsetMae": 0.02568197622483363
+            },
+            {
+              "from": 28,
+              "to": 32,
+              "referenceAttacks": 9,
+              "matched": 1,
+              "coverage": 0.1111111111111111,
+              "matchedOnsetMae": 0.0014460523603361253
+            }
+          ]
+        },
+        "limitations": [
+          "Selection uses detector output and may fit detector errors.",
+          "Check attacks were excluded from search ranking; they are not an independent song or human truth.",
+          "Coverage of a sparse arranger melody is not precision, recall or transcription accuracy for a commercial mix."
+        ]
+      },
+      "sharedWaveformTempo": {
+        "version": 2,
+        "task": "Detector-based disjoint-phrase alignment diagnostic, not recording ground truth",
+        "source": {
+          "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+          "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+          "page": 1,
+          "bars": [9, 16],
+          "arranger": "Steven Law",
+          "license": "Copyrighted score: private local evaluation only",
+          "annotation": "Manual voice/rhythm transcription with original string/fret glyphs. Supporting voices normalized on same-string reattacks for sound comparison.",
+          "review": "All 105 string/fret glyphs checked against independent PDF text geometry; rhythm/voice visual transcription, independent review pending",
+          "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth"
+        },
+        "referenceSha256": "1c98d7e5d2b0a95b435f18588aa88f73dcf49f270895a9e5a03b961b6953a59f",
+        "recordingCacheSha256": "ed8470ee928bdecfcdbc57e93e805cd92b4b97bdc6c1adf2f431ba91f4628882",
+        "recordingFileSha256": "69057d49ba210910427a5bc8c433e0cbf4fc62030f9dffb983819de4bc6ecadf",
+        "searchConfigSha256": "a6ac64c56f9765ceff84f50c9d39985ec0f8516cdd6c5bf00a90c5d69e701446",
+        "workbenchProposal": {
+          "bpm": 198,
+          "beatOffset": 0,
+          "timing": "unconfirmed"
+        },
+        "search": {
+          "bpm": [68.55146550782214, 68.55146550782214, 1],
+          "offsetSeconds": [27, 33, 0.02],
+          "transpose": [0, 12, -12],
+          "selectionBeats": [0, 8],
+          "checkBeats": [8, 32],
+          "onsetTolerance": 0.05,
+          "recordingBounds": [27, 67]
+        },
+        "status": "unconfirmed",
+        "evaluated": 903,
+        "selected": {
+          "bpm": 68.55146550782214,
+          "offset": 28.82,
+          "transpose": 0,
+          "selection": {
+            "referenceAttacks": 15,
+            "matched": 11,
+            "coverage": 0.7333333333333333,
+            "matchedOnsetMae": 0.011790675256193272
+          },
+          "check": {
+            "referenceAttacks": 49,
+            "matched": 27,
+            "coverage": 0.5510204081632653,
+            "matchedOnsetMae": 0.016001777027545242
+          }
+        },
+        "alternatives": [
+          {
+            "bpm": 68.55146550782214,
+            "offset": 28.8,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 11,
+              "coverage": 0.7333333333333333,
+              "matchedOnsetMae": 0.01676305089845087
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 28.84,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 11,
+              "coverage": 0.7333333333333333,
+              "matchedOnsetMae": 0.024266054142970006
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 32.78,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 10,
+              "coverage": 0.6666666666666666,
+              "matchedOnsetMae": 0.029254649501330478
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 28.78,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 10,
+              "coverage": 0.6666666666666666,
+              "matchedOnsetMae": 0.03058875015251843
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 29.26,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 15,
+              "matched": 9,
+              "coverage": 0.6,
+              "matchedOnsetMae": 0.018363410710974963
+            }
+          }
+        ],
+        "diagnostics": {
+          "checkAt100ms": {
+            "referenceAttacks": 49,
+            "matched": 35,
+            "coverage": 0.7142857142857143,
+            "matchedOnsetMae": 0.028123950425131737
+          },
+          "checkAt200ms": {
+            "referenceAttacks": 49,
+            "matched": 41,
+            "coverage": 0.8367346938775511,
+            "matchedOnsetMae": 0.046911565781580164
+          },
+          "checkPitchClassAt100ms": {
+            "referenceAttacks": 49,
+            "matched": 37,
+            "coverage": 0.7551020408163265,
+            "matchedOnsetMae": 0.026239147659061636
+          },
+          "checkOnsetsOnlyAt50ms": {
+            "referenceAttacks": 49,
+            "matched": 49,
+            "coverage": 1,
+            "matchedOnsetMae": 0.009463507581466241
+          },
+          "checkFourBeatWindows": [
+            {
+              "from": 8,
+              "to": 12,
+              "referenceAttacks": 6,
+              "matched": 2,
+              "coverage": 0.3333333333333333,
+              "matchedOnsetMae": 0.009192160847945274
+            },
+            {
+              "from": 12,
+              "to": 16,
+              "referenceAttacks": 9,
+              "matched": 4,
+              "coverage": 0.4444444444444444,
+              "matchedOnsetMae": 0.009284211147573274
+            },
+            {
+              "from": 16,
+              "to": 20,
+              "referenceAttacks": 8,
+              "matched": 5,
+              "coverage": 0.625,
+              "matchedOnsetMae": 0.00830655147633479
+            },
+            {
+              "from": 20,
+              "to": 24,
+              "referenceAttacks": 8,
+              "matched": 7,
+              "coverage": 0.875,
+              "matchedOnsetMae": 0.011944619028715766
+            },
+            {
+              "from": 24,
+              "to": 28,
+              "referenceAttacks": 9,
+              "matched": 5,
+              "coverage": 0.5555555555555556,
+              "matchedOnsetMae": 0.026417799339400007
+            },
+            {
+              "from": 28,
+              "to": 32,
+              "referenceAttacks": 9,
+              "matched": 4,
+              "coverage": 0.4444444444444444,
+              "matchedOnsetMae": 0.029823181544463395
+            }
+          ]
+        },
+        "limitations": [
+          "Selection uses detector output and may fit detector errors.",
+          "Check attacks were excluded from search ranking; they are not an independent song or human truth.",
+          "Coverage of a sparse arranger melody is not precision, recall or transcription accuracy for a commercial mix."
+        ]
+      }
+    },
+    {
+      "id": "chorus-window",
+      "freeTempo": {
+        "version": 2,
+        "task": "Detector-based disjoint-phrase alignment diagnostic, not recording ground truth",
+        "source": {
+          "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+          "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+          "page": [2, 3],
+          "bars": [25, 32],
+          "arranger": "Steven Law",
+          "license": "Copyrighted score: private local evaluation only",
+          "annotation": "Visual rhythm/tie annotation; fret and muted-string glyphs extracted independently from PDF text geometry. Voice roles are provisional.",
+          "review": "All string/fret/X glyphs checked; second visual staff/TAB rhythm review corrected bar 32 supporting voice role. Independent human rhythm review pending.",
+          "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth",
+          "sectionLabel": "Chorus-like texture only; formal section and recording alignment unconfirmed"
+        },
+        "referenceSha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4",
+        "recordingCacheSha256": "483e5aa16db3eb1f8dbc79857bda1cfec01d7945292edb940ff38a8d2a373af8",
+        "recordingFileSha256": "69057d49ba210910427a5bc8c433e0cbf4fc62030f9dffb983819de4bc6ecadf",
+        "searchConfigSha256": "3e73040b9fdaaaadb4aca0f2c882c199754660c5429a906a47f726bceb91e9ae",
+        "workbenchProposal": {
+          "bpm": 163,
+          "beatOffset": 0,
+          "timing": "unconfirmed"
+        },
+        "search": {
+          "bpm": [60, 80, 0.25],
+          "offsetSeconds": [82, 90, 0.02],
+          "transpose": [0, 12, -12],
+          "selectionBeats": [0, 8],
+          "checkBeats": [8, 32],
+          "onsetTolerance": 0.05,
+          "recordingBounds": [82, 122]
+        },
+        "status": "unconfirmed",
+        "evaluated": 97443,
+        "selected": {
+          "bpm": 70,
+          "offset": 84.96,
+          "transpose": 0,
+          "selection": {
+            "referenceAttacks": 14,
+            "matched": 10,
+            "coverage": 0.7142857142857143,
+            "matchedOnsetMae": 0.030545306122451165
+          },
+          "check": {
+            "referenceAttacks": 37,
+            "matched": 10,
+            "coverage": 0.2702702702702703,
+            "matchedOnsetMae": 0.024742585034010743
+          }
+        },
+        "alternatives": [
+          {
+            "bpm": 69.75,
+            "offset": 84.94,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 10,
+              "coverage": 0.7142857142857143,
+              "matchedOnsetMae": 0.031799218784289
+            }
+          },
+          {
+            "bpm": 69.5,
+            "offset": 84.94,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 10,
+              "coverage": 0.7142857142857143,
+              "matchedOnsetMae": 0.03312724971043366
+            }
+          },
+          {
+            "bpm": 70.75,
+            "offset": 85.04,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 10,
+              "coverage": 0.7142857142857143,
+              "matchedOnsetMae": 0.03484731633053713
+            }
+          },
+          {
+            "bpm": 68.5,
+            "offset": 84.86,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 9,
+              "coverage": 0.6428571428571429,
+              "matchedOnsetMae": 0.010041931906583399
+            }
+          },
+          {
+            "bpm": 68.25,
+            "offset": 84.84,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 9,
+              "coverage": 0.6428571428571429,
+              "matchedOnsetMae": 0.01173329844758718
+            }
+          }
+        ],
+        "diagnostics": {
+          "checkAt100ms": {
+            "referenceAttacks": 37,
+            "matched": 12,
+            "coverage": 0.32432432432432434,
+            "matchedOnsetMae": 0.034252154195009155
+          },
+          "checkAt200ms": {
+            "referenceAttacks": 37,
+            "matched": 19,
+            "coverage": 0.5135135135135135,
+            "matchedOnsetMae": 0.08086332497911473
+          },
+          "checkPitchClassAt100ms": {
+            "referenceAttacks": 37,
+            "matched": 19,
+            "coverage": 0.5135135135135135,
+            "matchedOnsetMae": 0.0416345864661631
+          },
+          "checkOnsetsOnlyAt50ms": {
+            "referenceAttacks": 37,
+            "matched": 29,
+            "coverage": 0.7837837837837838,
+            "matchedOnsetMae": 0.019392837594808077
+          },
+          "checkFourBeatWindows": [
+            {
+              "from": 8,
+              "to": 12,
+              "referenceAttacks": 6,
+              "matched": 2,
+              "coverage": 0.3333333333333333,
+              "matchedOnsetMae": 0.03169365079364894
+            },
+            {
+              "from": 12,
+              "to": 16,
+              "referenceAttacks": 4,
+              "matched": 0,
+              "coverage": 0,
+              "matchedOnsetMae": null
+            },
+            {
+              "from": 16,
+              "to": 20,
+              "referenceAttacks": 7,
+              "matched": 3,
+              "coverage": 0.42857142857142855,
+              "matchedOnsetMae": 0.021247467876032527
+            },
+            {
+              "from": 20,
+              "to": 24,
+              "referenceAttacks": 5,
+              "matched": 1,
+              "coverage": 0.2,
+              "matchedOnsetMae": 0.013374149659853174
+            },
+            {
+              "from": 24,
+              "to": 28,
+              "referenceAttacks": 8,
+              "matched": 3,
+              "coverage": 0.375,
+              "matchedOnsetMae": 0.034345729402872394
+            },
+            {
+              "from": 28,
+              "to": 32,
+              "referenceAttacks": 7,
+              "matched": 1,
+              "coverage": 0.14285714285714285,
+              "matchedOnsetMae": 0.003884807256241629
+            }
+          ]
+        },
+        "limitations": [
+          "Selection uses detector output and may fit detector errors.",
+          "Check attacks were excluded from search ranking; they are not an independent song or human truth.",
+          "Coverage of a sparse arranger melody is not precision, recall or transcription accuracy for a commercial mix."
+        ]
+      },
+      "sharedWaveformTempo": {
+        "version": 2,
+        "task": "Detector-based disjoint-phrase alignment diagnostic, not recording ground truth",
+        "source": {
+          "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+          "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+          "page": [2, 3],
+          "bars": [25, 32],
+          "arranger": "Steven Law",
+          "license": "Copyrighted score: private local evaluation only",
+          "annotation": "Visual rhythm/tie annotation; fret and muted-string glyphs extracted independently from PDF text geometry. Voice roles are provisional.",
+          "review": "All string/fret/X glyphs checked; second visual staff/TAB rhythm review corrected bar 32 supporting voice role. Independent human rhythm review pending.",
+          "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth",
+          "sectionLabel": "Chorus-like texture only; formal section and recording alignment unconfirmed"
+        },
+        "referenceSha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4",
+        "recordingCacheSha256": "483e5aa16db3eb1f8dbc79857bda1cfec01d7945292edb940ff38a8d2a373af8",
+        "recordingFileSha256": "69057d49ba210910427a5bc8c433e0cbf4fc62030f9dffb983819de4bc6ecadf",
+        "searchConfigSha256": "2fe0e1bc12c8ee3c1140a8721e5b5ec2e75f55119341a47137089a1e8c91b560",
+        "workbenchProposal": {
+          "bpm": 163,
+          "beatOffset": 0,
+          "timing": "unconfirmed"
+        },
+        "search": {
+          "bpm": [68.55146550782214, 68.55146550782214, 1],
+          "offsetSeconds": [82, 90, 0.02],
+          "transpose": [0, 12, -12],
+          "selectionBeats": [0, 8],
+          "checkBeats": [8, 32],
+          "onsetTolerance": 0.05,
+          "recordingBounds": [82, 122]
+        },
+        "status": "unconfirmed",
+        "evaluated": 1203,
+        "selected": {
+          "bpm": 68.55146550782214,
+          "offset": 84.86,
+          "transpose": 0,
+          "selection": {
+            "referenceAttacks": 14,
+            "matched": 9,
+            "coverage": 0.6428571428571429,
+            "matchedOnsetMae": 0.010246891132890963
+          },
+          "check": {
+            "referenceAttacks": 37,
+            "matched": 15,
+            "coverage": 0.40540540540540543,
+            "matchedOnsetMae": 0.020542756326939107
+          }
+        },
+        "alternatives": [
+          {
+            "bpm": 68.55146550782214,
+            "offset": 84.88,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 9,
+              "coverage": 0.6428571428571429,
+              "matchedOnsetMae": 0.021043194511559844
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 84.84,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 9,
+              "coverage": 0.6428571428571429,
+              "matchedOnsetMae": 0.02203234142958542
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 84.9,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 9,
+              "coverage": 0.6428571428571429,
+              "matchedOnsetMae": 0.03565487690887418
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 84.82,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 8,
+              "coverage": 0.5714285714285714,
+              "matchedOnsetMae": 0.03684015734573087
+            }
+          },
+          {
+            "bpm": 68.55146550782214,
+            "offset": 85.04,
+            "transpose": 0,
+            "selection": {
+              "referenceAttacks": 14,
+              "matched": 7,
+              "coverage": 0.5,
+              "matchedOnsetMae": 0.03242038915488114
+            }
+          }
+        ],
+        "diagnostics": {
+          "checkAt100ms": {
+            "referenceAttacks": 37,
+            "matched": 19,
+            "coverage": 0.5135135135135135,
+            "matchedOnsetMae": 0.030117884875835443
+          },
+          "checkAt200ms": {
+            "referenceAttacks": 37,
+            "matched": 29,
+            "coverage": 0.7837837837837838,
+            "matchedOnsetMae": 0.06670977559235192
+          },
+          "checkPitchClassAt100ms": {
+            "referenceAttacks": 37,
+            "matched": 25,
+            "coverage": 0.6756756756756757,
+            "matchedOnsetMae": 0.022181912891713864
+          },
+          "checkOnsetsOnlyAt50ms": {
+            "referenceAttacks": 37,
+            "matched": 35,
+            "coverage": 0.9459459459459459,
+            "matchedOnsetMae": 0.01222926341918448
+          },
+          "checkFourBeatWindows": [
+            {
+              "from": 8,
+              "to": 12,
+              "referenceAttacks": 6,
+              "matched": 3,
+              "coverage": 0.5,
+              "matchedOnsetMae": 0.019141261597539483
+            },
+            {
+              "from": 12,
+              "to": 16,
+              "referenceAttacks": 4,
+              "matched": 2,
+              "coverage": 0.5,
+              "matchedOnsetMae": 0.00822280513845186
+            },
+            {
+              "from": 16,
+              "to": 20,
+              "referenceAttacks": 7,
+              "matched": 4,
+              "coverage": 0.5714285714285714,
+              "matchedOnsetMae": 0.016354104360324584
+            },
+            {
+              "from": 20,
+              "to": 24,
+              "referenceAttacks": 5,
+              "matched": 2,
+              "coverage": 0.4,
+              "matchedOnsetMae": 0.02455145929409497
+            },
+            {
+              "from": 24,
+              "to": 28,
+              "referenceAttacks": 8,
+              "matched": 1,
+              "coverage": 0.125,
+              "matchedOnsetMae": 0.046176400166615394
+            },
+            {
+              "from": 28,
+              "to": 32,
+              "referenceAttacks": 7,
+              "matched": 3,
+              "coverage": 0.42857142857142855,
+              "matchedOnsetMae": 0.024525404546153595
+            }
+          ]
+        },
+        "limitations": [
+          "Selection uses detector output and may fit detector errors.",
+          "Check attacks were excluded from search ranking; they are not an independent song or human truth.",
+          "Coverage of a sparse arranger melody is not precision, recall or transcription accuracy for a commercial mix."
+        ]
+      }
+    }
+  ]
+}

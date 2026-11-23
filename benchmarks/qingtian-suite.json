@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "qingtian-first8",
+      "split": "development",
+      "input": "../artifacts/reference-corpus/qingtian/first8.json",
+      "gates": {
+        "minPitchedF1": 1,
+        "maxHardErrors": 0
+      },
+      "sha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d"
+    },
+    {
+      "id": "qingtian-verse8",
+      "split": "development",
+      "input": "../artifacts/reference-corpus/qingtian/verse8.json",
+      "gates": {
+        "minPitchedF1": 1,
+        "maxDurationMae": 1e-6,
+        "minPositionAgreement": 1,
+        "minArticulationAgreement": 1,
+        "maxHardErrors": 0,
+        "maxDropped": 0
+      },
+      "sha256": "1c98d7e5d2b0a95b435f18588aa88f73dcf49f270895a9e5a03b961b6953a59f"
+    },
+    {
+      "id": "qingtian-chorus8",
+      "split": "development",
+      "input": "../artifacts/reference-corpus/qingtian/chorus8.json",
+      "gates": {
+        "minPitchedF1": 1,
+        "minPercussionF1": 1,
+        "maxDurationMae": 1e-6,
+        "minPositionAgreement": 1,
+        "minArticulationAgreement": 1,
+        "maxHardErrors": 0,
+        "maxDropped": 0
+      },
+      "sha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4"
+    }
+  ]
+}

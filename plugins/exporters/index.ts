@@ -1,4 +1,5 @@
 import type { MusicPlugin, MusicProject } from "../../packages/contracts";
+import { musicXML } from "./musicxml";
 export function tablature(p: MusicProject): string {
   const a = p.arrangement;
   if (!a) throw new Error("请先生成编配");
@@ -21,10 +22,9 @@ export function tablature(p: MusicProject): string {
             Math.round(n.start / step) < i &&
             n.start + n.duration > i * step,
         );
-        rows[s - 1] += (note ? String(note.fret) : sustain ? "~" : "-").padEnd(
-          3,
-          "-",
-        );
+        rows[s - 1] += (
+          note ? (note.dead ? "x" : String(note.fret)) : sustain ? "~" : "-"
+        ).padEnd(3, "-");
       }
     lines.push(rows.join("\n"));
   }
@@ -50,21 +50,18 @@ export function midi(p: MusicProject): Uint8Array {
   for (let s = 0; s < 6; s++)
     events.push({ tick: 0, order: -1, data: [192 + s, 24] });
   for (const n of p.arrangement.notes) {
-    const ch = n.string - 1;
+    const ch = n.dead ? 9 : n.string - 1,
+      pitch = n.dead ? 37 : n.pitch.midi;
     events.push(
       {
         tick: ticks(n.start),
         order: 1,
-        data: [
-          144 + ch,
-          n.pitch.midi,
-          Math.max(1, Math.round(n.velocity * 127)),
-        ],
+        data: [144 + ch, pitch, Math.max(1, Math.round(n.velocity * 127))],
       },
       {
         tick: Math.max(ticks(n.start) + 1, ticks(n.start + n.duration)),
         order: 0,
-        data: [128 + ch, n.pitch.midi, 0],
+        data: [128 + ch, pitch, 0],
       },
     );
   }
@@ -104,6 +101,12 @@ export function midi(p: MusicProject): Uint8Array {
   ]);
 }
 export function exportFile(project: MusicProject, format: string) {
+  if (format === "musicxml")
+    return {
+      data: musicXML(project),
+      mime: "application/vnd.recordare.musicxml+xml",
+      extension: "musicxml",
+    };
   if (format === "txt")
     return {
       data: tablature(project),

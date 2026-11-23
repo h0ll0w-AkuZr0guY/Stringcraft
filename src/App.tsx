@@ -16,13 +16,13 @@ import {
 } from "lucide-react";
 import { validateProject } from "../packages/contracts";
 
-import { del } from "idb-keyval";
 import { listProjects, removeProject } from "../packages/storage";
 import PluginCenter from "./components/PluginCenter";
 
 import APISettingsDialog from "./components/APISettingsDialog";
 import ScorePanel from "./components/ScorePanel";
 import SourceControls from "./components/SourceControls";
+import NoteEditor from "./components/NoteEditor";
 import { errorMessage, useWorkbench } from "./hooks/useWorkbench";
 import { WorkbenchContext } from "./hooks/WorkbenchContext";
 export default function App() {
@@ -57,7 +57,14 @@ function WorkbenchView({
     settings,
   } = controller;
   return (
-    <div className="app-shell">
+    <div
+      className={
+        "app-shell " +
+        (controller.mode === "editor" && page === "workbench"
+          ? "note-mode"
+          : "")
+      }
+    >
       <aside className="sidebar">
         <a
           className="brand"
@@ -100,7 +107,10 @@ function WorkbenchView({
             onClick={() => section("plugins")}
           >
             <Puzzle size={19} />
-            插件中心<span className="nav-badge">7</span>
+            插件中心
+            {controller.pluginCount !== null && (
+              <span className="nav-badge">{controller.pluginCount}</span>
+            )}
           </button>
           <a href="docs/index.html" target="_blank" rel="noreferrer">
             <BookOpen size={19} />
@@ -131,7 +141,7 @@ function WorkbenchView({
           >
             GitHub 开源项目 <ArrowUpRight size={14} />
           </a>
-          <span className="version">v0.1.0-preview · 为每一次练习而作</span>
+          <span className="version">v0.2.0-preview.1 · 音符编辑器</span>
         </div>
       </aside>
       <div className="main-shell">
@@ -228,8 +238,11 @@ function WorkbenchView({
                         aria-label={`删除 ${p.name}`}
                         onClick={async () => {
                           await removeProject(p.id);
-                          await del("audio:" + p.id);
+                          controller.clearProjectAudio(p.id);
                           setProjects(await listProjects());
+                          controller.notify(
+                            "作品及其关联录音已从此浏览器删除。",
+                          );
                         }}
                       >
                         <Trash2 size={17} />
@@ -246,31 +259,61 @@ function WorkbenchView({
             </>
           ) : (
             <>
-              <section className="workbench-heading">
-                <div>
-                  <p className="eyebrow">FROM LISTENING TO PLAYING</p>
-                  <h1>
-                    让喜欢的旋律，<em>在指尖响起。</em>
-                  </h1>
-                  <p>从一首喜欢的歌开始，找到属于自己的弹奏方式。</p>
-                </div>
+              <div className="workspace-switch">
                 <button
-                  className="button secondary demo-button"
-                  disabled={!ready || !!busy}
-                  onClick={useDemo}
+                  className={controller.mode === "editor" ? "active" : ""}
+                  onClick={() => {
+                    controller.stop();
+                    controller.setMode("editor");
+                  }}
                 >
-                  <Headphones size={17} />
-                  体验原创示例
+                  音符编辑器
                 </button>
-              </section>
-              <div className="workspace">
-                <SourceControls />
-                <ScorePanel />
+                <button
+                  className={controller.mode === "guitar" ? "active" : ""}
+                  disabled={!!busy}
+                  onClick={() => {
+                    if (controller.mode === "editor")
+                      void controller.handoffToGuitar();
+                    else controller.setMode("guitar");
+                  }}
+                >
+                  吉他编配
+                </button>
               </div>
-              <footer className="page-footer">
-                <span>弦作，为每一次练习而作。</span>
-                <span>复杂混音可能错音或漏音，编配请结合试听与试弹核对。</span>
-              </footer>
+              {controller.mode === "editor" ? (
+                <NoteEditor />
+              ) : (
+                <>
+                  <section className="workbench-heading">
+                    <div>
+                      <p className="eyebrow">FROM LISTENING TO PLAYING</p>
+                      <h1>
+                        让喜欢的旋律，<em>在指尖响起。</em>
+                      </h1>
+                      <p>从一首喜欢的歌开始，找到属于自己的弹奏方式。</p>
+                    </div>
+                    <button
+                      className="button secondary demo-button"
+                      disabled={!ready || !!busy}
+                      onClick={useDemo}
+                    >
+                      <Headphones size={17} />
+                      体验原创示例
+                    </button>
+                  </section>
+                  <div className="workspace">
+                    <SourceControls />
+                    <ScorePanel />
+                  </div>
+                  <footer className="page-footer">
+                    <span>弦作，为每一次练习而作。</span>
+                    <span>
+                      复杂混音可能错音或漏音，编配请结合试听与试弹核对。
+                    </span>
+                  </footer>
+                </>
+              )}
             </>
           )}
         </main>
@@ -284,7 +327,8 @@ function WorkbenchView({
           const f = e.target.files?.[0];
           if (!f) return;
           try {
-            if (f.size > 10 * 1024 * 1024) throw new Error("项目文件过大");
+            if (f.size > 50 * 1024 * 1024)
+              throw new Error("项目文件上限为 50 MB");
             const p = JSON.parse(await f.text());
             validateProject(p);
             await openProject(p);

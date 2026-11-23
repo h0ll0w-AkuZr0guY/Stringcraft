@@ -16,3 +16,5 @@
 FFmpeg 并非 Apache-2.0 组件，许可证取决于实际构建。本地环境构建使用 imageio-ffmpeg 的发行二进制，其元数据、许可证和二进制来源随包保留；构建记录固定其版本。不要将本机未知来源 FFmpeg 随意复制进正式发布。
 
 原创合成测试曲由 scripts/generate-fixtures.py 生成，随项目许可提供。仓库不含用户私人歌曲与谱件。贡献者新增媒体需说明来源和再分发授权。接口兼容不代表第三方许可自动兼容。
+
+交互设计研究参考 [hear-score](https://github.com/LiRenTech/hear-score) 与 [Basic Pitch 论文](https://arxiv.org/html/2203.09893v2)。此次核查未找到 hear-score 项目本身的 LICENSE，未复制其源码或资源；卷帘、编辑与导出独立实现。模型直接使用官方 @spotify/basic-pitch 1.0.1 的 Apache-2.0 发行资源，构建生成逐资源 SHA-256 与组合摘要。

@@ -1,3 +1,23 @@
+import { alphaScore } from "../../plugins/guitar/alpha-score";
+import { tabMeasures } from "../../plugins/guitar/notation";
+import { chordName } from "../../plugins/guitar/voicings";
+import { secondsToBeat, beatToSeconds } from "../../packages/contracts/score";
+import { projectScore } from "../../packages/music/score";
+let musicFont: Promise<void> | undefined;
+function prepareMusicFont(directory: URL) {
+  return (musicFont ??= new FontFace(
+    "alphaTab",
+    `url("${new URL("Bravura.woff2", directory).href}")`,
+  )
+    .load()
+    .then((face) => {
+      document.fonts.add(face);
+    })
+    .catch((error) => {
+      musicFont = undefined;
+      throw error;
+    }));
+}
 import { useEffect, useRef, useState } from "react";
 import type { GuitarNote, MusicProject } from "../../packages/contracts";
 import { noteName } from "../../packages/music/demo";
@@ -12,128 +32,328 @@ export function Tablature({
   onSelect: (n: GuitarNote) => void;
   time: number;
 }) {
-  const notes = project.arrangement?.notes ?? [],
-    seconds = 8,
-    width = 900,
-    left = 48,
-    right = 20,
-    barWidth = width - left - right;
-  const rows = Math.max(1, Math.ceil(project.duration / seconds));
+  const measures = tabMeasures(project),
+    score = project.arrangement?.score ?? projectScore(project);
+  const [fingering, setFingering] = useState(false);
   return (
     <div className="tab-pages" data-testid="tablature">
-      {Array.from({ length: rows }, (_, row) => {
-        const start = row * seconds,
-          group = notes.filter(
-            (n) => n.start >= start && n.start < start + seconds,
-          );
+      <label className="fingering-toggle">
+        <input
+          type="checkbox"
+          checked={fingering}
+          onChange={(e) => setFingering(e.target.checked)}
+        />{" "}
+        显示左右手指法（1–4 / p i m a）
+      </label>
+      {Array.from({ length: Math.ceil(measures.length / 2) }, (_, row) => {
+        const bars = measures.slice(row * 2, row * 2 + 2),
+          width = Math.max(750, bars.reduce((sum, b) => sum + b.width, 0) + 30);
+        let offset = 30;
         return (
           <svg
             key={row}
-            viewBox={`0 0 ${width} 210`}
-            role="img"
-            aria-label={`${start} 至 ${Math.min(project.duration, start + seconds)} 秒六线谱`}
+            viewBox={`0 0 ${width} 250`}
+            style={{ minWidth: width }}
+            role="group"
+            aria-label={`小节 ${row * 2 + 1} 至 ${row * 2 + bars.length} 六线谱`}
           >
-            <text x="0" y="22" className="measure-label">
-              {String(row + 1).padStart(2, "0")}
-            </text>
-            <text x={left} y="22" className="time-label">
-              {start.toFixed(0)}s
-            </text>
-            {Array.from({ length: 6 }, (_, s) => (
-              <g key={s}>
-                <text x="14" y={64 + s * 22} className="string-label">
-                  {["e", "B", "G", "D", "A", "E"][s]}
-                </text>
-                <line
-                  x1={left}
-                  x2={width - right}
-                  y1={60 + s * 22}
-                  y2={60 + s * 22}
-                  stroke="#d0d7d0"
-                />
-              </g>
-            ))}
-            {Array.from({ length: 9 }, (_, i) => (
-              <line
-                key={i}
-                x1={left + (i / 8) * barWidth}
-                x2={left + (i / 8) * barWidth}
-                y1="46"
-                y2="182"
-                stroke={i === 0 || i === 8 ? "#9aaa9b" : "#e9ece7"}
-                strokeDasharray={i % 2 ? "2 5" : undefined}
-              />
-            ))}
-            {group.map((n) => {
-              const x = left + ((n.start - start) / seconds) * barWidth,
-                y = 60 + (n.string - 1) * 22;
+            {bars.map((bar) => {
+              const left = offset;
+              offset += bar.width;
+              const beatX = (beat: number) => {
+                const after = bar.columns.find((c) => c.beat >= beat),
+                  before = bar.columns.filter((c) => c.beat < beat).at(-1);
+                const a = before ?? { beat: bar.beat, x: 40 },
+                  b = after ?? { beat: bar.endBeat, x: bar.width - 15 };
+                return (
+                  a.x +
+                  (b.x - a.x) *
+                    Math.max(
+                      0,
+                      Math.min(
+                        1,
+                        (beat - a.beat) / Math.max(0.001, b.beat - a.beat),
+                      ),
+                    )
+                );
+              };
               return (
-                <g
-                  key={n.id}
-                  className="tab-note"
-                  onClick={() => onSelect(n)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") onSelect(n);
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${noteName(n.pitch.midi)} ${n.string}弦${n.fret}品 ${n.start.toFixed(2)}秒`}
-                >
-                  <line
-                    x1={x + 11}
-                    x2={Math.min(
-                      width - right,
-                      x + (n.duration / seconds) * barWidth,
-                    )}
-                    y1={y + 6}
-                    y2={y + 6}
-                    stroke={n.role === "melody" ? "#7b9c89" : "#c5b79a"}
-                    strokeWidth="3"
-                    opacity=".55"
-                  />
-                  <rect
-                    x={x - 10}
-                    y={y - 12}
-                    width="22"
-                    height="24"
-                    rx="5"
-                    fill={
-                      selected === n.id
-                        ? "#d8ad6b"
-                        : n.locked
-                          ? "#dbe7e0"
-                          : "#fafbf8"
-                    }
-                  />
-                  <text
-                    x={x + 1}
-                    y={y + 5}
-                    textAnchor="middle"
-                    className={n.role === "melody" ? "fret melody" : "fret"}
-                  >
-                    {n.fret}
+                <g key={bar.index} transform={`translate(${left},0)`}>
+                  <text x={5} y={20} className="measure-label">
+                    {bar.index + 1}
                   </text>
+                  <text x={50} y={20} className="time-label">
+                    {bar.start.toFixed(1)}s
+                  </text>
+                  {bar.columns
+                    .filter((c) => c.chord)
+                    .map((column) => {
+                      const chord = column.chord!;
+                      return (
+                        <text
+                          key={`symbol-${chord.id}`}
+                          x={column.x}
+                          y={43}
+                          className="fret chord-symbol"
+                        >
+                          {chordName({
+                            root:
+                              (((chord.root +
+                                (project.arrangement?.transpose ?? 0) -
+                                (project.arrangement?.capo ?? 0)) %
+                                12) +
+                                12) %
+                              12,
+                            quality: chord.quality,
+                          })}
+                          {chord.origin === "estimated" ? " ?" : ""}
+                        </text>
+                      );
+                    })}
+                  {Array.from({ length: 6 }, (_, s) => (
+                    <g key={s}>
+                      <text x={5} y={78 + s * 23} className="string-label">
+                        {["e", "B", "G", "D", "A", "E"][s]}
+                      </text>
+                      <line
+                        x1={35}
+                        x2={bar.width - 5}
+                        y1={74 + s * 23}
+                        y2={74 + s * 23}
+                        stroke="#d0d7d0"
+                      />
+                    </g>
+                  ))}
+                  <line x1={35} x2={35} y1={60} y2={201} stroke="#9aaa9b" />
+                  <line
+                    x1={bar.width - 5}
+                    x2={bar.width - 5}
+                    y1={60}
+                    y2={201}
+                    stroke="#9aaa9b"
+                  />
+                  {(project.arrangement?.notes ?? [])
+                    .filter(
+                      (n) =>
+                        n.start < bar.start - 0.001 &&
+                        n.start + n.duration > bar.start,
+                    )
+                    .map((n) => (
+                      <g key={`held-${n.id}`}>
+                        <text
+                          x={40}
+                          y={79 + (n.string - 1) * 23}
+                          className="time-label"
+                        >
+                          ~
+                        </text>
+                        <line
+                          x1={52}
+                          x2={
+                            beatX(
+                              Math.min(
+                                bar.endBeat,
+                                secondsToBeat(score, n.start + n.duration),
+                              ),
+                            ) - 8
+                          }
+                          y1={81 + (n.string - 1) * 23}
+                          y2={81 + (n.string - 1) * 23}
+                          stroke={n.role === "melody" ? "#7b9c89" : "#c5b79a"}
+                          strokeWidth={2}
+                        />
+                      </g>
+                    ))}
+                  {bar.columns.map((column) => (
+                    <g key={column.key}>
+                      {column.notes[0]?.stroke && (
+                        <text
+                          x={column.x}
+                          y={57}
+                          textAnchor="middle"
+                          className="time-label"
+                        >
+                          {column.notes[0]?.stroke === "down" ? "↓" : "↑"}
+                        </text>
+                      )}
+                      {column.notes.map((n) => {
+                        const y = 74 + (n.string - 1) * 23;
+                        return (
+                          <g key={n.id}>
+                            <line
+                              x1={column.x + 13}
+                              x2={Math.max(
+                                column.x + 13,
+                                beatX(
+                                  Math.min(
+                                    bar.endBeat,
+                                    secondsToBeat(score, n.start + n.duration),
+                                  ),
+                                ) - 9,
+                              )}
+                              y1={y + 7}
+                              y2={y + 7}
+                              stroke={
+                                n.role === "melody" ? "#7b9c89" : "#c5b79a"
+                              }
+                              strokeWidth={2}
+                            />
+                            <g
+                              className="tab-note"
+                              onClick={() => onSelect(n)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  onSelect(n);
+                                }
+                              }}
+                              tabIndex={0}
+                              role="button"
+                              aria-label={`${n.dead ? "闷音" : noteName(n.pitch.midi)} ${n.string}弦${n.dead ? "" : `${n.fret}品`} ${n.start.toFixed(2)}秒`}
+                            >
+                              <title>{`${n.start.toFixed(2)}s · ${n.duration.toFixed(2)}s${n.leftFinger ? ` · 左手 ${n.leftFinger}` : ""}${n.rightFinger ? ` · 右手 ${n.rightFinger}` : ""}${n.attack ? ` · ${n.attack}` : ""}`}</title>
+                              <rect
+                                x={column.x - 11}
+                                y={y - 11}
+                                width={24}
+                                height={23}
+                                rx={4}
+                                fill={
+                                  selected === n.id
+                                    ? "#d8ad6b"
+                                    : n.locked
+                                      ? "#dbe7e0"
+                                      : "#fafbf8"
+                                }
+                              />
+                              <text
+                                x={column.x + 1}
+                                y={y + 5}
+                                textAnchor="middle"
+                                className={
+                                  n.role === "melody" ? "fret melody" : "fret"
+                                }
+                              >
+                                {n.dead ? "×" : n.fret}
+                              </text>
+                              {!n.linkFrom &&
+                                (n.attack === "hammer" ||
+                                  n.attack === "pull" ||
+                                  n.attack === "slide") && (
+                                  <text
+                                    x={column.x - 15}
+                                    y={y - 8}
+                                    className="time-label"
+                                  >
+                                    {n.attack === "hammer"
+                                      ? "h"
+                                      : n.attack === "pull"
+                                        ? "p"
+                                        : "/"}
+                                  </text>
+                                )}
+                              {fingering && (
+                                <text
+                                  x={column.x + 13}
+                                  y={y - 6}
+                                  className="finger-label"
+                                >
+                                  {n.fret > 0 ? n.leftFinger : ""}
+                                  {n.rightFinger}
+                                </text>
+                              )}
+                            </g>
+                          </g>
+                        );
+                      })}
+                      <line
+                        x1={column.x}
+                        x2={column.x}
+                        y1={207}
+                        y2={222}
+                        stroke="#66846d"
+                      />
+                      <text
+                        x={column.x}
+                        y={238}
+                        textAnchor="middle"
+                        className="time-label"
+                      >
+                        {(column.beat - bar.beat + 1)
+                          .toFixed(2)
+                          .replace(/\.?0+$/, "")}
+                      </text>
+                    </g>
+                  ))}
+                  {time >= bar.start && time < bar.end && (
+                    <line
+                      x1={Math.max(
+                        40,
+                        bar.columns
+                          .filter((c) => beatToSeconds(score, c.beat) <= time)
+                          .at(-1)?.x ?? 40,
+                      )}
+                      x2={Math.max(
+                        40,
+                        bar.columns
+                          .filter((c) => beatToSeconds(score, c.beat) <= time)
+                          .at(-1)?.x ?? 40,
+                      )}
+                      y1={58}
+                      y2={224}
+                      stroke="#b47040"
+                      strokeWidth={2}
+                    />
+                  )}
+                  {(project.arrangement?.notes ?? [])
+                    .filter(
+                      (n) =>
+                        n.linkFrom &&
+                        ["hammer", "pull", "slide"].includes(n.attack ?? ""),
+                    )
+                    .map((n) => {
+                      const previous = project.arrangement!.notes.find(
+                        (p) => p.id === n.linkFrom,
+                      );
+                      if (!previous || previous.string !== n.string)
+                        return null;
+                      const a = secondsToBeat(score, previous.start),
+                        b = secondsToBeat(score, n.start);
+                      if (b < bar.beat || a >= bar.endBeat) return null;
+                      const x1 = a < bar.beat ? 40 : beatX(a) + 12,
+                        x2 = b >= bar.endBeat ? bar.width - 10 : beatX(b) - 12;
+                      if (x2 <= x1) return null;
+                      const y = 62 + (n.string - 1) * 23,
+                        label =
+                          n.attack === "hammer"
+                            ? "h"
+                            : n.attack === "pull"
+                              ? "p"
+                              : "/";
+                      return (
+                        <g key={`link-${n.id}`} className="legato-link">
+                          <path
+                            d={`M ${x1} ${y} Q ${(x1 + x2) / 2} ${y - 24} ${x2} ${y}`}
+                            fill="none"
+                            stroke="#527560"
+                            strokeWidth="1.3"
+                          />
+                          <text
+                            x={(x1 + x2) / 2}
+                            y={y - 15}
+                            textAnchor="middle"
+                            className="time-label"
+                          >
+                            {a < bar.beat ? "←" : ""}
+                            {label}
+                            {b >= bar.endBeat ? "→" : ""}
+                          </text>
+                        </g>
+                      );
+                    })}
                 </g>
               );
             })}
-            {time >= start && time < start + seconds && (
-              <line
-                x1={left + ((time - start) / seconds) * barWidth}
-                x2={left + ((time - start) / seconds) * barWidth}
-                y1="42"
-                y2="187"
-                stroke="#b47040"
-                strokeWidth="2"
-              />
-            )}
-            <text
-              x={width - right}
-              y="204"
-              textAnchor="end"
-              className="time-label"
-            >
-              {Math.min(project.duration, start + seconds).toFixed(1)}s
-            </text>
           </svg>
         );
       })}
@@ -142,13 +362,25 @@ export function Tablature({
 }
 export function RhythmScore({ project }: { project: MusicProject }) {
   const element = useRef<HTMLDivElement>(null),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [fingering, setFingering] = useState(false),
+    [rendered, setRendered] = useState(false);
+  const printScore = useRef<() => void>(undefined);
   useEffect(() => {
     let disposed = false,
       api: { destroy: () => void } | undefined;
     setError("");
+    setRendered(false);
     import("@coderline/alphatab")
-      .then((alpha) => {
+      .then(async (alpha) => {
+        if (disposed || !element.current) return;
+        // alphaTab 1.9 can wait indefinitely when its initial font availability
+        // probe runs before the browser has loaded Bravura. Load it explicitly.
+        const directory = new URL(
+          "font/",
+          new URL(import.meta.env.BASE_URL, location.href),
+        );
+        await prepareMusicFont(directory);
         if (disposed || !element.current) return;
         const a = new alpha.AlphaTabApi(element.current, {
           core: {
@@ -163,42 +395,47 @@ export function RhythmScore({ project }: { project: MusicProject }) {
           display: { scale: 0.85 },
         });
         api = a;
+        printScore.current = () =>
+          // alphaTab print() forces workers on unless explicitly overridden.
+          // Keep the same renderer mode: Vite dev prebundles have no worker URL.
+          a.print("180mm", {
+            core: { useWorkers: false },
+            display: { scale: 0.8, barsPerRow: 2 },
+          });
         a.error.on((e) => setError(String(e)));
-        const step = 60 / project.bpm / 4,
-          notes = project.arrangement?.notes ?? [];
-        const cells = Array.from(
-          { length: Math.ceil(project.duration / step) },
-          (_, i) => {
-            const sounding = notes.filter(
-              (n) =>
-                Math.round(n.start / step) <= i &&
-                Math.round((n.start + n.duration) / step) > i,
-            );
-            const tokens = sounding.map(
-              (n) =>
-                `${n.fret}.${n.string}${Math.round(n.start / step) < i ? "{t}" : ""}`,
-            );
-            return (
-              (i && i % 16 === 0 ? "| " : "") +
-              (tokens.length > 1 ? `(${tokens.join(" ")})` : (tokens[0] ?? "r"))
-            );
-          },
-        );
-        const title = project.name.replace(/["\\\r\n]/g, " ").slice(0, 100);
-        a.tex(
-          `\\title "${title}" \\tempo ${project.bpm} \\capo ${project.arrangement?.capo ?? 0} . :16 ${cells.join(" ")}`,
-        );
+        a.renderFinished.on(() => {
+          if (!disposed) setRendered(true);
+        });
+        a.renderScore(alphaScore(alpha, project, fingering));
       })
       .catch((e) => setError(String(e)));
     return () => {
       disposed = true;
+      printScore.current = undefined;
       api?.destroy();
     };
-  }, [project]);
+  }, [project, fingering]);
   return (
     <div className="rhythm-view">
+      <div className="rhythm-controls">
+        <label className="fingering-toggle">
+          <input
+            type="checkbox"
+            checked={fingering}
+            onChange={(e) => setFingering(e.target.checked)}
+          />{" "}
+          显示节奏谱指法
+        </label>
+        <button
+          className="text-button"
+          disabled={!rendered}
+          onClick={() => printScore.current?.()}
+        >
+          打印节奏谱 PDF
+        </button>
+      </div>
       <p className="muted">
-        节奏谱按十六分网格近似量化，试听保留原始起音与时长。
+        节奏谱按十六分网格近似量化，旋律、低音与和弦独立分声部；延音线保持发声，试听保留原始时间。
       </p>
       {error && (
         <p role="alert" className="inline-error">

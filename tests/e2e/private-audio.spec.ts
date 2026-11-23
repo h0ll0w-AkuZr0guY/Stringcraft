@@ -10,7 +10,7 @@ test("opt-in local-only real recording smoke test", async ({ page }) => {
     if (r.method() === "POST" && !r.url().startsWith("http://127.0.0.1:"))
       outsideUploads.push(new URL(r.url()).origin);
   });
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
@@ -38,12 +38,18 @@ test("opt-in local-only real recording smoke test", async ({ page }) => {
     melody: p.melody.length,
     arranged: p.arrangement.notes.length,
     externalUploads: outsideUploads.length,
+    timingCandidates: p.timingAnalysis?.candidates,
+    retainedBpm: p.bpm,
     quality: "Not annotated; no accuracy claim",
   };
   await mkdir("artifacts", { recursive: true });
   await writeFile(
     "artifacts/private-validation.json",
     JSON.stringify(stats, null, 2),
+  );
+  await writeFile(
+    "artifacts/private-recording-project.json",
+    JSON.stringify(p),
   );
   console.log(JSON.stringify(stats));
   expect(outsideUploads).toEqual([]);

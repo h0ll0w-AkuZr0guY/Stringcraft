@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Original regression phrase, Apache-2.0. Not a published song transcription. -->
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Guitar</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef><transpose><chromatic>0</chromatic><octave-change>-1</octave-change></transpose></attributes>
+    <direction><sound tempo="120"/></direction>
+    <note><pitch><step>E</step><octave>5</octave></pitch><duration>8</duration><voice>1</voice><notations><technical><string>1</string><fret>0</fret><hammer-on type="start" number="1"/></technical></notations></note>
+    <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><notations><technical><string>1</string><fret>3</fret><hammer-on type="stop" number="1"/><pull-off type="start" number="1"/></technical></notations></note>
+    <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><notations><technical><string>1</string><fret>0</fret><pull-off type="stop" number="1"/></technical></notations></note>
+    <backup><duration>16</duration></backup>
+    <note><pitch><step>E</step><octave>3</octave></pitch><duration>4</duration><voice>2</voice><notations><technical><string>6</string><fret>0</fret></technical></notations></note>
+    <note><unpitched><display-step>E</display-step><display-octave>3</display-octave></unpitched><duration>4</duration><voice>2</voice><notehead>x</notehead><notations><technical><string>6</string><fret>0</fret></technical></notations></note>
+    <note><pitch><step>E</step><octave>3</octave></pitch><duration>8</duration><voice>2</voice><notations><technical><string>6</string><fret>0</fret></technical></notations></note>
+  </measure></part>
+</score-partwise>

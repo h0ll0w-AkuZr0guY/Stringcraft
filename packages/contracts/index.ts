@@ -1,5 +1,24 @@
-/** Public SDK v1. Seconds are source time; notation is a separate projection. */
-export const SDK_VERSION = 1;
+/** SDK v2 plus the v1 workbench compatibility projection. Seconds remain source time. */
+export const SDK_VERSION = 2;
+import type {
+  NoteEditorState,
+  TranscriptionState,
+  TranscriptionChunk,
+  NoteViewPlugin,
+} from "./note-editor";
+import { validateNoteEditor } from "./note-editor";
+export * from "./note-editor";
+import {
+  validateScore,
+  type MusicalScore,
+  type ArrangementGoal,
+  type PerformancePlan,
+} from "./score";
+export * from "./score";
+import { validateTiming, type TimingAnalysis } from "./timing";
+export * from "./timing";
+import { validateAudioReference, type AudioReference } from "./audio-reference";
+export * from "./audio-reference";
 export type Difficulty = "easy" | "normal" | "hard" | "expert";
 export interface Pitch {
   midi: number;
@@ -20,6 +39,17 @@ export interface GuitarNote extends NoteEvent {
   string: number;
   fret: number;
   technique?: "h" | "p" | "pm";
+  leftFinger?: number;
+  rightFinger?: "p" | "i" | "m" | "a";
+  linkFrom?: string;
+  attack?: "pluck" | "hammer" | "pull" | "slide" | "strum" | "dead";
+  /** Legacy TAB projection: pitch describes the string position, not a sounded pitch. */
+  dead?: boolean;
+  /** Guitar percussion may have a notated beat value longer than its noise decay. */
+  notationDurationBeats?: number;
+  stroke?: "down" | "up";
+  strokeId?: string;
+  letRing?: boolean;
 }
 export interface InstrumentDefinition {
   id: string;
@@ -39,9 +69,25 @@ export interface Arrangement<N extends NoteEvent = GuitarNote> {
   notes: N[];
   dropped: { noteId: string; reason: string }[];
   warnings: string[];
+  goal?: ArrangementGoal;
+  score?: MusicalScore;
+  performance?: PerformancePlan<unknown>;
 }
 export interface MusicProject<N extends NoteEvent = GuitarNote> {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
+  score?: MusicalScore;
+  migratedFrom?: string;
+  refinement?: {
+    pluginId: string;
+    profile: string;
+    notes: NoteEvent[];
+    dropped: { noteId: string; reason: string }[];
+  };
+  timingAnalysis?: TimingAnalysis;
+  noteEditor?: NoteEditorState;
+  transcription?: TranscriptionState;
+  sourceAudioSha256?: string;
+  audioReference?: AudioReference;
   id: string;
   name: string;
   createdAt: string;
@@ -59,11 +105,16 @@ export interface MusicProject<N extends NoteEvent = GuitarNote> {
 export type Capability =
   | "transcriber"
   | "melody"
+  | "harmony"
+  | "timing"
+  | "refiner"
   | "instrument"
   | "renderer"
   | "exporter"
   | "advisor"
-  | "separator";
+  | "separator"
+  | "note-view"
+  | "note-renderer";
 export interface PluginManifest {
   id: string;
   name: string;
@@ -88,8 +139,28 @@ export interface ArrangeOptions {
   transpose: number;
   bpm: number;
   previous?: GuitarNote[];
+  goal?: ArrangementGoal;
+  score?: MusicalScore;
+  pattern?: "strum" | "arpeggio";
 }
 export interface MusicPlugin {
+  noteView?: NoteViewPlugin;
+  scheduleNotes?: (
+    ctx: AudioContext,
+    notes: NoteEvent[],
+    from: number,
+    to: number,
+    speed: number,
+  ) => { origin: number; stop: () => void };
+  renderNotes?: (notes: NoteEvent[], duration: number) => Promise<ArrayBuffer>;
+  exportNotes?: (notes: NoteEvent[], bpm: number) => Uint8Array;
+  analyzeTiming?: (
+    samples: Float32Array,
+    sampleRate: number,
+    noteProposalBpm?: number,
+  ) => TimingAnalysis;
+  analyzeHarmony?: (notes: NoteEvent[], score: MusicalScore) => MusicalScore;
+  tempoCandidates?: (notes: NoteEvent[]) => { bpm: number; score: number }[];
   instrument?: InstrumentDefinition;
   extractMelody?: (notes: NoteEvent[]) => NoteEvent[];
   arrange?: (notes: NoteEvent[], options: ArrangeOptions) => Arrangement;
@@ -102,6 +173,7 @@ export interface MusicPlugin {
     modelUrl: string,
     wasmUrl: string,
     progress: (value: number) => void,
+    chunk?: (chunk: TranscriptionChunk) => void,
   ) => Promise<NoteEvent[]>;
   scheduleAudio?: (
     ctx: AudioContext | OfflineAudioContext,
@@ -122,6 +194,12 @@ export interface MusicPlugin {
     summary: { notes: number; difficulty: string },
     signal?: AbortSignal,
   ) => Promise<{ capo: number; reason: string }>;
+}
+export interface NoteRefinerPlugin<Options> {
+  refineNotes(
+    notes: NoteEvent[],
+    options?: Options,
+  ): { notes: NoteEvent[]; dropped: { noteId: string; reason: string }[] };
 }
 export interface Job {
   id: string;
@@ -166,7 +244,7 @@ export function validateProject(value: unknown): asserts value is MusicProject {
   const p = value as MusicProject;
   if (
     !p ||
-    p.schemaVersion !== 1 ||
+    ![1, 2].includes(p.schemaVersion) ||
     typeof p.id !== "string" ||
     typeof p.name !== "string" ||
     !Number.isFinite(p.duration) ||
@@ -188,6 +266,58 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
   validateNotes(p.melody);
+  validateNoteEditor(p);
+  if (p.transcription) {
+    const t = p.transcription;
+    if (
+      typeof t.jobId !== "string" ||
+      !["running", "complete", "stopped", "error"].includes(t.status) ||
+      !Number.isFinite(t.processedSeconds) ||
+      t.processedSeconds < 0 ||
+      t.processedSeconds > p.duration + 0.01 ||
+      typeof t.pluginVersion !== "string" ||
+      typeof t.pluginSha256 !== "string" ||
+      (t.status === "complete" &&
+        Math.abs(t.processedSeconds - p.duration) > 0.01)
+    )
+      throw new Error("转录进度无效");
+  }
+  validateAudioReference(p);
+  if (p.timingAnalysis) {
+    validateTiming(p.timingAnalysis);
+    if (p.timingAnalysis.durationSeconds > p.duration + 0.01)
+      throw new Error("拍点分析超出项目时长");
+  }
+  if (p.refinement) {
+    validateNotes(p.refinement.notes);
+    const originals = new Map(p.notes.map((n) => [n.id, n])),
+      kept = new Set(p.refinement.notes.map((n) => n.id));
+    for (const note of p.refinement.notes) {
+      const original = originals.get(note.id);
+      if (
+        !original ||
+        note.start !== original.start ||
+        note.duration !== original.duration ||
+        note.pitch.midi !== original.pitch.midi ||
+        note.source !== original.source ||
+        note.score !== original.score ||
+        note.velocity !== original.velocity
+      )
+        throw new Error("清理结果不能更改或伪造原始候选");
+    }
+    if (
+      !Array.isArray(p.refinement.dropped) ||
+      p.refinement.dropped.some(
+        (d) =>
+          !originals.has(d.noteId) ||
+          kept.has(d.noteId) ||
+          typeof d.reason !== "string",
+      )
+    )
+      throw new Error("候选清理省略记录无效");
+  }
+  if (p.schemaVersion === 2 && !p.score) throw new Error("v2 项目缺少音乐结构");
+  if (p.score) validateScore(p.score);
   for (const n of [...p.notes, ...p.melody, ...(p.arrangement?.notes ?? [])]) {
     if (n.start + n.duration > p.duration + 0.01)
       throw new Error("音符超出项目时间范围");
@@ -206,7 +336,7 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     )
       throw new Error("编配参数无效");
     const tuning = [64, 59, 55, 50, 45, 40];
-    for (const n of p.arrangement.notes)
+    for (const n of p.arrangement.notes) {
       if (
         !Number.isInteger(n.string) ||
         n.string < 1 ||
@@ -217,5 +347,18 @@ export function validateProject(value: unknown): asserts value is MusicProject {
         n.pitch.midi !== tuning[n.string - 1] + p.arrangement.capo + n.fret
       )
         throw new Error("吉他弦位与音高不一致");
+      if (
+        (n.dead !== undefined && typeof n.dead !== "boolean") ||
+        (n.attack === "dead" && !n.dead) ||
+        (n.dead && n.attack !== undefined && n.attack !== "dead")
+      )
+        throw new Error("闷音与演奏动作不一致");
+      if (
+        n.notationDurationBeats !== undefined &&
+        (!Number.isFinite(n.notationDurationBeats) ||
+          n.notationDurationBeats <= 0)
+      )
+        throw new Error("谱面时值无效");
+    }
   }
 }

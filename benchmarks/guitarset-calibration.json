@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "source": "https://zenodo.org/records/3371780",
+  "inputSha256": "6e180f8629ba71b360b3a1edd9008651ec88259b8836547e409e1a4049f72f8d",
+  "splitContract": "performers 00-03 train, 04 validation, 05 held-out test",
+  "projection": "highest MIDI in 30ms onset groups of annotated solo tracks; not a verified melodic voice",
+  "audit": {
+    "sourceTracks": 360,
+    "excludedKnownErrata": [
+      "02_Funk2-119-G_comp",
+      "04_BN3-154-E_comp",
+      "04_Jazz1-200-B_comp"
+    ],
+    "retainedNotes": 15996,
+    "projectedOut": 865
+  },
+  "search": {
+    "candidates": 60,
+    "validationCandidates": 10,
+    "selectionMetric": "reference string agreement; alternatives may also be playable",
+    "hardConstraints": "unchanged; no fret limit, span or finger rule is fitted"
+  },
+  "baselineWeights": {
+    "fret": 1,
+    "movement": 8.125,
+    "stringChange": 5,
+    "open": 0
+  },
+  "selectedWeights": {
+    "fret": 1,
+    "movement": 12,
+    "stringChange": 10,
+    "open": 4
+  },
+  "testDelta": 0.0569708198239926,
+  "accepted": true,
+  "attribution": "Qingyang Xi, Rachel M. Bittner, Johan Pauwels, Xuzhou Ye, Juan P. Bello. GuitarSet: A Dataset for Guitar Transcription. ISMIR 2018. Dataset v1.1.0, CC-BY-4.0.",
+  "baseline": {
+    "train": {
+      "notes": 11354,
+      "coverage": 1,
+      "stringAgreement": 0.41456755328518585
+    },
+    "validation": {
+      "notes": 2483,
+      "coverage": 1,
+      "stringAgreement": 0.4796616995569875
+    },
+    "test": {
+      "notes": 2159,
+      "coverage": 1,
+      "stringAgreement": 0.30430754979157015
+    }
+  },
+  "learned": {
+    "train": {
+      "notes": 11354,
+      "coverage": 1,
+      "stringAgreement": 0.44680288884974456
+    },
+    "validation": {
+      "notes": 2483,
+      "coverage": 1,
+      "stringAgreement": 0.5118807893677003
+    },
+    "test": {
+      "notes": 2159,
+      "coverage": 1,
+      "stringAgreement": 0.36127836961556276
+    }
+  },
+  "limitation": "Reference string choice is not unique; this is fingering-preference agreement on a frozen projected upper line, not arrangement or audio transcription accuracy."
+}

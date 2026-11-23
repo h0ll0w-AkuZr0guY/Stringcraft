@@ -1,9 +1,9 @@
 {
   "name": "stringcraft",
-  "version": "0.1.0",
+  "version": "0.2.0-preview.1",
   "private": true,
   "type": "module",
-  "description": "A local-first, extensible music-to-guitar workbench",
+  "description": "A local-first, extensible polyphonic note editor and instrument workbench",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite --host 127.0.0.1",

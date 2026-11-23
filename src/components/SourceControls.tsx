@@ -33,8 +33,14 @@ export default function SourceControls() {
     progress,
     abortRef,
     project,
+    refineGuitar,
+    setRefineGuitar,
     difficulty,
     setDifficulty,
+    goal,
+    setGoal,
+    pattern,
+    setPattern,
     autoCapo,
     capo,
     setAutoCapo,
@@ -99,6 +105,22 @@ export default function SourceControls() {
         />
         {file && (
           <>
+            {localMode === "browser" && (
+              <label className="refinement-option">
+                <span>
+                  <input
+                    type="checkbox"
+                    aria-label="清理弱音候选"
+                    checked={refineGuitar}
+                    onChange={(e) => setRefineGuitar(e.target.checked)}
+                  />{" "}
+                  清理弱音候选（实验）
+                </span>
+                <small>
+                  适合清晰吉他录音，可能漏掉弱和弦音。下次分析应用，原候选始终保留。
+                </small>
+              </label>
+            )}
             {local && (
               <label className="local-mode">
                 分析方式
@@ -210,12 +232,44 @@ export default function SourceControls() {
           <label>弹奏难度</label>
           <span>循序渐进，找到手感</span>
         </div>
+        <label>
+          编配目标
+          <select
+            aria-label="编配目标"
+            value={goal}
+            onChange={(e) => setGoal(e.target.value as typeof goal)}
+          >
+            <option value="accompaniment">和弦伴奏 · 为弹唱留出空间</option>
+            <option value="fingerstyle">独奏指弹 · 旋律与低音</option>
+            <option value="melody">单线旋律练习</option>
+          </select>
+        </label>
+        {goal === "accompaniment" && (
+          <label>
+            伴奏手法
+            <select
+              aria-label="伴奏手法"
+              value={pattern}
+              onChange={(e) => setPattern(e.target.value as typeof pattern)}
+            >
+              <option value="strum">扫弦</option>
+              <option value="arpeggio">分解和弦</option>
+            </select>
+          </label>
+        )}
         <div className="difficulty-grid">
           {Object.entries(labels).map(([d, label], i) => (
             <button
               key={d}
               className={difficulty === d ? "selected" : ""}
-              onClick={() => setDifficulty(d as Difficulty)}
+              onClick={() => {
+                setDifficulty(d as Difficulty);
+                setGoal(
+                  d === "easy" || d === "normal"
+                    ? "accompaniment"
+                    : "fingerstyle",
+                );
+              }}
             >
               <span className="difficulty-dots">
                 {Array.from({ length: 4 }, (_, j) => (
@@ -228,12 +282,12 @@ export default function SourceControls() {
         </div>
         <p className="difficulty-description">
           {difficulty === "easy"
-            ? "清晰的单音旋律，留出从容换把的时间。"
+            ? "简化和弦伴奏，稳定节奏，留出换和弦的准备时间。"
             : difficulty === "normal"
-              ? "旋律加少量低音，让音乐多一点层次。"
+              ? "常用和弦与扫弦或分解节奏，为弹唱留出空间。"
               : difficulty === "hard"
-                ? "加入更多和声，兼顾持续音与流畅换把。"
-                : "更完整的声部组合，依然遵守指法约束。"}
+                ? "以旋律和独立低音构成指弹，优先保持乐句。"
+                : "保留独奏结构，处理连奏和指法；不通过堆叠音符增加难度。"}
         </p>
         <div className="field-row">
           <label>

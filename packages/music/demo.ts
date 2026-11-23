@@ -1,4 +1,5 @@
 import type { MusicProject, NoteEvent } from "../contracts";
+import { projectScore } from "./score";
 /** Original fixed composition. This fixture is never described as model inference. */
 export function demoProject(): MusicProject {
   const pitches = [
@@ -26,8 +27,8 @@ export function demoProject(): MusicProject {
       source: "demo",
       role: "bass",
     });
-  return {
-    schemaVersion: 1,
+  const project: MusicProject = {
+    schemaVersion: 2,
     id: crypto.randomUUID(),
     name: "林间来信 · 原创练习曲",
     createdAt: new Date().toISOString(),
@@ -42,6 +43,26 @@ export function demoProject(): MusicProject {
     pluginVersions: {},
     sourceKind: "demo",
   };
+  project.score = projectScore(project);
+  project.score.timing = "manual";
+  project.score.chords = Array.from({ length: 9 }, (_, i) => ({
+    id: `demo-chord-${i}`,
+    beat: i * 4,
+    durationBeats: Math.min(4, project.score!.durationBeats - i * 4),
+    root: [4, 9, 0, 7][i % 4],
+    quality: i % 4 < 2 ? ("minor" as const) : ("major" as const),
+    origin: "manual" as const,
+  })).filter((c) => c.durationBeats > 0);
+  project.score.sections = [
+    {
+      id: "demo-verse",
+      beat: 0,
+      endBeat: project.score.durationBeats,
+      label: "原创练习段",
+      origin: "manual",
+    },
+  ];
+  return project;
 }
 export function noteName(midi: number) {
   return (

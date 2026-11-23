@@ -16,7 +16,7 @@ test("opt-in actual Pages BYOK call uses the official provider and validated can
   const key = text.match(/sk-[A-Za-z0-9_.-]{20,}/)?.[0];
   if (!key)
     throw new Error("Credential format not recognized; file was not logged");
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();

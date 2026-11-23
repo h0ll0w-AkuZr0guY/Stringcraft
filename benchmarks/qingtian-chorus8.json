@@ -1,0 +1,275 @@
+{
+  "version": 2,
+  "source": {
+    "url": "https://stevenlawguitar.com/wp-content/uploads/2015/11/e699b4e5a4a9.pdf",
+    "sha256": "6e996577eb896f29aa9c814a4060e2250cf3730421470851654bce230b6ec450",
+    "page": [2, 3],
+    "bars": [25, 32],
+    "arranger": "Steven Law",
+    "license": "Copyrighted score: private local evaluation only",
+    "annotation": "Visual rhythm/tie annotation; fret and muted-string glyphs extracted independently from PDF text geometry. Voice roles are provisional.",
+    "review": "All string/fret/X glyphs checked; second visual staff/TAB rhythm review corrected bar 32 supporting voice role. Independent human rhythm review pending.",
+    "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth",
+    "sectionLabel": "Chorus-like texture only; formal section and recording alignment unconfirmed"
+  },
+  "inputSha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4",
+  "task": "authored multivoice TAB performance; same-string reattacks release earlier resonance; no audio-recognition claim",
+  "pitched": {
+    "reference": 122,
+    "prediction": 122,
+    "matched": 122,
+    "precision": 1,
+    "recall": 1,
+    "f1": 1,
+    "onsetMae": 0,
+    "durationMae": 0
+  },
+  "percussion": {
+    "reference": 16,
+    "prediction": 16,
+    "matched": 16,
+    "precision": 1,
+    "recall": 1,
+    "f1": 1,
+    "onsetMae": 0,
+    "durationMae": 0
+  },
+  "positions": {
+    "matched": 122,
+    "total": 122,
+    "agreement": 1
+  },
+  "articulation": {
+    "matched": 122,
+    "total": 122,
+    "agreement": 1,
+    "referenceLegato": 0,
+    "predictedLegato": 0,
+    "correctLegato": 0
+  },
+  "roles": {
+    "melody": {
+      "reference": 51,
+      "prediction": 51,
+      "matched": 51,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "onsetMae": 0,
+      "durationMae": 0
+    },
+    "bass": {
+      "reference": 16,
+      "prediction": 16,
+      "matched": 16,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "onsetMae": 0,
+      "durationMae": 0
+    },
+    "harmony": {
+      "reference": 55,
+      "prediction": 55,
+      "matched": 55,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "onsetMae": 0,
+      "durationMae": 0
+    }
+  },
+  "ablations": {
+    "withoutConfirmedSupportingVoices": {
+      "description": "Same engine, but confirmed supporting voices are deliberately treated as unreviewed detector candidates. Not a comparison to a historical release.",
+      "pitched": {
+        "reference": 122,
+        "prediction": 51,
+        "matched": 51,
+        "precision": 1,
+        "recall": 0.4180327868852459,
+        "f1": 0.5895953757225433,
+        "onsetMae": 0,
+        "durationMae": 0
+      },
+      "percussion": {
+        "reference": 16,
+        "prediction": 0,
+        "matched": 0,
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "onsetMae": null,
+        "durationMae": null
+      },
+      "positions": {
+        "matched": 51,
+        "total": 51,
+        "agreement": 1
+      },
+      "articulation": {
+        "matched": 51,
+        "total": 51,
+        "agreement": 1,
+        "referenceLegato": 0,
+        "predictedLegato": 0,
+        "correctLegato": 0
+      },
+      "roles": {
+        "melody": {
+          "reference": 51,
+          "prediction": 51,
+          "matched": 51,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "onsetMae": 0,
+          "durationMae": 0
+        },
+        "bass": {
+          "reference": 16,
+          "prediction": 0,
+          "matched": 0,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "onsetMae": null,
+          "durationMae": null
+        },
+        "harmony": {
+          "reference": 55,
+          "prediction": 0,
+          "matched": 0,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "onsetMae": null,
+          "durationMae": null
+        }
+      }
+    }
+  },
+  "hardErrors": [],
+  "referenceTexture": [
+    {
+      "bar": 1,
+      "notes": 19,
+      "gestures": 8,
+      "maxChordSize": 4,
+      "legato": 0
+    },
+    {
+      "bar": 2,
+      "notes": 22,
+      "gestures": 8,
+      "maxChordSize": 4,
+      "legato": 0
+    },
+    {
+      "bar": 3,
+      "notes": 16,
+      "gestures": 8,
+      "maxChordSize": 3,
+      "legato": 0
+    },
+    {
+      "bar": 4,
+      "notes": 15,
+      "gestures": 8,
+      "maxChordSize": 3,
+      "legato": 0
+    },
+    {
+      "bar": 5,
+      "notes": 13,
+      "gestures": 8,
+      "maxChordSize": 3,
+      "legato": 0
+    },
+    {
+      "bar": 6,
+      "notes": 18,
+      "gestures": 8,
+      "maxChordSize": 4,
+      "legato": 0
+    },
+    {
+      "bar": 7,
+      "notes": 17,
+      "gestures": 8,
+      "maxChordSize": 3,
+      "legato": 0
+    },
+    {
+      "bar": 8,
+      "notes": 18,
+      "gestures": 8,
+      "maxChordSize": 4,
+      "legato": 0
+    }
+  ],
+  "generatedTexture": [
+    {
+      "bar": 1,
+      "notes": 19,
+      "gestures": 8,
+      "maxChordSize": 4,
+      "legato": 0
+    },
+    {
+      "bar": 2,
+      "notes": 22,
+      "gestures": 8,
+      "maxChordSize": 4,
+      "legato": 0
+    },
+    {
+      "bar": 3,
+      "notes": 16,
+      "gestures": 8,
+      "maxChordSize": 3,
+      "legato": 0
+    },
+    {
+      "bar": 4,
+      "notes": 15,
+      "gestures": 8,
+      "maxChordSize": 3,
+      "legato": 0
+    },
+    {
+      "bar": 5,
+      "notes": 13,
+      "gestures": 8,
+      "maxChordSize": 3,
+      "legato": 0
+    },
+    {
+      "bar": 6,
+      "notes": 18,
+      "gestures": 8,
+      "maxChordSize": 4,
+      "legato": 0
+    },
+    {
+      "bar": 7,
+      "notes": 17,
+      "gestures": 8,
+      "maxChordSize": 3,
+      "legato": 0
+    },
+    {
+      "bar": 8,
+      "notes": 18,
+      "gestures": 8,
+      "maxChordSize": 4,
+      "legato": 0
+    }
+  ],
+  "dropped": [],
+  "limitations": [
+    "Manual rhythm/voice annotation still needs independent review",
+    "Not aligned to the user recording",
+    "Exact reconstruction does not demonstrate automatic composition quality"
+  ]
+}

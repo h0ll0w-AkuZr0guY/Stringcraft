@@ -1861,3 +1861,231 @@ svg {
 .tab-pages svg > line {
   pointer-events: none;
 }
+/* Musical structure is editable independently from raw detection evidence. */
+.structure-panel,
+.arrangement-report {
+  margin: 12px 24px;
+  padding: 14px;
+  border: 1px solid var(--border, #dfe5d9);
+  border-radius: 8px;
+  background: #fafbf7;
+}
+.structure-panel summary,
+.arrangement-report summary {
+  cursor: pointer;
+  color: #335942;
+  font-weight: 600;
+}
+.structure-timing {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 12px 0;
+}
+.structure-timing label {
+  width: 130px;
+}
+.chord-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow: auto;
+}
+.chord-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #dfe5d9;
+  border-radius: 6px;
+}
+.chord-cell small {
+  color: #6e7e66;
+}
+.arrangement-report p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.tab-pages {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.tab-pages svg {
+  width: 100%;
+  display: block;
+}
+.fingering-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  margin: 8px 0 16px;
+}
+.tab-pages .fingering-toggle {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.tab-pages .fingering-toggle input {
+  width: auto;
+  margin: 0;
+}
+.finger-label {
+  font: 9px system-ui;
+  fill: #8b6849;
+}
+.tab-pages svg line {
+  pointer-events: none;
+}
+.chord-diagrams {
+  margin: 12px 24px;
+  color: #466c47;
+  font-size: 12px;
+}
+.chord-diagrams summary {
+  cursor: pointer;
+}
+.chord-diagram-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 12px;
+}
+.chord-change {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e1e6da;
+}
+.section-editor {
+  margin-top: 18px;
+}
+.section-editor h3 {
+  font-size: 14px;
+}
+.section-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.section-row input {
+  max-width: 200px;
+}
+.section-row select {
+  max-width: 145px;
+}
+.refinement-option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.refinement-option span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.refinement-option input {
+  width: auto;
+  margin: 0;
+}
+.refinement-option small {
+  color: #74876d;
+  line-height: 1.6;
+}
+.refinement-summary {
+  margin: 12px 24px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #74876d;
+}
+.voice-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.voice-row select {
+  max-width: 200px;
+}
+.legato-link {
+  pointer-events: none;
+}
+.rhythm-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px;
+}
+.timing-candidates {
+  padding: 14px;
+  background: #f4f7ee;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.timing-candidates h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.timing-candidate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #e0e8d9;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.timing-candidate > span {
+  flex: 1;
+  min-width: 170px;
+}
+.timing-candidate small {
+  display: block;
+  color: #74876d;
+  margin-top: 4px;
+}
+.reference-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+  font-size: 11px;
+  color: #74876d;
+}
+.reference-controls label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.reference-controls input[type="number"] {
+  width: 82px;
+  padding: 5px 7px;
+  font-size: 11px;
+}
+@media print {
+  .tab-pages {
+    overflow: visible;
+  }
+  .tab-pages svg {
+    min-width: 0 !important;
+    width: 100%;
+    break-inside: avoid;
+  }
+  .structure-panel,
+  .arrangement-report,
+  .rhythm-controls,
+  .chord-diagrams:not([open]),
+  .fingering-toggle {
+    display: none;
+  }
+}
