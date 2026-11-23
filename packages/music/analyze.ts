@@ -1,5 +1,6 @@
 import { installed, install, catalog } from "../plugin-host";
 import type { NoteEvent } from "../contracts";
+import { readAudioFile } from "./media";
 export async function decode(
   file: File,
   start: number,
@@ -10,6 +11,7 @@ export async function decode(
   buffer: AudioBuffer;
   duration: number;
   waveform: number[];
+  sourceSha256: string;
 }> {
   if (file.size > 50 * 1024 * 1024)
     throw new Error("在线文件上限为 50 MB，请使用本地增强包");
@@ -21,31 +23,26 @@ export async function decode(
     length > 60
   )
     throw new Error("请选择 1–60 秒的分析片段");
-  const ctx = new AudioContext();
-  try {
-    const buffer = await ctx.decodeAudioData(await file.arrayBuffer());
-    signal?.throwIfAborted();
-    if (start >= buffer.duration) throw new Error("片段起点超出音频时长");
-    const duration = Math.min(length, buffer.duration - start),
-      off = new OfflineAudioContext(1, Math.ceil(duration * 22050), 22050);
-    const source = off.createBufferSource();
-    source.buffer = buffer;
-    source.connect(off.destination);
-    source.start(0, start, duration);
-    const rendered = await off.startRendering();
-    signal?.throwIfAborted();
-    const samples = rendered.getChannelData(0).slice();
-    const waveform = Array.from({ length: 120 }, (_, i) => {
-      const a = Math.floor((i * samples.length) / 120),
-        b = Math.floor(((i + 1) * samples.length) / 120);
-      let v = 0;
-      for (let j = a; j < b; j++) v = Math.max(v, Math.abs(samples[j]));
-      return v;
-    });
-    return { samples, buffer, duration, waveform };
-  } finally {
-    await ctx.close();
-  }
+  const { buffer, sha256 } = await readAudioFile(file, 50, signal);
+  signal?.throwIfAborted();
+  if (start >= buffer.duration) throw new Error("片段起点超出音频时长");
+  const duration = Math.min(length, buffer.duration - start),
+    off = new OfflineAudioContext(1, Math.ceil(duration * 22050), 22050);
+  const source = off.createBufferSource();
+  source.buffer = buffer;
+  source.connect(off.destination);
+  source.start(0, start, duration);
+  const rendered = await off.startRendering();
+  signal?.throwIfAborted();
+  const samples = rendered.getChannelData(0).slice();
+  const waveform = Array.from({ length: 120 }, (_, i) => {
+    const a = Math.floor((i * samples.length) / 120),
+      b = Math.floor(((i + 1) * samples.length) / 120);
+    let v = 0;
+    for (let j = a; j < b; j++) v = Math.max(v, Math.abs(samples[j]));
+    return v;
+  });
+  return { samples, buffer, duration, waveform, sourceSha256: sha256 };
 }
 export async function transcribe(
   samples: Float32Array,

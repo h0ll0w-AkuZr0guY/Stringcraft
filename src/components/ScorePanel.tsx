@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { type GuitarNote } from "../../packages/contracts";
+import { useRef, useState, useEffect } from "react";
 import { noteName } from "../../packages/music/demo";
 
 import { violations } from "../../plugins/guitar";
@@ -65,7 +66,20 @@ export default function ScorePanel() {
     edit,
     transpose,
     exportAs,
+    bindRecording,
+    updateReferenceOffset,
   } = useWorkbenchContext();
+  const referenceInput = useRef<HTMLInputElement>(null),
+    [referenceOffset, setReferenceOffset] = useState(
+      project.audioReference?.offsetSeconds ?? project.sourceOffset,
+    );
+  useEffect(
+    () =>
+      setReferenceOffset(
+        project.audioReference?.offsetSeconds ?? project.sourceOffset,
+      ),
+    [project.id, project.audioReference?.offsetSeconds, project.sourceOffset],
+  );
   return (
     <section className="panel score-panel">
       <div className="score-heading">
@@ -99,7 +113,7 @@ export default function ScorePanel() {
           <button
             className="play-button"
             aria-label={playing ? "停止播放" : "播放编配"}
-            disabled={!notes.length || !!busy}
+            disabled={!playing && (!notes.length || !!busy)}
             onClick={() => (playing ? stop() : void play())}
           >
             {playing ? (
@@ -121,8 +135,59 @@ export default function ScorePanel() {
             disabled={!!busy}
             onClick={() => void play(true)}
           >
-            原曲对照
+            {project.audioReference?.kind === "reference"
+              ? "参考录音对照"
+              : "原曲对照"}
           </button>
+        </div>
+        <div className="reference-controls">
+          <button
+            className="text-button"
+            disabled={!!busy}
+            onClick={() => referenceInput.current?.click()}
+          >
+            关联录音
+          </button>
+          <input
+            ref={referenceInput}
+            type="file"
+            accept="audio/*,video/mp4,.flac"
+            className="visually-hidden"
+            data-testid="reference-audio-input"
+            aria-label="关联录音文件"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void bindRecording(file, referenceOffset);
+              e.target.value = "";
+            }}
+          />
+          <label>
+            对照起点（秒）
+            <input
+              aria-label="录音对照起点"
+              type="number"
+              min={0}
+              step={0.01}
+              disabled={!!busy}
+              value={Number(referenceOffset.toFixed(3))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (
+                  value >= 0 &&
+                  Number.isFinite(value) &&
+                  (!project.audioReference || updateReferenceOffset(value))
+                )
+                  setReferenceOffset(value);
+              }}
+            />
+          </label>
+          <small>
+            {project.audioReference?.kind === "original"
+              ? "已记录原文件摘要，可重新关联文件"
+              : project.audioReference
+                ? "已记录参考录音，可重新关联文件"
+                : "可重新关联录音，保留已有谱面"}
+          </small>
         </div>
         <div
           className="waveform"

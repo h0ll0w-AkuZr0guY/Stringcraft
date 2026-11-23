@@ -9,6 +9,8 @@ import {
 export * from "./score";
 import { validateTiming, type TimingAnalysis } from "./timing";
 export * from "./timing";
+import { validateAudioReference, type AudioReference } from "./audio-reference";
+export * from "./audio-reference";
 export type Difficulty = "easy" | "normal" | "hard" | "expert";
 export interface Pitch {
   midi: number;
@@ -74,6 +76,8 @@ export interface MusicProject<N extends NoteEvent = GuitarNote> {
     dropped: { noteId: string; reason: string }[];
   };
   timingAnalysis?: TimingAnalysis;
+  sourceAudioSha256?: string;
+  audioReference?: AudioReference;
   id: string;
   name: string;
   createdAt: string;
@@ -239,6 +243,7 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
   validateNotes(p.melody);
+  validateAudioReference(p);
   if (p.timingAnalysis) {
     validateTiming(p.timingAnalysis);
     if (p.timingAnalysis.durationSeconds > p.duration + 0.01)

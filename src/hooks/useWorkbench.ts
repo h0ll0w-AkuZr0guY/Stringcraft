@@ -12,6 +12,7 @@ import {
   type TimingCandidate,
 } from "../../packages/contracts";
 import { decode, transcribe } from "../../packages/music/analyze";
+import { readAudioFile, referenceWaveform } from "../../packages/music/media";
 import { demoProject } from "../../packages/music/demo";
 import {
   bootstrap,
@@ -27,7 +28,12 @@ import { get, set } from "idb-keyval";
 import { type AISettings } from "../../packages/music/advisor";
 import { importMidi, importMusicXML } from "../../packages/music/import";
 import { analyzeLocal, localCapabilities } from "../../packages/music/local";
-import { listProjects, saveProject } from "../../packages/storage";
+import {
+  listProjects,
+  saveProject,
+  audioAssetKey,
+  audioAssetPrefix,
+} from "../../packages/storage";
 import { recommend, violations } from "../../plugins/guitar";
 import {
   recommendForScore,
@@ -71,7 +77,7 @@ export function useWorkbench() {
     [saved, setSaved] = useState("原创示例 · 尚未修改"),
     [dirty, setDirty] = useState(false),
     [projects, setProjects] = useState<MusicProject[]>([]);
-  const [pluginCount,setPluginCount]=useState<number|null>(null);
+  const [pluginCount, setPluginCount] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>("normal"),
     [goal, setGoal] = useState<ArrangementGoal>("accompaniment"),
     [pattern, setPattern] = useState<"strum" | "arpeggio">("strum"),
@@ -110,6 +116,7 @@ export function useWorkbench() {
     [localReady, setLocalReady] = useState(false),
     [localMode, setLocalMode] = useState("browser");
   const abortRef = useRef<AbortController | null>(null),
+    referenceLoad = useRef<AbortController | null>(null),
     audioRef = useRef<AudioContext | null>(null),
     timerRef = useRef<ReturnType<typeof setInterval> | null>(null),
     sourceBuffer = useRef(new Map<string, AudioBuffer>()),
@@ -117,11 +124,15 @@ export function useWorkbench() {
     projectInput = useRef<HTMLInputElement>(null),
     playGeneration = useRef(0);
   const notify = useCallback((s: string) => setMessage(s), []);
-  const edit = (next: MusicProject) => {
+  const projectRef = useRef(project);
+  projectRef.current = project;
+  const edit = (next: MusicProject, synchronize = true) => {
+    const current = projectRef.current;
     try {
       if (
+        synchronize &&
         next.arrangement &&
-        next.arrangement !== project.arrangement &&
+        next.arrangement !== current.arrangement &&
         next.arrangement.performance
       )
         next = { ...next, arrangement: syncPerformance(next.arrangement) };
@@ -129,12 +140,14 @@ export function useWorkbench() {
       notify(errorMessage(error));
       return;
     }
-    if (next.bpm !== project.bpm && next.score && next.score === project.score)
+    if (next.bpm !== current.bpm && next.score && next.score === current.score)
       next = { ...next, score: withReferenceTempo(next.score, next.bpm) };
     setDirty(true);
-    setHistory((h) => [...h.slice(-39), structuredClone(project)]);
+    setHistory((h) => [...h.slice(-39), structuredClone(current)]);
     setFuture([]);
-    setProject({ ...next, updatedAt: new Date().toISOString() });
+    const updated = { ...next, updatedAt: new Date().toISOString() };
+    projectRef.current = updated;
+    setProject(updated);
   };
   const notes = project.arrangement?.notes ?? [],
     chosen = notes.find((n) => n.id === selected);
@@ -149,6 +162,8 @@ export function useWorkbench() {
         JSON.stringify(project.arrangement.score) !==
           JSON.stringify(project.score)));
   function stop() {
+    referenceLoad.current?.abort();
+    referenceLoad.current = null;
     playGeneration.current++;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
@@ -161,7 +176,7 @@ export function useWorkbench() {
     let active = true;
     bootstrap()
       .then(async (entries) => {
-        if(active)setPluginCount(entries.length);
+        if (active) setPluginCount(entries.length);
         const plugin = await load("guitar-standard");
         if (
           (await installed("guitar-standard"))!.manifest.version === "0.1.0"
@@ -239,6 +254,7 @@ export function useWorkbench() {
       abortRef.current?.abort();
       if (timerRef.current) clearInterval(timerRef.current);
       void audioRef.current?.close();
+      referenceLoad.current?.abort();
     },
     [],
   );
@@ -386,6 +402,13 @@ export function useWorkbench() {
           "basic-pitch": (await installed("basic-pitch"))!.manifest.version,
         },
         sourceKind: "audio",
+        sourceAudioSha256: data.sourceSha256,
+        audioReference: {
+          kind: "original",
+          sha256: data.sourceSha256,
+          durationSeconds: data.buffer.duration,
+          offsetSeconds: start,
+        },
       };
       const harmony = await load("harmony-analysis");
       const tempos = harmony.tempoCandidates!(usable);
@@ -415,13 +438,13 @@ export function useWorkbench() {
       ])
         p.pluginVersions[id] = (await installed(id))!.manifest.version;
       p.schemaVersion = 2;
-      sourceBuffer.current.set(p.id, data.buffer);
+      sourceBuffer.current.set(audioAssetKey(p), data.buffer);
       if (sourceBuffer.current.size > 3)
         sourceBuffer.current.delete(sourceBuffer.current.keys().next().value!);
       edit(p);
       setSelected(null);
       setLoopEnd(Math.min(8, p.duration));
-      await set("audio:" + p.id, file);
+      await set(audioAssetKey(p), file);
       notify(
         detected.length
           ? `识别到 ${detected.length} 个原始候选音${refinement ? `，清理后保留 ${usable.length} 个` : ""}、${melody.length} 个旋律候选音。速度与和弦待校正，请先确认首拍。`
@@ -579,6 +602,123 @@ export function useWorkbench() {
       notify(errorMessage(e));
     }
   }
+  async function bindRecording(recording: File, offset: number) {
+    if (busy) return;
+    stop();
+    setBusy("正在关联录音");
+    const control = new AbortController();
+    abortRef.current = control;
+    const projectId = project.id;
+    try {
+      const decoded = await readAudioFile(
+        recording,
+        local ? 200 : 50,
+        control.signal,
+      );
+      control.signal.throwIfAborted();
+      const current = projectRef.current;
+      if (current.id !== projectId) return;
+      const kind =
+        current.sourceAudioSha256?.toLowerCase() === decoded.sha256
+          ? ("original" as const)
+          : ("reference" as const);
+      const next = {
+        ...current,
+        audioReference: {
+          kind,
+          sha256: decoded.sha256,
+          durationSeconds: decoded.buffer.duration,
+          offsetSeconds: offset,
+        },
+      };
+      validateProject(next);
+      await set(audioAssetKey(next), recording);
+      control.signal.throwIfAborted();
+      if (projectRef.current.id !== projectId) return;
+      sourceBuffer.current.set(audioAssetKey(next), decoded.buffer);
+      if (sourceBuffer.current.size > 3)
+        sourceBuffer.current.delete(sourceBuffer.current.keys().next().value!);
+      const applied = {
+        ...projectRef.current,
+        audioReference: next.audioReference,
+      };
+      validateProject(applied);
+      edit(applied);
+      setFile(recording);
+      setSourceUrl(URL.createObjectURL(recording));
+      setWave(referenceWaveform(decoded.buffer, offset, applied.duration));
+      notify(
+        kind === "original"
+          ? "原文件摘要已核验，录音对照已恢复；谱面和编辑保留。"
+          : "已关联参考录音；识别来源、谱面和编辑保留。",
+      );
+    } catch (error) {
+      notify(
+        control.signal.aborted
+          ? "已取消关联，原项目保留。"
+          : errorMessage(error),
+      );
+    } finally {
+      if (abortRef.current === control) {
+        abortRef.current = null;
+        setBusy("");
+      }
+    }
+  }
+  async function upgrade() {
+    if (busy) return;
+    stop();
+    const current = projectRef.current,
+      next = upgradeProject(current);
+    setBusy("正在升级项目副本");
+    try {
+      await saveProject(current);
+      const audio = await get<File>(audioAssetKey(current));
+      if (projectRef.current !== current) return;
+      if (audio) await set(audioAssetKey(next), audio);
+      if (projectRef.current !== current) return;
+      const buffer = sourceBuffer.current.get(audioAssetKey(current));
+      if (buffer) sourceBuffer.current.set(audioAssetKey(next), buffer);
+      edit(next, false);
+      notify("已创建 v2 副本，原项目和关联录音保留。");
+    } catch (error) {
+      notify(errorMessage(error));
+    } finally {
+      setBusy("");
+    }
+  }
+  function clearProjectAudio(id: string) {
+    for (const key of sourceBuffer.current.keys())
+      if (key === `audio:${id}` || key.startsWith(audioAssetPrefix(id)))
+        sourceBuffer.current.delete(key);
+    if (projectRef.current.id === id) {
+      stop();
+      setDirty(false);
+      setSaved("作品已删除，编辑后重新保存");
+      setFile(null);
+      setSourceUrl("");
+      setWave([]);
+    }
+  }
+  function updateReferenceOffset(offset: number): boolean {
+    const current = projectRef.current;
+    if (!current.audioReference) return false;
+    const next = {
+      ...current,
+      audioReference: { ...current.audioReference, offsetSeconds: offset },
+    };
+    try {
+      validateProject(next);
+      stop();
+      edit(next);
+      const buffer = sourceBuffer.current.get(audioAssetKey(next));
+      if (buffer) setWave(referenceWaveform(buffer, offset, next.duration));
+      return true;
+    } catch (error) {
+      notify(errorMessage(error));
+      return false;
+    }
+  }
   async function play(source = false, pulse?: TimingCandidate) {
     stop();
     const generation = playGeneration.current;
@@ -594,26 +734,43 @@ export function useWorkbench() {
     }
     try {
       let origin = ctx.currentTime + 0.06;
-      if (source && !sourceBuffer.current.has(project.id)) {
-        const original = await get<File>("audio:" + project.id);
+      const assetKey = audioAssetKey(project);
+      if (source && !sourceBuffer.current.has(assetKey)) {
+        const control = new AbortController();
+        referenceLoad.current = control;
+        const original = await get<File>(assetKey);
+        control.signal.throwIfAborted();
         if (!original)
           throw new Error(
-            "该项目没有原音频。请重新选择源文件进行分析；原曲对照不会使用合成音代替。",
+            "当前浏览器没有这份录音文件。请用“关联录音”重新选择；谱面和编辑会保留。",
           );
-        sourceBuffer.current.set(
-          project.id,
-          await ctx.decodeAudioData(await original.arrayBuffer()),
+        const decoded = await readAudioFile(
+          original,
+          local ? 200 : 50,
+          control.signal,
         );
+        if (
+          project.audioReference &&
+          decoded.sha256 !== project.audioReference.sha256.toLowerCase()
+        )
+          throw new Error("缓存录音与项目摘要不同，请重新关联文件。");
+        sourceBuffer.current.set(assetKey, decoded.buffer);
+        if (referenceLoad.current === control) referenceLoad.current = null;
       }
       if (source) {
         if (generation !== playGeneration.current || ctx.state === "closed")
           return;
         origin = ctx.currentTime + 0.06;
         const s = ctx.createBufferSource();
-        s.buffer = sourceBuffer.current.get(project.id)!;
+        s.buffer = sourceBuffer.current.get(assetKey)!;
         s.playbackRate.value = speed;
         s.connect(ctx.destination);
-        s.start(origin, project.sourceOffset + from, to - from);
+        s.start(
+          origin,
+          (project.audioReference?.offsetSeconds ?? project.sourceOffset) +
+            from,
+          to - from,
+        );
         if (pulse) {
           const period = 60 / pulse.bpm;
           for (
@@ -724,10 +881,16 @@ export function useWorkbench() {
     }
   }
   async function openProject(p: MusicProject) {
+    if (busy) {
+      notify("请先取消或完成当前任务，再打开其他作品。");
+      return;
+    }
     stop();
+    const control = new AbortController();
+    referenceLoad.current = control;
     try {
       validateProject(p);
-      edit(p);
+      edit(p, false);
       if (p.arrangement) {
         setGoal(p.arrangement.goal ?? "melody");
         setDifficulty(p.arrangement.difficulty);
@@ -735,26 +898,50 @@ export function useWorkbench() {
         setAutoCapo(false);
         setTranspose(p.arrangement.transpose);
       }
-      const audio = await get<File>("audio:" + p.id);
+      const audio = await get<File>(audioAssetKey(p));
+      control.signal.throwIfAborted();
+      if (
+        projectRef.current.id !== p.id ||
+        audioAssetKey(projectRef.current) !== audioAssetKey(p)
+      )
+        return;
       setFile(audio ?? null);
       setSourceUrl(audio ? URL.createObjectURL(audio) : "");
 
       if (audio) {
-        const ctx = new AudioContext();
-        try {
-          sourceBuffer.current.set(
-            p.id,
-            await ctx.decodeAudioData(await audio.arrayBuffer()),
-          );
-        } finally {
-          await ctx.close();
-        }
+        const decoded = await readAudioFile(
+          audio,
+          local ? 200 : 50,
+          control.signal,
+        );
+        if (
+          p.audioReference &&
+          decoded.sha256 !== p.audioReference.sha256.toLowerCase()
+        )
+          throw new Error("关联录音摘要不符，请重新选择文件。");
+        if (
+          projectRef.current.id !== p.id ||
+          audioAssetKey(projectRef.current) !== audioAssetKey(p)
+        )
+          return;
+        sourceBuffer.current.set(audioAssetKey(p), decoded.buffer);
+        setWave(
+          referenceWaveform(
+            decoded.buffer,
+            p.audioReference?.offsetSeconds ?? p.sourceOffset,
+            p.duration,
+          ),
+        );
+      } else {
+        setWave([]);
       }
-      setWave([]);
+      if (referenceLoad.current === control) referenceLoad.current = null;
       setPage("workbench");
       setSelected(null);
     } catch (e) {
-      notify(errorMessage(e));
+      if (!control.signal.aborted) notify(errorMessage(e));
+    } finally {
+      if (referenceLoad.current === control) referenceLoad.current = null;
     }
   }
   const section = (p: typeof page) => {
@@ -771,6 +958,9 @@ export function useWorkbench() {
         .catch((e) => notify(errorMessage(e)));
   };
   return {
+    bindRecording,
+    updateReferenceOffset,
+    clearProjectAudio,
     pluginCount,
     playTiming: (candidate: TimingCandidate) => play(true, candidate),
     refineGuitar,
@@ -779,7 +969,7 @@ export function useWorkbench() {
     setGoal,
     pattern,
     setPattern,
-    upgrade: () => edit(upgradeProject(project)),
+    upgrade,
     page,
     setPage,
     project,

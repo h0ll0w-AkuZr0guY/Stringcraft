@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { readFile, mkdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
 test("real workbench: editing, undo, score, downloads and saved project", async ({
   page,
 }) => {
@@ -99,6 +100,16 @@ test("real uploaded audio reaches the model and can be arranged", async ({
     await readFile((await (await projectDownload).path())!, "utf8"),
   );
   expect(result.refinement.profile).toBe("experimental-guitar-clarity");
+  expect(result.sourceAudioSha256).toBe(
+    createHash("sha256")
+      .update(await readFile("tests/fixtures/audio/clean-melody.wav"))
+      .digest("hex"),
+  );
+  expect(result.audioReference).toMatchObject({
+    kind: "original",
+    sha256: result.sourceAudioSha256,
+    offsetSeconds: 0,
+  });
   expect(result.refinement.notes.length).toBeLessThanOrEqual(
     result.notes.length,
   );

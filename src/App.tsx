@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { validateProject } from "../packages/contracts";
 
-import { del } from "idb-keyval";
 import { listProjects, removeProject } from "../packages/storage";
 import PluginCenter from "./components/PluginCenter";
 
@@ -231,8 +230,11 @@ function WorkbenchView({
                         aria-label={`删除 ${p.name}`}
                         onClick={async () => {
                           await removeProject(p.id);
-                          await del("audio:" + p.id);
+                          controller.clearProjectAudio(p.id);
                           setProjects(await listProjects());
+                          controller.notify(
+                            "作品及其关联录音已从此浏览器删除。",
+                          );
                         }}
                       >
                         <Trash2 size={17} />

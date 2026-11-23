@@ -27,6 +27,9 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 
 ## 音乐与项目
 
+- `AudioReference`：独立录音对照元数据，含完整文件 SHA-256、解码时长、对照起点和 `original/reference` 类别。`sourceAudioSha256` 固定标识浏览器分析输入；只有文件摘要匹配才允许标为 original。重新关联不改写识别来源、原始秒时间或谱面。对照起点只调整录音播放，必须覆盖整个项目。
+- `readAudioFile`：在文件大小限制与 60 秒超时内解码并计算摘要，支持取消后丢弃迟到结果；返回可复用 AudioBuffer。`audioAssetKey` 将项目 ID 与文件摘要编码成 IndexedDB 键，保留撤销所需旧文件；`removeProject` 清理该项目的全部关联录音与旧格式缓存，不删除其他项目。
+
 - `NoteEvent`：唯一 id、非负 start、正 duration、MIDI 0–127、可选 cents、velocity 与 score 0–1，source 区分 detected/demo/manual/generated。role 表示 melody/bass/harmony；locked 是人工保护标记。
 - `GuitarNote`：增加 string 1–6、fret 相对变调夹、可选 technique。仅为吉他事件，不要求所有乐器使用。
 - `Arrangement<N>`：instrumentId、difficulty、capo、transpose、notes、dropped 与 warnings。默认 N 为 GuitarNote；其他乐器可使用不同演奏事件。
