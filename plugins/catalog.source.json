@@ -30,7 +30,7 @@
     "id": "basic-pitch",
     "name": "Basic Pitch",
     "directory": "basic-pitch",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "capabilities": ["transcriber"],
     "description": "浏览器神经音符识别，首次需下载模型",
     "license": "Apache-2.0"
@@ -87,6 +87,42 @@
     "version": "0.1.0",
     "capabilities": ["timing"],
     "description": "独立波形起音与周期候选；相位不等于小节首拍，需试听确认。",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "piano-roll",
+    "name": "音符卷帘",
+    "directory": "piano-roll",
+    "version": "0.2.0",
+    "capabilities": ["note-view"],
+    "description": "完整复音的时间与音高视图，可视区绘制。",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "note-audio",
+    "name": "键盘音符试听",
+    "directory": "note-audio",
+    "version": "0.2.0",
+    "capabilities": ["note-renderer"],
+    "description": "通用复音合成试听与 WAV 导出，不应用吉他弦位约束。",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "note-exporters",
+    "name": "音符 MIDI 导出",
+    "directory": "note-exporters",
+    "version": "0.2.0",
+    "capabilities": ["exporter"],
+    "description": "直接导出校订音符和复音时序。",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "basic-pitch-stream",
+    "name": "Basic Pitch 整曲识别",
+    "directory": "basic-pitch",
+    "version": "0.2.0",
+    "capabilities": ["transcriber"],
+    "description": "共享预训练核心，6 秒分块渐进显示，支持 5 分钟音频。",
     "license": "Apache-2.0"
   }
 ]

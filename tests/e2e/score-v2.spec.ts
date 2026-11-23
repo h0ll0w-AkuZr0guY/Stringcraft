@@ -10,7 +10,7 @@ test("early project import is not overwritten by asynchronous plugin bootstrap",
     await new Promise((resolve) => setTimeout(resolve, 300));
     await route.continue();
   });
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   const p = demoProject();
   p.name = "启动时导入的无和弦乐谱";
   p.sourceKind = "musicxml";
@@ -33,7 +33,7 @@ test("written guitar octave, string positions and unpitched attacks survive arra
   await page.context().addInitScript(() => {
     window.print = () => {};
   });
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
@@ -133,7 +133,7 @@ test("written guitar octave, string positions and unpitched attacks survive arra
 test("known score preserves independent voices, ties, slurs, rests, meter and tempo", async ({
   page,
 }) => {
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
@@ -203,7 +203,7 @@ test("known score preserves independent voices, ties, slurs, rests, meter and te
 test("daily style changes accompaniment pattern and melody mode remains independent", async ({
   page,
 }) => {
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
@@ -224,7 +224,7 @@ test("daily style changes accompaniment pattern and melody mode remains independ
 test("musical editor splits intra-bar harmony, pickup and expressive sections without changing raw notes", async ({
   page,
 }) => {
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();

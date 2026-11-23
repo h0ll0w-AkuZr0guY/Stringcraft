@@ -1,5 +1,13 @@
 /** SDK v2 plus the v1 workbench compatibility projection. Seconds remain source time. */
 export const SDK_VERSION = 2;
+import type {
+  NoteEditorState,
+  TranscriptionState,
+  TranscriptionChunk,
+  NoteViewPlugin,
+} from "./note-editor";
+import { validateNoteEditor } from "./note-editor";
+export * from "./note-editor";
 import {
   validateScore,
   type MusicalScore,
@@ -76,6 +84,8 @@ export interface MusicProject<N extends NoteEvent = GuitarNote> {
     dropped: { noteId: string; reason: string }[];
   };
   timingAnalysis?: TimingAnalysis;
+  noteEditor?: NoteEditorState;
+  transcription?: TranscriptionState;
   sourceAudioSha256?: string;
   audioReference?: AudioReference;
   id: string;
@@ -102,7 +112,9 @@ export type Capability =
   | "renderer"
   | "exporter"
   | "advisor"
-  | "separator";
+  | "separator"
+  | "note-view"
+  | "note-renderer";
 export interface PluginManifest {
   id: string;
   name: string;
@@ -132,6 +144,16 @@ export interface ArrangeOptions {
   pattern?: "strum" | "arpeggio";
 }
 export interface MusicPlugin {
+  noteView?: NoteViewPlugin;
+  scheduleNotes?: (
+    ctx: AudioContext,
+    notes: NoteEvent[],
+    from: number,
+    to: number,
+    speed: number,
+  ) => { origin: number; stop: () => void };
+  renderNotes?: (notes: NoteEvent[], duration: number) => Promise<ArrayBuffer>;
+  exportNotes?: (notes: NoteEvent[], bpm: number) => Uint8Array;
   analyzeTiming?: (
     samples: Float32Array,
     sampleRate: number,
@@ -151,6 +173,7 @@ export interface MusicPlugin {
     modelUrl: string,
     wasmUrl: string,
     progress: (value: number) => void,
+    chunk?: (chunk: TranscriptionChunk) => void,
   ) => Promise<NoteEvent[]>;
   scheduleAudio?: (
     ctx: AudioContext | OfflineAudioContext,
@@ -243,6 +266,22 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
   validateNotes(p.melody);
+  validateNoteEditor(p);
+  if (p.transcription) {
+    const t = p.transcription;
+    if (
+      typeof t.jobId !== "string" ||
+      !["running", "complete", "stopped", "error"].includes(t.status) ||
+      !Number.isFinite(t.processedSeconds) ||
+      t.processedSeconds < 0 ||
+      t.processedSeconds > p.duration + 0.01 ||
+      typeof t.pluginVersion !== "string" ||
+      typeof t.pluginSha256 !== "string" ||
+      (t.status === "complete" &&
+        Math.abs(t.processedSeconds - p.duration) > 0.01)
+    )
+      throw new Error("转录进度无效");
+  }
   validateAudioReference(p);
   if (p.timingAnalysis) {
     validateTiming(p.timingAnalysis);

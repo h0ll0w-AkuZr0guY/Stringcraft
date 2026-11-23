@@ -39,7 +39,7 @@ test("compare waveform timing proposals with an independent nominal beat corpus"
       body: await readFile(manifest.tracks[index].path),
     });
   });
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   const plugin = await page.evaluate(async () => {
     const catalog = await (await fetch("plugins/catalog.json")).json();
     return catalog.find((p: { id: string }) => p.id === "rhythm-analysis");

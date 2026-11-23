@@ -10,7 +10,7 @@ test("opt-in local-only real recording smoke test", async ({ page }) => {
     if (r.method() === "POST" && !r.url().startsWith("http://127.0.0.1:"))
       outsideUploads.push(new URL(r.url()).origin);
   });
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();

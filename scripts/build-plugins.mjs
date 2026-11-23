@@ -75,6 +75,31 @@ await cp(
   "public/models/basic-pitch",
   { recursive: true },
 );
+const modelFiles = (
+  await readdir("node_modules/@spotify/basic-pitch/model")
+).sort();
+const modelHashes = [];
+for (const file of modelFiles) {
+  const data = await readFile(
+    "node_modules/@spotify/basic-pitch/model/" + file,
+  );
+  modelHashes.push({
+    file,
+    sha256: createHash("sha256").update(data).digest("hex"),
+  });
+}
+await writeFile(
+  "public/models/basic-pitch/provenance.json",
+  JSON.stringify({
+    package: "@spotify/basic-pitch@1.0.1",
+    sha256: createHash("sha256")
+      .update(JSON.stringify(modelHashes))
+      .digest("hex"),
+    files: modelHashes,
+  }),
+);
+await mkdir("public/demo", { recursive: true });
+await cp("tests/fixtures/audio/clean-melody.wav", "public/demo/phrase.wav");
 await mkdir("public/wasm", { recursive: true });
 for (const file of await readdir(
   "node_modules/@tensorflow/tfjs-backend-wasm/dist",

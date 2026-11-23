@@ -70,7 +70,7 @@ async function exercise() {
   return p;
 }
 async function open(page: Page, p: object) {
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();

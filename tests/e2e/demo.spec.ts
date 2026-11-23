@@ -12,7 +12,7 @@ test("record the actual preview workflow without a prerecorded recognition resul
     process.env.STRINGCRAFT_DEMO !== "1",
     "Opt-in recording, run with STRINGCRAFT_DEMO=1",
   );
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();

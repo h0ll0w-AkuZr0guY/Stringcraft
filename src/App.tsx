@@ -22,6 +22,7 @@ import PluginCenter from "./components/PluginCenter";
 import APISettingsDialog from "./components/APISettingsDialog";
 import ScorePanel from "./components/ScorePanel";
 import SourceControls from "./components/SourceControls";
+import NoteEditor from "./components/NoteEditor";
 import { errorMessage, useWorkbench } from "./hooks/useWorkbench";
 import { WorkbenchContext } from "./hooks/WorkbenchContext";
 export default function App() {
@@ -56,7 +57,14 @@ function WorkbenchView({
     settings,
   } = controller;
   return (
-    <div className="app-shell">
+    <div
+      className={
+        "app-shell " +
+        (controller.mode === "editor" && page === "workbench"
+          ? "note-mode"
+          : "")
+      }
+    >
       <aside className="sidebar">
         <a
           className="brand"
@@ -133,7 +141,7 @@ function WorkbenchView({
           >
             GitHub 开源项目 <ArrowUpRight size={14} />
           </a>
-          <span className="version">v0.2.0-dev · 参考谱评估中</span>
+          <span className="version">v0.2.0-preview.1 · 音符编辑器</span>
         </div>
       </aside>
       <div className="main-shell">
@@ -251,31 +259,61 @@ function WorkbenchView({
             </>
           ) : (
             <>
-              <section className="workbench-heading">
-                <div>
-                  <p className="eyebrow">FROM LISTENING TO PLAYING</p>
-                  <h1>
-                    让喜欢的旋律，<em>在指尖响起。</em>
-                  </h1>
-                  <p>从一首喜欢的歌开始，找到属于自己的弹奏方式。</p>
-                </div>
+              <div className="workspace-switch">
                 <button
-                  className="button secondary demo-button"
-                  disabled={!ready || !!busy}
-                  onClick={useDemo}
+                  className={controller.mode === "editor" ? "active" : ""}
+                  onClick={() => {
+                    controller.stop();
+                    controller.setMode("editor");
+                  }}
                 >
-                  <Headphones size={17} />
-                  体验原创示例
+                  音符编辑器
                 </button>
-              </section>
-              <div className="workspace">
-                <SourceControls />
-                <ScorePanel />
+                <button
+                  className={controller.mode === "guitar" ? "active" : ""}
+                  disabled={!!busy}
+                  onClick={() => {
+                    if (controller.mode === "editor")
+                      void controller.handoffToGuitar();
+                    else controller.setMode("guitar");
+                  }}
+                >
+                  吉他编配
+                </button>
               </div>
-              <footer className="page-footer">
-                <span>弦作，为每一次练习而作。</span>
-                <span>复杂混音可能错音或漏音，编配请结合试听与试弹核对。</span>
-              </footer>
+              {controller.mode === "editor" ? (
+                <NoteEditor />
+              ) : (
+                <>
+                  <section className="workbench-heading">
+                    <div>
+                      <p className="eyebrow">FROM LISTENING TO PLAYING</p>
+                      <h1>
+                        让喜欢的旋律，<em>在指尖响起。</em>
+                      </h1>
+                      <p>从一首喜欢的歌开始，找到属于自己的弹奏方式。</p>
+                    </div>
+                    <button
+                      className="button secondary demo-button"
+                      disabled={!ready || !!busy}
+                      onClick={useDemo}
+                    >
+                      <Headphones size={17} />
+                      体验原创示例
+                    </button>
+                  </section>
+                  <div className="workspace">
+                    <SourceControls />
+                    <ScorePanel />
+                  </div>
+                  <footer className="page-footer">
+                    <span>弦作，为每一次练习而作。</span>
+                    <span>
+                      复杂混音可能错音或漏音，编配请结合试听与试弹核对。
+                    </span>
+                  </footer>
+                </>
+              )}
             </>
           )}
         </main>
@@ -289,7 +327,8 @@ function WorkbenchView({
           const f = e.target.files?.[0];
           if (!f) return;
           try {
-            if (f.size > 10 * 1024 * 1024) throw new Error("项目文件过大");
+            if (f.size > 50 * 1024 * 1024)
+              throw new Error("项目文件上限为 50 MB");
             const p = JSON.parse(await f.text());
             validateProject(p);
             await openProject(p);

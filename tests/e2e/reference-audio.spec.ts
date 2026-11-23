@@ -22,7 +22,7 @@ test("measure real licensed GuitarSet recordings against published note annotati
     if (r.method() === "POST" && !r.url().startsWith("http://127.0.0.1:"))
       outsideUploads.push(new URL(r.url()).origin);
   });
-  await page.goto("./");
+  await page.goto("./?view=guitar");
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();

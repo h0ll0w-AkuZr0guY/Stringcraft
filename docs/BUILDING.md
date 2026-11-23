@@ -4,7 +4,7 @@
 
 Node.js 22+：npm ci、npm run check、npm run build。构建包含独立插件、模型/WASM、文档 HTML 与运行依赖许可。Python 源码审计只扫描本仓库，检查密钥模式与 Markdown 链接。后端另安装 requirements 与 httpx，运行 unittest。
 
-首次测试浏览器执行 npx playwright install chromium，随后 npm run test:e2e；Windows 可用环境变量 PLAYWRIGHT_CHANNEL=msedge。完整合成音频评估执行 npm run quality，输出 artifacts/quality。质量门槛见 QUALITY。
+首次测试浏览器执行 npx playwright install chromium，先 npm run build，随后 npm run test:e2e（测试生产构建）；Windows 可用环境变量 PLAYWRIGHT_CHANNEL=msedge。完整合成音频评估执行 npm run quality，输出 artifacts/quality。质量门槛见 QUALITY。
 
 ## Pages
 

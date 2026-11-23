@@ -46,7 +46,7 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 | --- | --- |
 | extractMelody(notes) | 返回引用稳定 ID 的主旋律；不发明 source=detected 的音符 |
 | arrange(notes, options) | 接收 difficulty、capo、transpose、bpm、previous；锁定冲突抛错 |
-| transcribe(samples, modelUrl, wasmUrl, progress) | 单声道 22050 Hz Float32Array；异步返回 NoteEvent，进度 0–1 |
+| transcribe(samples, modelUrl, wasmUrl, progress, chunk?) | 单声道 22050 Hz Float32Array；异步返回 NoteEvent，进度 0–1；可选回调接收 TranscriptionChunk 全量快照 |
 | analyzeTiming(samples, sampleRate, noteProposalBpm?) | 返回未确认的 TimingAnalysis；证据分数不作概率，拍点相位不作小节首拍 |
 | scheduleAudio(ctx, notes, tone, from, to, speed) | 调度播放，返回 origin 和合成回退计数 |
 | renderAudio(notes, duration, tone) | 返回 PCM WAV ArrayBuffer 与回退计数 |
@@ -69,3 +69,15 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 | DELETE /api/v1/jobs/{id} | 取消 queued/running 作业；已结束作业保持原状态 |
 
 mode 为 transcribe、vocals、instrumental。结果包含 duration、bpm、notes、method 和 limitSeconds。未知作业 404、缺认证 401、跨来源 403、环境未装或已有任务 409、超文件上限 413。当前最多 30 分钟输入解码。
+
+## 通用音符编辑能力（0.2 可选扩展）
+
+`note-view` 能力提供 `noteView.index(notes): NoteSpatialIndex`，查询秒范围与 MIDI 范围；`noteView.paint(ctx, window, visibleNotes, selectedIds)` 只绘制可见事件。不得修改输入或读取项目存储。Window 以秒和音高描述，像素换算由绘制插件负责。
+
+`note-renderer` 提供 `scheduleNotes(ctx, notes, from, to, speed): {origin, stop}` 和 `renderNotes(notes, duration): Promise<ArrayBuffer>`。stop 必须释放定时调度与音频节点；WAV 为 PCM16 单声道。`exporter` 可提供 `exportNotes(notes, bpm): Uint8Array`，不要求 Arrangement。
+
+`TranscriptionChunk` 含 notes、processedSeconds、complete；notes 是截至当前已处理范围的快照，不是增量。同一事件 ID 在跨块延音更新后保持稳定；新起音使用新 ID。调用者负责把快照写入原始层，并保留 noteEditor。无 chunk 回调的旧片段调用继续兼容。
+
+`NoteEditorState` 包含 base、commands、cursor、filter。changes 中 null 表示删除，before 记录编辑时的材料；撤销按 cursor 应用覆盖层，原始结果继续更新。`commitNotes`/`correctedNotes`/`filteredNotes` 是可复用的纯数据操作；导入与持久化必须通过 validateProject。旧 v1/v2 项目可不含这些字段，无需强制迁移。
+
+MusicProject.transcription 保存 jobId、运行状态、processedSeconds、插件版本/代码摘要及可选模型摘要。导入 running 项目标记为 stopped，不能伪装为完整结果。complete 必须覆盖项目完整时长。

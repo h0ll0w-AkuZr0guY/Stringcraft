@@ -26,7 +26,7 @@ written-voices 负责已确认材料与弦位，reference 负责私人参考的�
 
 录音和改编谱对齐使用 `packages/music/reference-alignment.ts` 与 `scripts/align-reference.mjs`。先记录搜索配置与输入摘要，再用不重叠的短句选参和后续检查；不得用检查段挑选 BPM 或将宽松时差、忽略八度的诊断改名为准确率。最高新起音也可能属于持续旋律下方的伴奏，声部用途要结合记谱与持音关系核对。
 
-用 InstrumentDefinition 描述音域、可选调弦、谱面和技法；用自己的演奏事件扩展 NoteEvent。实现编配、演奏约束与验证样例。尤克里里可以复用弦乐算法并提供调弦与弦数；钢琴需要双手/声部约束，不能复用六线谱品位限制。当前应用编辑器针对吉他，新乐器需要相应的编辑/谱面适配与注册 UI，这一工作在路线图中明确列出。
+用 InstrumentDefinition 描述音域、可选调弦、谱面和技法；用自己的演奏事件扩展 NoteEvent。实现编配、演奏约束与验证样例。尤克里里可以复用弦乐算法并提供调弦与弦数；钢琴需要双手/声部约束，不能复用六线谱品位限制。默认编辑器已支持中立复音事件；新乐器的演奏谱仍需要相应的编辑/谱面适配与注册 UI。
 
 ## 新增导出器
 
@@ -43,3 +43,11 @@ written-voices 负责已确认材料与弦位，reference 负责私人参考的�
 ## 验证
 
 `npm run check`、`npm run build`、后端 unittest。首次浏览器测试 `npx playwright install chromium` 后运行 `npm run test:e2e`；Windows 可设置 PLAYWRIGHT_CHANNEL=msedge 使用已安装 Edge。质量样本用 `python scripts/generate-fixtures.py` 生成；算法质量与模型质量分开记录，见 QUALITY。
+
+## 继续开发音符编辑器
+
+先读 [音符编辑器](NOTE_EDITOR.md)。入口是 src/components/NoteEditor.tsx；主机数据与任务在 useWorkbench，持久化在 packages/storage，音符覆盖层在 packages/music/note-edits。卷帘索引/绘制、通用试听和 MIDI 分别在三个独立插件包，不把乐器手型写进它们。
+
+新增识别器实现可选 chunk 回调，分块状态必须可取消。比较模型前固定音频、标注、阈值、块边界与模型摘要；不可把人工改过的数据当留出集。新增训练适配器应独立保存冻结核、训练头、用户纠错记录与版本，并提供恢复旧模型、显式启动和固定留出比较；当前发行版没有在线训练。
+
+浏览器回归针对生产构建：先 npm run build，再 npm run test:e2e。旧吉他流程以 ?view=guitar 进入，新入口使用 note-editor.spec.ts。私人歌曲不进入 CI 或仓库，公开演示只用原创合成 fixture。

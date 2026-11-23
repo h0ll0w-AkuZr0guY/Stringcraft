@@ -164,6 +164,9 @@ export async function loadRefiner<Options>(
 export async function bootstrap() {
   const list = await catalog();
   for (const id of [
+    "piano-roll",
+    "note-audio",
+    "note-exporters",
     "melody-tracker",
     "guitar-standard",
     "standard-exporters",
