@@ -8,11 +8,11 @@
     "arranger": "Steven Law",
     "license": "Copyrighted score: private local evaluation only",
     "annotation": "Visual rhythm/tie annotation; fret and muted-string glyphs extracted independently from PDF text geometry. Voice roles are provisional.",
-    "review": "All string/fret/X glyphs checked; rhythm/voice independent review pending",
+    "review": "All string/fret/X glyphs checked; second visual staff/TAB rhythm review corrected bar 32 supporting voice role. Independent human rhythm review pending.",
     "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth",
     "sectionLabel": "Chorus-like texture only; formal section and recording alignment unconfirmed"
   },
-  "inputSha256": "a957dbb983d94de5de518c80281e9758ab1ac1597cbac697685117667020a821",
+  "inputSha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4",
   "task": "authored multivoice TAB performance; same-string reattacks release earlier resonance; no audio-recognition claim",
   "pitched": {
     "reference": 122,
@@ -49,9 +49,9 @@
   },
   "roles": {
     "melody": {
-      "reference": 52,
-      "prediction": 52,
-      "matched": 52,
+      "reference": 51,
+      "prediction": 51,
+      "matched": 51,
       "precision": 1,
       "recall": 1,
       "f1": 1,
@@ -69,9 +69,9 @@
       "durationMae": 0
     },
     "harmony": {
-      "reference": 54,
-      "prediction": 54,
-      "matched": 54,
+      "reference": 55,
+      "prediction": 55,
+      "matched": 55,
       "precision": 1,
       "recall": 1,
       "f1": 1,
@@ -84,11 +84,11 @@
       "description": "Same engine, but confirmed supporting voices are deliberately treated as unreviewed detector candidates. Not a comparison to a historical release.",
       "pitched": {
         "reference": 122,
-        "prediction": 52,
-        "matched": 52,
+        "prediction": 51,
+        "matched": 51,
         "precision": 1,
-        "recall": 0.4262295081967213,
-        "f1": 0.5977011494252873,
+        "recall": 0.4180327868852459,
+        "f1": 0.5895953757225433,
         "onsetMae": 0,
         "durationMae": 0
       },
@@ -103,13 +103,13 @@
         "durationMae": null
       },
       "positions": {
-        "matched": 52,
-        "total": 52,
+        "matched": 51,
+        "total": 51,
         "agreement": 1
       },
       "articulation": {
-        "matched": 52,
-        "total": 52,
+        "matched": 51,
+        "total": 51,
         "agreement": 1,
         "referenceLegato": 0,
         "predictedLegato": 0,
@@ -117,9 +117,9 @@
       },
       "roles": {
         "melody": {
-          "reference": 52,
-          "prediction": 52,
-          "matched": 52,
+          "reference": 51,
+          "prediction": 51,
+          "matched": 51,
           "precision": 1,
           "recall": 1,
           "f1": 1,
@@ -137,7 +137,7 @@
           "durationMae": null
         },
         "harmony": {
-          "reference": 54,
+          "reference": 55,
           "prediction": 0,
           "matched": 0,
           "precision": 0,

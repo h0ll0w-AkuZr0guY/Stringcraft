@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "purpose": "Predeclared diagnostic windows, not recording alignment truth",
+  "basis": "Window locations extrapolated from intro pulse and arranger bar numbers; octave alternatives allow voice register differences. Only the selection phrase ranks candidates.",
+  "cases": [
+    {
+      "id": "intro-window",
+      "referenceSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+      "recordingCacheSha256": "7110d3820743094383caf914663ba50e529930ac35b39c418635ab40ced9a481",
+      "search": {
+        "bpm": [60, 80, 0.25],
+        "offsetSeconds": [0, 4, 0.02],
+        "transpose": [0, 12, -12],
+        "selectionBeats": [0, 8],
+        "checkBeats": [8, 16],
+        "onsetTolerance": 0.05
+      }
+    },
+    {
+      "id": "verse-window",
+      "referenceSha256": "1c98d7e5d2b0a95b435f18588aa88f73dcf49f270895a9e5a03b961b6953a59f",
+      "recordingCacheSha256": "ed8470ee928bdecfcdbc57e93e805cd92b4b97bdc6c1adf2f431ba91f4628882",
+      "search": {
+        "bpm": [60, 80, 0.25],
+        "offsetSeconds": [27, 33, 0.02],
+        "transpose": [0, 12, -12],
+        "selectionBeats": [0, 8],
+        "checkBeats": [8, 32],
+        "onsetTolerance": 0.05
+      }
+    },
+    {
+      "id": "chorus-window",
+      "referenceSha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4",
+      "recordingCacheSha256": "483e5aa16db3eb1f8dbc79857bda1cfec01d7945292edb940ff38a8d2a373af8",
+      "search": {
+        "bpm": [60, 80, 0.25],
+        "offsetSeconds": [82, 90, 0.02],
+        "transpose": [0, 12, -12],
+        "selectionBeats": [0, 8],
+        "checkBeats": [8, 32],
+        "onsetTolerance": 0.05
+      }
+    }
+  ],
+  "fixedTempoControl": {
+    "bpm": 68.55146550782214,
+    "source": "Highest independent waveform timing candidate in the intro analysis window, reused unchanged across sections",
+    "sourceCacheSha256": "7110d3820743094383caf914663ba50e529930ac35b39c418635ab40ced9a481",
+    "purpose": "Development ablation added after unconstrained pitch-fit results; not held-out validation or a default promotion."
+  }
+}

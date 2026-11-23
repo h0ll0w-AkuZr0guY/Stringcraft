@@ -1,131 +1,101 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
-// Diagnostic affine beat-grid fit. Detector onsets are NOT human alignment truth.
-const [referencePath, projectPath, outputPath] = process.argv.slice(2);
+import { build } from "esbuild";
+
+const [referencePath, projectPath, outputPath, configPath] =
+  process.argv.slice(2);
 if (!referencePath || !projectPath || !outputPath)
   throw new Error(
-    "Usage: node scripts/align-reference.mjs private-reference.json private-recording-project.json report.json",
+    "Usage: node scripts/align-reference.mjs reference.json recording-project.json report.json [search.json]",
   );
 const refBytes = await readFile(referencePath),
-  projectBytes = await readFile(projectPath);
+  projectBytes = await readFile(projectPath),
+  configBytes = configPath ? await readFile(configPath) : null;
 const reference = JSON.parse(refBytes),
   project = JSON.parse(projectBytes);
-const events = reference.score.events.filter(
-  (e) =>
-    e.midi !== null &&
-    !e.tieFrom &&
-    e.beat < 16 &&
-    (e.role === "melody" || e.voice === "melody"),
-);
 if (
-  events.length < 8 ||
+  project.sourceKind !== "audio" ||
   !Array.isArray(project.notes) ||
-  project.sourceKind !== "audio"
+  !Number.isFinite(project.sourceOffset) ||
+  !Number.isFinite(project.duration)
 )
   throw new Error(
-    "Need an authored first-four-bar riff and an actual recording candidate cache",
+    "Need an actual recording candidate cache with source bounds",
   );
-const train = events.filter((e) => e.beat < 8),
-  held = events.filter((e) => e.beat >= 8);
-const byPitch = new Map();
-for (const note of project.notes) {
-  const group = byPitch.get(note.pitch.midi) ?? [];
-  group.push(note.start);
-  byPitch.set(note.pitch.midi, group);
-}
-for (const starts of byPitch.values()) starts.sort((a, b) => a - b);
-function evaluate(notes, bpm, offset) {
-  // This is coverage only. The sparse riff does not label every sound in a mix.
-  const candidates = notes.map((e) =>
-    (byPitch.get(e.midi) ?? [])
-      .map((start, i) => ({
-        key: `${e.midi}/${i}`,
-        error: Math.abs(start - offset - (e.beat * 60) / bpm),
-      }))
-      .filter((c) => c.error <= 0.05)
-      .sort((a, b) => a.error - b.error),
-  );
-  const owner = new Map();
-  function assign(index, visited) {
-    for (const candidate of candidates[index]) {
-      if (visited.has(candidate.key)) continue;
-      visited.add(candidate.key);
-      if (
-        !owner.has(candidate.key) ||
-        assign(owner.get(candidate.key), visited)
-      ) {
-        owner.set(candidate.key, index);
-        return true;
-      }
-    }
-    return false;
-  }
-  notes.forEach((_, i) => assign(i, new Set()));
-  const matched = owner.size,
-    error = [...owner].reduce(
-      (sum, [key, index]) =>
-        sum + candidates[index].find((c) => c.key === key).error,
-      0,
-    );
-  return {
-    referenceAttacks: notes.length,
-    matched,
-    coverage: matched / notes.length,
-    matchedOnsetMae: matched ? error / matched : null,
-  };
-}
-const candidates = [];
-// Fixed before looking at this recording: 60–180 BPM, 0–4 s offset, exact pitch, 50 ms.
-for (let bpm = 60; bpm <= 180; bpm += 0.25)
-  for (let index = 0; index <= 200; index++) {
-    const offset = index * 0.02,
-      metric = evaluate(train, bpm, offset);
-    candidates.push({ bpm, offset, train: metric });
-  }
-candidates.sort(
-  (a, b) =>
-    b.train.matched - a.train.matched ||
-    (a.train.matchedOnsetMae ?? Infinity) -
-      (b.train.matchedOnsetMae ?? Infinity),
+const config = configBytes ? JSON.parse(configBytes) : {};
+const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
+if (config.referenceSha256 && config.referenceSha256 !== hash(refBytes))
+  throw new Error("Frozen reference digest mismatch");
+if (
+  config.recordingCacheSha256 &&
+  config.recordingCacheSha256 !== hash(projectBytes)
+)
+  throw new Error("Frozen recording cache digest mismatch");
+const search = {
+  bpm: [60, 180, 0.25],
+  offsetSeconds: [0, 4, 0.02],
+  transpose: [0],
+  selectionBeats: [0, 8],
+  checkBeats: [8, 16],
+  onsetTolerance: 0.05,
+  ...config.search,
+  recordingBounds: [
+    project.sourceOffset,
+    project.sourceOffset + project.duration,
+  ],
+};
+const events = reference.score.events
+  .filter(
+    (e) =>
+      e.midi !== null &&
+      !e.unpitched &&
+      !e.tieFrom &&
+      (e.role ?? e.voice) === (config.role ?? "melody"),
+  )
+  .map((e) => ({ beat: e.beat, midi: e.midi }));
+const bundle = await build({
+  entryPoints: ["packages/music/reference-alignment.ts"],
+  bundle: true,
+  platform: "node",
+  format: "esm",
+  write: false,
+});
+await mkdir("artifacts/tools", { recursive: true });
+const toolPath = resolve("artifacts/tools/reference-alignment.mjs");
+await writeFile(toolPath, bundle.outputFiles[0].contents);
+const { fitReferenceGrid } = await import(pathToFileURL(toolPath).href);
+const result = fitReferenceGrid(
+  events,
+  project.notes.map((n) => ({
+    start: n.start + project.sourceOffset,
+    pitch: n.pitch,
+  })),
+  search,
 );
-const selected = candidates[0],
-  report = {
-    version: 1,
-    task: "Detector-based riff grid alignment diagnostic, not verified recording ground truth",
-    source: reference.source,
-    referenceSha256: createHash("sha256").update(refBytes).digest("hex"),
-    recordingCacheSha256: createHash("sha256")
-      .update(projectBytes)
-      .digest("hex"),
-    workbenchProposal: {
-      bpm: project.bpm,
-      beatOffset: project.beatOffset,
-      timing: project.score?.timing,
-    },
-    search: {
-      bpm: [60, 180],
-      bpmStep: 0.25,
-      offsetSeconds: [0, 4],
-      offsetStep: 0.02,
-      onsetTolerance: 0.05,
-      matching: "maximum one-to-one exact pitch/onset coverage",
-      selectionBeats: [0, 8],
-      checkBeats: [8, 16],
-    },
-    selected: {
-      ...selected,
-      check: evaluate(held, selected.bpm, selected.offset),
-    },
-    alternatives: candidates.slice(1, 6),
-    status: "unconfirmed",
-    limitations: [
-      "Arranger score and commercial recording may differ",
-      "Selection on detector output can fit detector errors; this does not establish transcription accuracy",
-      "Repeat-pattern check is within one recording, not independent cross-song validation",
-      "Needs independent beat/section annotation before use as evaluation truth",
-    ],
-  };
+const report = {
+  version: 2,
+  task: "Detector-based disjoint-phrase alignment diagnostic, not recording ground truth",
+  source: reference.source,
+  referenceSha256: hash(refBytes),
+  recordingCacheSha256: hash(projectBytes),
+  recordingFileSha256: project.sourceAudioSha256 ?? null,
+  searchConfigSha256: configBytes ? hash(configBytes) : null,
+  workbenchProposal: {
+    bpm: project.bpm,
+    beatOffset: project.beatOffset,
+    timing: project.score?.timing,
+  },
+  search,
+  ...result,
+};
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, JSON.stringify(report, null, 2));
-console.log(JSON.stringify(report.selected));
+console.log(
+  JSON.stringify({
+    status: result.status,
+    evaluated: result.evaluated,
+    selected: result.selected,
+  }),
+);

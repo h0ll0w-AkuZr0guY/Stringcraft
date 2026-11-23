@@ -36,6 +36,7 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 - `MusicProject<N>`：兼容 schemaVersion 1 与带 score 的 2，含来源、时长、BPM、beatOffset、sourceOffset、候选、旋律、编配、时间及插件版本。存储前校验；旧 schema 不静默改写。
 - `validateNotes`：拒绝重复 ID、非法音高、NaN、负时间、零时长和不支持的来源；最多 100000 音符。
 - `validateProject`：当前校验吉他项目及弦位音高关系。扩展乐器需注册相应校验器；禁止绕过校验。
+- `fitReferenceGrid`：离线参考评估工具，接受拍/音高参照与录音绝对秒起音，在有界速度/偏移/固定移调范围内只按 selectionBeats 排序；checkBeats 必须不重叠且整段被录音覆盖。返回未确认网格与一对一覆盖诊断，后续段和宽松指标均不参与选参，不代表真实音频准确率，不修改项目。
 
 ## 插件
 

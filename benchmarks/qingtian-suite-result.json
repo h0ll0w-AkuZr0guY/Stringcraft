@@ -1,7 +1,7 @@
 {
   "version": 1,
   "task": "Frozen known-score regression; no recording accuracy or listening claim",
-  "manifestSha256": "20a4d65d2284af61af4122c37fa021cf9c9992b52b41567ab1eca6b938159c35",
+  "manifestSha256": "9a3d32f33b40438d08b6b47e58042e6ff0a2e44d4dc5acce383a7b52abe6e95c",
   "passed": true,
   "records": [
     {
@@ -51,7 +51,7 @@
         },
         {
           "name": "maxDurationMae",
-          "target": 0.000001,
+          "target": 1e-06,
           "actual": 0,
           "passed": true
         },
@@ -85,7 +85,7 @@
     {
       "id": "qingtian-chorus8",
       "split": "development",
-      "inputSha256": "a957dbb983d94de5de518c80281e9758ab1ac1597cbac697685117667020a821",
+      "inputSha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4",
       "actual": {
         "pitchedF1": 1,
         "percussionF1": 1,
@@ -110,7 +110,7 @@
         },
         {
           "name": "maxDurationMae",
-          "target": 0.000001,
+          "target": 1e-06,
           "actual": 0,
           "passed": true
         },
