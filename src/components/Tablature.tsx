@@ -391,7 +391,12 @@ export function RhythmScore({ project }: { project: MusicProject }) {
         });
         api = a;
         printScore.current = () =>
-          a.print("180mm", { display: { scale: 0.8, barsPerRow: 2 } });
+          // alphaTab print() forces workers on unless explicitly overridden.
+          // Keep the same renderer mode: Vite dev prebundles have no worker URL.
+          a.print("180mm", {
+            core: { useWorkers: false },
+            display: { scale: 0.8, barsPerRow: 2 },
+          });
         a.error.on((e) => setError(String(e)));
         a.renderFinished.on(() => {
           if (!disposed) setRendered(true);
