@@ -3,7 +3,7 @@
     "id": "guitar-standard",
     "name": "标准吉他",
     "directory": "guitar",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "capabilities": ["instrument"],
     "description": "和弦伴奏、独奏指弹与单线练习；独立按弦与演奏动作验证",
     "license": "Apache-2.0"

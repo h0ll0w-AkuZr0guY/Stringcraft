@@ -10,6 +10,7 @@ import {
   arrangeMusicalScore,
   validateProjectedNotes,
   guitarPerformancePlugin,
+  recommendForScore,
 } from "./performance";
 export const guitar: InstrumentDefinition = {
   id: "guitar",
@@ -261,4 +262,13 @@ export default {
   ...guitarPerformancePlugin,
   instrument: guitar,
   arrange,
+  recommendCapos: (notes, options) =>
+    options.goal !== "melody" && options.score
+      ? recommendForScore(options.score, {
+          difficulty: options.difficulty,
+          transpose: options.transpose,
+          goal: options.goal ?? "accompaniment",
+          pattern: options.pattern ?? "strum",
+        })
+      : recommend(notes, options.difficulty),
 } satisfies MusicPlugin;

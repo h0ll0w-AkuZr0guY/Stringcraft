@@ -1,0 +1,103 @@
+.basic-arrange-settings,
+.generation-advanced-controls fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.generation-advanced-controls {
+  margin: 15px 0;
+  border-top: 1px solid #e0e7da;
+}
+.generation-advanced-controls summary {
+  cursor: pointer;
+  padding: 12px 0;
+  color: #60765a;
+  font-size: 12px;
+}
+.generation-feedback {
+  margin: 12px 0;
+  border: 1px solid #d6e1cc;
+  background: #f0f5e9;
+  padding: 14px;
+  border-radius: 7px;
+  scroll-margin-top: 18px;
+  outline-offset: 4px;
+}
+.generation-feedback.running {
+  border-color: #b4c8a5;
+}
+.generation-feedback.error {
+  border-color: #d8b6a2;
+  background: #fff5ee;
+  color: #804b36;
+}
+.generation-feedback.cancelled {
+  background: #f4f4ef;
+}
+.generation-message {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.generation-message svg {
+  flex: 0 0 18px;
+  margin-top: 2px;
+}
+.generation-feedback small {
+  display: block;
+  margin: 6px 0;
+  color: #687963;
+}
+.generation-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+.generation-feedback ul {
+  padding-left: 18px;
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+.score-panel > .generation-feedback {
+  margin: 16px 24px;
+}
+.advanced-music-toggle {
+  padding: 20px 24px;
+  border-top: 1px solid #e3eadc;
+}
+.advanced-music {
+  padding: 0 20px 20px;
+}
+.advanced-music .structure-panel {
+  margin: 0;
+}
+.generation-feedback .button,
+.generation-feedback .text-button {
+  font-size: 12px;
+}
+.generate-button {
+  min-height: 46px;
+}
+.local-build {
+  font-size: 11px;
+  color: #7e8e78;
+}
+@media (max-width: 700px) {
+  .score-panel > .generation-feedback {
+    margin: 12px;
+  }
+  .advanced-music {
+    padding: 0 10px 12px;
+  }
+}
+@media print {
+  .generation-feedback,
+  .advanced-music-toggle,
+  .advanced-music {
+    display: none !important;
+  }
+}

@@ -1,3 +1,9 @@
+import {
+  runGeneration,
+  repairGenerationPlugins,
+  GenerationError,
+} from "../../packages/music/generate";
+import type { GenerationTask } from "./generation-state";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   validateProject,
@@ -41,11 +47,8 @@ import {
   audioAssetKey,
   audioAssetPrefix,
 } from "../../packages/storage";
-import { recommend, violations } from "../../plugins/guitar";
-import {
-  recommendForScore,
-  syncPerformance,
-} from "../../plugins/guitar/performance";
+import { violations } from "../../plugins/guitar";
+import { syncPerformance } from "../../plugins/guitar/performance";
 import {
   projectScore,
   upgradeProject,
@@ -84,6 +87,9 @@ export function useWorkbench() {
     [saved, setSaved] = useState("原创示例 · 尚未修改"),
     [dirty, setDirty] = useState(false),
     [projects, setProjects] = useState<MusicProject[]>([]);
+  const [generation, setGeneration] = useState<GenerationTask | null>(null);
+  const generationLock = useRef(false);
+  const [advanced, setAdvanced] = useState(false);
   const [pluginCount, setPluginCount] = useState<number | null>(null);
   const [mode, setMode] = useState<"editor" | "guitar">(() =>
     new URLSearchParams(location.search).get("view") === "guitar"
@@ -138,29 +144,38 @@ export function useWorkbench() {
   const notify = useCallback((s: string) => setMessage(s), []);
   const projectRef = useRef(project);
   projectRef.current = project;
-  const edit = (next: MusicProject, synchronize = true) => {
+  const commitEdit = (next: MusicProject, synchronize = true) => {
     const current = projectRef.current;
-    try {
-      if (
-        synchronize &&
-        next.arrangement &&
-        next.arrangement !== current.arrangement &&
-        next.arrangement.performance
-      )
-        next = { ...next, arrangement: syncPerformance(next.arrangement) };
-    } catch (error) {
-      notify(errorMessage(error));
-      return;
-    }
+    if (
+      synchronize &&
+      next.arrangement &&
+      next.arrangement !== current.arrangement &&
+      next.arrangement.performance
+    )
+      next = { ...next, arrangement: syncPerformance(next.arrangement) };
     if (next.bpm !== current.bpm && next.score && next.score === current.score)
       next = { ...next, score: withReferenceTempo(next.score, next.bpm) };
+    validateProject(next);
+    const updated = { ...next, updatedAt: new Date().toISOString() };
     setDirty(true);
     setHistory((h) => [...h.slice(-39), structuredClone(current)]);
     setFuture([]);
-    const updated = { ...next, updatedAt: new Date().toISOString() };
     projectRef.current = updated;
     setProject(updated);
   };
+  const edit = (next: MusicProject, synchronize = true) => {
+    try {
+      commitEdit(next, synchronize);
+      return true;
+    } catch (error) {
+      notify(errorMessage(error));
+      return false;
+    }
+  };
+  useEffect(() => {
+    setGeneration(null);
+    setAdvanced(false);
+  }, [project.id]);
   const notes = project.arrangement?.notes ?? [],
     chosen = notes.find((n) => n.id === selected);
   const stale =
@@ -666,7 +681,9 @@ export function useWorkbench() {
       );
     } catch (e) {
       if (abortRef.current === control)
-        notify(control.signal.aborted ? "已取消，原项目已保留" : errorMessage(e));
+        notify(
+          control.signal.aborted ? "已取消，原项目已保留" : errorMessage(e),
+        );
     } finally {
       if (abortRef.current === control) {
         setBusy("");
@@ -675,126 +692,117 @@ export function useWorkbench() {
     }
   }
   async function generate() {
+    if (generationLock.current || abortRef.current || busy) return;
+    generationLock.current = true;
     stop();
-    setBusy("正在编配");
-    setMessage("");
-    setAdvice("");
+    const current = projectRef.current;
     const control = new AbortController();
     abortRef.current = control;
+    const task: GenerationTask = {
+      id: crypto.randomUUID(),
+      projectId: current.id,
+      status: "running",
+      phase: "检查输入与插件",
+      startedAt: Date.now(),
+      message: "已收到请求，正在检查输入与插件。",
+    };
+    setGeneration(task);
+    setBusy("正在编配 · 检查输入与插件");
+    setMessage("");
+    setAdvice("");
+    const update = (changes: Partial<GenerationTask>) =>
+      setGeneration((previous) =>
+        previous?.id === task.id ? { ...previous, ...changes } : previous,
+      );
+    const timeout = setTimeout(() => control.abort("timeout"), 120000);
     try {
-      const tracker = await load("melody-tracker"),
-        guitar = await load("guitar-standard");
-      const musicalInput = project.noteEditor
-        ? filteredNotes(project)
-        : (project.refinement?.notes ?? project.notes);
-      if (project.schemaVersion === 1 && goal !== "melody")
-        throw new Error(
-          "请先在音乐结构中点击“升级为 v2 副本”，保留旧项目后再重编配。",
-        );
-      const melody = project.score
-        ? soundingEvents(project.score).filter((n) => n.role === "melody")
-        : project.melody.length
-          ? project.melody
-          : await invoke<NoteEvent[]>(
-              "melody-tracker",
-              "extractMelody",
-              [musicalInput],
-              control.signal,
-            );
-      if ((await installed("guitar-standard"))!.manifest.version === "0.1.0")
-        throw new Error("请在插件中心更新标准吉他到 0.2，再使用新的编配方式。");
-      const harmony = await load("harmony-analysis");
-      const baseScore = projectScore({ ...project, melody });
-      const score =
-        baseScore.chords.length && project.sourceKind !== "audio"
-          ? baseScore
-          : harmony.analyzeHarmony!(musicalInput, baseScore);
-      const candidates = (
-        goal === "melody"
-          ? recommend(melody, difficulty)
-          : recommendForScore(score, { difficulty, transpose, goal, pattern })
-      ).slice(0, 5);
-      if (!candidates.length)
-        throw new Error(
-          "当前没有可用指型。请先补充或校正和弦，再调整移调、变调夹或难度。",
-        );
-      let chosenCapo = autoCapo ? (candidates[0]?.capo ?? 0) : capo;
-      if (useAI && autoCapo) {
-        try {
-          let advisor = await installed("bailian-advisor");
-          if (!advisor) {
-            const entry = (await catalog()).find(
-              (m) => m.id === "bailian-advisor",
-            )!;
-            await install(entry);
-          }
-          const plugin = await load("bailian-advisor");
-          const a = await plugin.advise!(
-            ai,
-            candidates,
-            {
-              notes: melody.length,
-              difficulty,
-            },
-            control.signal,
-          );
-          chosenCapo = a.capo;
-          const metric = candidates.find((c) => c.capo === a.capo);
-          if (!metric) throw new Error("AI 返回了候选以外的结果");
-          setAdvice(
-            `AI 选择 Capo ${a.capo}；本地演奏候选评分 ${metric.score.toFixed(2)}。请试听核对。`,
-          );
-        } catch (e) {
-          setAdvice(errorMessage(e) + "，已使用本地规则。");
-        }
-      }
-      const input = melody;
-      const arrangement = await invoke<Arrangement>(
-        "guitar-standard",
-        "arrange",
-        [
-          input,
-          {
-            difficulty,
-            capo: chosenCapo,
-            transpose,
-            bpm: project.bpm,
-            previous: project.arrangement?.notes,
-            goal,
-            score,
-            pattern,
-          },
-        ],
-        control.signal,
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
       );
-      const versions = { ...project.pluginVersions };
-      for (const id of [
-        "guitar-standard",
-        "melody-tracker",
-        "standard-exporters",
-      ])
-        versions[id] = (await installed(id))!.manifest.version;
-      setCapo(chosenCapo);
       control.signal.throwIfAborted();
-      edit({
-        ...project,
-        schemaVersion: project.schemaVersion,
-        score,
-        melody,
-        arrangement,
-        pluginVersions: versions,
-      });
-      setSelected(null);
-      notify(
-        `编配完成：${goal === "accompaniment" ? "和弦伴奏" : goal === "fingerstyle" ? "独奏指弹" : "单线练习"}，${arrangement.notes.length} 个发声事件。请逐小节核对并试弹。`,
+      const result = await runGeneration(
+        current,
+        {
+          difficulty,
+          capo,
+          transpose,
+          bpm: current.bpm,
+          goal,
+          pattern,
+          autoCapo,
+          useAI,
+        },
+        ai,
+        control.signal,
+        (phase) => {
+          update({ phase, message: phase + "…" });
+          setBusy("正在编配 · " + phase);
+        },
       );
-    } catch (e) {
-      if (abortRef.current === control) notify(errorMessage(e));
+      control.signal.throwIfAborted();
+      if (projectRef.current !== current)
+        throw new GenerationError(
+          "生成期间项目已修改，请使用当前设置重试。已有谱面已保留。",
+        );
+      commitEdit(result.project, false);
+      setCapo(result.capo);
+      setAdvice(result.advice);
+      setSelected(null);
+      update({
+        status: "success",
+        endedAt: Date.now(),
+        count: result.project.arrangement!.notes.length,
+        message: `编配完成：${result.project.arrangement!.notes.length} 个发声事件，可直接试听。`,
+      });
+      notify(
+        `编配完成：${goal === "accompaniment" ? "和弦伴奏" : goal === "fingerstyle" ? "独奏指弹" : "单线练习"}，${result.project.arrangement!.notes.length} 个发声事件。请逐小节核对并试弹。`,
+      );
+    } catch (error) {
+      if (projectRef.current.id !== current.id) return;
+      const timedOut = control.signal.reason === "timeout";
+      const cancelled = control.signal.aborted && !timedOut;
+      const message = timedOut
+        ? "生成超过 120 秒，已停止。已有谱面已保留，可缩短片段后重试。"
+        : cancelled
+          ? "已取消生成，已有谱面已保留。"
+          : errorMessage(error);
+      update({
+        status: cancelled ? "cancelled" : "error",
+        message,
+        endedAt: Date.now(),
+        recovery:
+          error instanceof GenerationError
+            ? error.recovery
+            : /锁定|指型|和弦|手指/.test(message)
+              ? "structure"
+              : "retry",
+        problems: error instanceof GenerationError ? error.problems : [],
+      });
+      if (abortRef.current === control) notify(message);
     } finally {
+      clearTimeout(timeout);
+      generationLock.current = false;
       if (abortRef.current === control) {
         setBusy("");
         abortRef.current = null;
       }
+    }
+  }
+  async function repairGeneration() {
+    if (busy || generationLock.current) return;
+    setBusy("正在修复生成所需插件");
+    try {
+      await repairGenerationPlugins(generation?.problems ?? []);
+      setGeneration(null);
+      notify("所需插件已修复，请点击生成吉他编配。");
+    } catch (error) {
+      const message = "插件修复失败：" + errorMessage(error);
+      setGeneration((previous) =>
+        previous ? { ...previous, message } : previous,
+      );
+      notify(message);
+    } finally {
+      setBusy("");
     }
   }
   async function useDemo() {
@@ -1202,6 +1210,10 @@ export function useWorkbench() {
         .catch((e) => notify(errorMessage(e)));
   };
   return {
+    generation,
+    repairGeneration,
+    advanced,
+    setAdvanced,
     commitEditor,
     changeNoteEditor,
     mode,

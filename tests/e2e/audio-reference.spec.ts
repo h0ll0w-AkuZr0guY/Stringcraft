@@ -301,6 +301,9 @@ test("upgrading a legacy project copies its recording without replacing the orig
   await expect(page.getByRole("status")).toContainText("原文件摘要已核验");
   await expect(page.locator(".save-state")).toContainText("已保存在此浏览器");
   await page
+    .getByRole("button", { name: "高级校正：节拍、和弦与声部", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "升级为 v2 副本", exact: true })
     .click();
   await expect(page.getByRole("status")).toContainText("已创建 v2 副本");

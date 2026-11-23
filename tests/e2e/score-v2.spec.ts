@@ -54,6 +54,7 @@ test("written guitar octave, string positions and unpitched attacks survive arra
     imported.score.events.filter((e: { unpitched?: boolean }) => e.unpitched),
   ).toHaveLength(1);
   await page.getByRole("button", { name: "进阶", exact: true }).click();
+  await page.locator(".generation-advanced-controls > summary").click();
   await page.getByLabel("变调夹", { exact: true }).selectOption("0");
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
@@ -171,6 +172,7 @@ test("known score preserves independent voices, ties, slurs, rests, meter and te
   ).toHaveLength(3);
   expect(p.notes[0].duration).toBeCloseTo(1.5);
   await page.getByRole("button", { name: "进阶", exact: true }).click();
+  await page.locator(".generation-advanced-controls > summary").click();
   await page.getByLabel("变调夹", { exact: true }).selectOption("0");
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
@@ -228,6 +230,9 @@ test("musical editor splits intra-bar harmony, pickup and expressive sections wi
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
+  await page
+    .getByRole("button", { name: "高级校正：节拍、和弦与声部", exact: true })
+    .click();
   await page.locator(".structure-panel > summary").click();
   await page
     .getByRole("button", { name: "小节 1 添加换和弦", exact: true })

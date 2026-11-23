@@ -81,3 +81,11 @@ mode 为 transcribe、vocals、instrumental。结果包含 duration、bpm、note
 `NoteEditorState` 包含 base、commands、cursor、filter。changes 中 null 表示删除，before 记录编辑时的材料；撤销按 cursor 应用覆盖层，原始结果继续更新。`commitNotes`/`correctedNotes`/`filteredNotes` 是可复用的纯数据操作；导入与持久化必须通过 validateProject。旧 v1/v2 项目可不含这些字段，无需强制迁移。
 
 MusicProject.transcription 保存 jobId、运行状态、processedSeconds、插件版本/代码摘要及可选模型摘要。导入 running 项目标记为 stopped，不能伪装为完整结果。complete 必须覆盖项目完整时长。
+
+## 本地试用生成扩展
+
+MusicPlugin 可选 `recommendCapos(notes, options): {capo,score}[]`，复用 ArrangeOptions；标准吉他 0.2.3 根据目标调用自身候选规则。宿主 invoke 允许 analyzeHarmony 与 recommendCapos，通过同一可取消 Worker 执行，不在 React 主线程搜索指型。旧插件不会自动覆盖，生成前识别版本/摘要差异和停用状态，由用户明确点击“修复所需插件”处理。
+
+runGeneration 返回已校验的新项目、所选变调夹和建议文字，不直接修改传入项目。GenerationError 提供 plugins/structure/upgrade/retry 恢复入口；插件问题区分 missing/disabled/update。界面阶段使用不定进度与耗时，不编造百分比。
+
+本地 GET /api/v1/capabilities 增加 appVersion 与 buildSha，来自包内 dist/build-info.json；原字段兼容。启动器发现端口占用时，只复用版本和构建标识均相同的 Stringcraft 服务，否则提示退出，不静默打开旧程序。

@@ -141,7 +141,7 @@ function WorkbenchView({
           >
             GitHub 开源项目 <ArrowUpRight size={14} />
           </a>
-          <span className="version">v0.2.0-preview.1 · 音符编辑器</span>
+          <span className="version">{__APP_VERSION__} · 本地试用</span>
         </div>
       </aside>
       <div className="main-shell">
@@ -155,6 +155,9 @@ function WorkbenchView({
                 : "插件中心"}
           </div>
           <div className="topbar-actions">
+            <span className="local-build">
+              本地试用 {__APP_VERSION__} · {__BUILD_SHA__}
+            </span>
             <span className="local-status">
               <i />
               本机处理

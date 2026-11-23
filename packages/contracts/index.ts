@@ -164,6 +164,10 @@ export interface MusicPlugin {
   instrument?: InstrumentDefinition;
   extractMelody?: (notes: NoteEvent[]) => NoteEvent[];
   arrange?: (notes: NoteEvent[], options: ArrangeOptions) => Arrangement;
+  recommendCapos?: (
+    notes: NoteEvent[],
+    options: ArrangeOptions,
+  ) => { capo: number; score: number }[];
   exportFile?: (
     project: MusicProject,
     format: string,

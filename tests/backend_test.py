@@ -18,6 +18,8 @@ class LocalHostTests(unittest.TestCase):
         data = self.client.get('/api/v1/capabilities').json()
         self.assertTrue(data['local'])
         self.assertEqual(data['sdk'],1)
+        self.assertIsInstance(data['appVersion'],str)
+        self.assertIsInstance(data['buildSha'],str)
     def test_job_authentication_required(self):
         self.assertEqual(self.client.get('/api/v1/jobs/missing').status_code,401)
     def test_unknown_job_is_not_redirected(self):

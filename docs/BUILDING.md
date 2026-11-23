@@ -8,7 +8,7 @@ Node.js 22+：npm ci、npm run check、npm run build。构建包含独立插件�
 
 ## Pages
 
-Settings → Pages 的 source 选择 GitHub Actions。pages.yml 在 main 通过同样检查后构建并发布 dist。Vite 使用相对 base，模型、WASM、插件、字体与文档都从仓库子路径载入。只部署 dist，不部署服务、Key 或用户文件。
+Settings → Pages 的 source 选择 GitHub Actions。pages.yml 仅允许 workflow_dispatch 手动发布；main 提交不再自动上线。先交付本地包并完成试用，再按用户明确的发布请求部署指定提交。Vite 使用相对 base，模型、WASM、插件、字体与文档都从仓库子路径载入。只部署 dist，不部署服务、Key 或用户文件。
 
 插件编译后使用内容摘要命名 ESM。官方目录指向版本化文件；更新新插件时保留旧文件，以免已安装项目失去相关资源。更改已有逻辑需递增相应插件版本，不能只依靠内容散列掩盖语义版本变化。
 
@@ -30,8 +30,14 @@ Windows、Python 3.11+：先 npm run build，再 python scripts/build-local.py�
 
 ## 发布流程
 
-ci.yml 检查每个 PR。pages.yml 发布主分支网页；release.yml 对明确 v 标签构建 Windows 基础包并创建预览 Release，同时提供环境构建的独立 workflow_dispatch。CI 不读取本地 Key、不调用付费模型。
+ci.yml 检查每个 PR。pages.yml 手动发布网页；release.yml 对明确 v 标签构建 Windows 基础包并创建预览 Release，同时提供环境构建的独立 workflow_dispatch。CI 不读取本地 Key、不调用付费模型。
 
 维护者发布前检查差异、第三方许可、质量报告、版本和下载包。0.1.0 只能标记 preview，真人试弹与真实混音门槛未过前不作为稳定版 Latest。不要覆盖历史附件；新环境包应使用新版本名，提供 SHA-256。
 
 真实 Pages 的 BYOK 验证使用显式设置 STRINGCRAFT_PROVIDER_KEY_FILE 后运行 provider.spec.ts，默认跳过且禁止录屏、截图和 trace；普通 CI 永不读取或调用密钥。
+
+## 本地试用包
+
+本轮版本为 0.2.0-local.1，不创建公开标签或 Release。构建后本机执行 python scripts/build-local.py，输出完整目录包、ZIP 与 .zip.sha256。使用说明随包提供；网页和服务从同一 build-info 识别版本。基础模型/WASM/采样已包含，不携带用户音频或 Key。
+
+先独立解压，再限制 PATH 只含 Windows 系统路径启动 EXE。以 TEST_BASE_URL 指向该进程，执行 scripts/verify-local-trial.mjs；它阻止外网请求，验证真实识别、生成、播放、WAV 非静音、MIDI、保存和重开。STRINGCRAFT_PRIVATE_AUDIO 可显式指定本机授权材料；私人阶段不录视频，结果只写 artifacts。端口相同版本复用、旧版本占用拒绝还需用实际 EXE 验证。

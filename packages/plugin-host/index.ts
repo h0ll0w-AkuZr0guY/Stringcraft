@@ -183,7 +183,12 @@ export async function bootstrap() {
 /** Pure musical computations run outside the UI; cancellation terminates the worker. */
 export async function invoke<T>(
   id: string,
-  method: "extractMelody" | "arrange" | "analyzeTiming",
+  method:
+    | "extractMelody"
+    | "arrange"
+    | "analyzeTiming"
+    | "analyzeHarmony"
+    | "recommendCapos",
   args: unknown[],
   signal?: AbortSignal,
 ): Promise<T> {

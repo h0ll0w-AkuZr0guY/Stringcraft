@@ -14,6 +14,7 @@ import tempfile
 import time
 import uuid
 import webbrowser
+import socket
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
@@ -29,6 +30,13 @@ MAX_BYTES = 200 * 1024 * 1024
 JOBS: dict[str, dict] = {}
 PROCESSES: dict[str, asyncio.subprocess.Process] = {}
 TASKS: set[asyncio.Task] = set()
+
+def build_info() -> dict:
+    try:
+        value = json.loads((ROOT / 'dist' / 'build-info.json').read_text(encoding='utf-8'))
+        return {key: value[key] for key in ('appVersion', 'buildSha')}
+    except (OSError, ValueError, KeyError):
+        return {'appVersion': 'development', 'buildSha': 'local'}
 
 def plugin_python() -> Path:
     override = os.environ.get('STRINGCRAFT_NEURAL_PYTHON')
@@ -93,7 +101,7 @@ def session():
 @app.get('/api/v1/capabilities')
 def capabilities():
     python = plugin_python()
-    return {'sdk': 1, 'local': True, 'plugin': {'id': 'local-separation', 'installed': python.is_file(), 'ffmpeg': bool(ffmpeg())}, 'maxUploadBytes': MAX_BYTES}
+    return {'sdk': 1, 'local': True, **build_info(), 'plugin': {'id': 'local-separation', 'installed': python.is_file(), 'ffmpeg': bool(ffmpeg())}, 'maxUploadBytes': MAX_BYTES}
 
 async def run_job(identifier: str, source: Path, mode: str):
     job = JOBS[identifier]
@@ -208,10 +216,50 @@ def main():
     parser.add_argument('--port', type=int, default=18765)
     parser.add_argument('--no-open', action='store_true')
     args = parser.parse_args()
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        listener.bind(('127.0.0.1', args.port))
+        listener.listen(128)
+    except OSError:
+        listener.close()
+        # Never silently send the user to a different build occupying this port.
+        try:
+            import urllib.request
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            with opener.open(f'http://127.0.0.1:{args.port}/api/v1/capabilities', timeout=2) as response:
+                existing = json.load(response)
+            same = existing.get('local') is True and all(existing.get(k) == v for k, v in build_info().items())
+        except Exception:
+            same = False
+        if same:
+            if not args.no_open:
+                webbrowser.open(f'http://127.0.0.1:{args.port}/')
+            print('This Stringcraft build is already running.')
+            return
+        message = f'端口 {args.port} 已被旧版本或其他程序占用。请关闭旧窗口后重新启动；未打开其他版本。'
+        print(message)
+        if os.name == 'nt' and not args.no_open:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(0, message, 'Stringcraft 本地试用', 0x10)
+        raise SystemExit(1)
     if not args.no_open:
         import threading
-        threading.Timer(1, lambda: webbrowser.open(f'http://127.0.0.1:{args.port}/')).start()
-    uvicorn.run(app, host='127.0.0.1', port=args.port, log_level='warning')
+        def open_when_ready():
+            import urllib.request
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            for _ in range(100):
+                try:
+                    with opener.open(f'http://127.0.0.1:{args.port}/api/v1/capabilities', timeout=.5) as response:
+                        json.load(response)
+                    webbrowser.open(f'http://127.0.0.1:{args.port}/')
+                    return
+                except Exception:
+                    time.sleep(.1)
+        threading.Thread(target=open_when_ready, daemon=True).start()
+    try:
+        uvicorn.Server(uvicorn.Config(app, log_level='warning')).run(sockets=[listener])
+    finally:
+        listener.close()
 
 if __name__ == '__main__':
     main()

@@ -1,3 +1,4 @@
+import GenerationFeedback from "./GenerationFeedback";
 import {
   Check,
   Download,
@@ -68,6 +69,9 @@ export default function ScorePanel() {
     exportAs,
     bindRecording,
     updateReferenceOffset,
+    generation,
+    advanced,
+    setAdvanced,
   } = useWorkbenchContext();
   const referenceInput = useRef<HTMLInputElement>(null),
     [referenceOffset, setReferenceOffset] = useState(
@@ -293,27 +297,7 @@ export default function ScorePanel() {
           设置已改变，谱面仍为上次结果。重新生成后应用新设置。
         </p>
       )}
-      <MusicalStructure />
-      {project.refinement && (
-        <p className="refinement-summary">
-          原始 {project.notes.length} 个候选均已保留；本次编配使用清理后的{" "}
-          {project.refinement.notes.length}{" "}
-          个候选。弱和弦音可能被省略，关闭清理后可重新分析对照。
-        </p>
-      )}
-      <ChordDiagrams />
-      {!!project.arrangement?.warnings.length && (
-        <details className="arrangement-report">
-          <summary>编配说明与待核对项</summary>
-          {project.arrangement.warnings.map((w) => (
-            <p key={w}>{w}</p>
-          ))}
-          <p>
-            省略 {project.arrangement.dropped.length}{" "}
-            个输入事件。演奏约束通过不代表真人试弹已通过。
-          </p>
-        </details>
-      )}
+      <GenerationFeedback result />
       <div className="notation-toolbar">
         <div className="tabs">
           <button
@@ -367,12 +351,24 @@ export default function ScorePanel() {
           <span />
         </div>
       </div>
-      <div className="notation-body">
+      <div className="notation-body" id="guitar-notation">
         {!notes.length ? (
           <div className="empty-panel">
             <Guitar size={48} />
-            <h3>旋律的下一种可能，在这里。</h3>
-            <p>分析音乐后，点击「生成吉他编配」。</p>
+            <h3>
+              {generation?.status === "running"
+                ? "正在生成你的吉他谱…"
+                : generation?.status === "error"
+                  ? "本次生成尚未完成"
+                  : generation?.status === "cancelled"
+                    ? "生成已取消"
+                    : "音乐已就绪，下一步生成吉他谱"}
+            </h3>
+            <p>
+              {generation
+                ? generation.message
+                : "选择弹奏目标和难度，点击左侧「生成吉他编配」。"}
+            </p>
           </div>
         ) : view === "tab" ? (
           <Tablature
@@ -707,6 +703,41 @@ export default function ScorePanel() {
           </button>
         </div>
       </div>
+      <div className="advanced-music-toggle">
+        <button
+          className="button secondary small"
+          aria-expanded={advanced}
+          onClick={() => setAdvanced(!advanced)}
+        >
+          {advanced ? "收起音乐结构校正" : "高级校正：节拍、和弦与声部"}
+        </button>
+      </div>
+      {advanced && (
+        <div className="advanced-music">
+          {" "}
+          <MusicalStructure />
+          {project.refinement && (
+            <p className="refinement-summary">
+              原始 {project.notes.length} 个候选均已保留；本次编配使用清理后的{" "}
+              {project.refinement.notes.length}{" "}
+              个候选。弱和弦音可能被省略，关闭清理后可重新分析对照。
+            </p>
+          )}
+          <ChordDiagrams />
+          {!!project.arrangement?.warnings.length && (
+            <details className="arrangement-report">
+              <summary>编配说明与待核对项</summary>
+              {project.arrangement.warnings.map((w) => (
+                <p key={w}>{w}</p>
+              ))}
+              <p>
+                省略 {project.arrangement.dropped.length}{" "}
+                个输入事件。演奏约束通过不代表真人试弹已通过。
+              </p>
+            </details>
+          )}
+        </div>
+      )}
     </section>
   );
 }

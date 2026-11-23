@@ -1,3 +1,4 @@
+import GenerationFeedback from "./GenerationFeedback";
 import {
   ArrowUpRight,
   AudioLines,
@@ -58,6 +59,9 @@ export default function SourceControls() {
     notes,
     generate,
     advice,
+    generation,
+    advanced,
+    setAdvanced,
   } = useWorkbenchContext();
   return (
     <aside className="controls-column">
@@ -181,7 +185,7 @@ export default function SourceControls() {
             </button>
           </>
         )}
-        {busy && (
+        {busy && generation?.status !== "running" && (
           <div className="progress-box">
             <progress max="1" value={progress} />
             <span>
@@ -228,157 +232,179 @@ export default function SourceControls() {
           <h2>我的弹奏方式</h2>
           <span className="step-label">ARRANGE</span>
         </div>
-        <div className="field-header">
-          <label>弹奏难度</label>
-          <span>循序渐进，找到手感</span>
-        </div>
-        <label>
-          编配目标
-          <select
-            aria-label="编配目标"
-            value={goal}
-            onChange={(e) => setGoal(e.target.value as typeof goal)}
-          >
-            <option value="accompaniment">和弦伴奏 · 为弹唱留出空间</option>
-            <option value="fingerstyle">独奏指弹 · 旋律与低音</option>
-            <option value="melody">单线旋律练习</option>
-          </select>
-        </label>
-        {goal === "accompaniment" && (
+        <fieldset className="basic-arrange-settings" disabled={!!busy}>
+          <div className="field-header">
+            <label>弹奏难度</label>
+            <span>循序渐进，找到手感</span>
+          </div>
           <label>
-            伴奏手法
+            编配目标
             <select
-              aria-label="伴奏手法"
-              value={pattern}
-              onChange={(e) => setPattern(e.target.value as typeof pattern)}
+              aria-label="编配目标"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value as typeof goal)}
             >
-              <option value="strum">扫弦</option>
-              <option value="arpeggio">分解和弦</option>
+              <option value="accompaniment">和弦伴奏 · 为弹唱留出空间</option>
+              <option value="fingerstyle">独奏指弹 · 旋律与低音</option>
+              <option value="melody">单线旋律练习</option>
             </select>
           </label>
-        )}
-        <div className="difficulty-grid">
-          {Object.entries(labels).map(([d, label], i) => (
-            <button
-              key={d}
-              className={difficulty === d ? "selected" : ""}
-              onClick={() => {
-                setDifficulty(d as Difficulty);
-                setGoal(
-                  d === "easy" || d === "normal"
-                    ? "accompaniment"
-                    : "fingerstyle",
-                );
-              }}
-            >
-              <span className="difficulty-dots">
-                {Array.from({ length: 4 }, (_, j) => (
-                  <i key={j} className={j <= i ? "filled" : ""} />
-                ))}
+          {goal === "accompaniment" && (
+            <label>
+              伴奏手法
+              <select
+                aria-label="伴奏手法"
+                value={pattern}
+                onChange={(e) => setPattern(e.target.value as typeof pattern)}
+              >
+                <option value="strum">扫弦</option>
+                <option value="arpeggio">分解和弦</option>
+              </select>
+            </label>
+          )}
+          <div className="difficulty-grid">
+            {Object.entries(labels).map(([d, label], i) => (
+              <button
+                key={d}
+                className={difficulty === d ? "selected" : ""}
+                onClick={() => {
+                  setDifficulty(d as Difficulty);
+                  setGoal(
+                    d === "easy" || d === "normal"
+                      ? "accompaniment"
+                      : "fingerstyle",
+                  );
+                }}
+              >
+                <span className="difficulty-dots">
+                  {Array.from({ length: 4 }, (_, j) => (
+                    <i key={j} className={j <= i ? "filled" : ""} />
+                  ))}
+                </span>
+                <strong>{label}</strong>
+              </button>
+            ))}
+          </div>
+          <p className="difficulty-description">
+            {difficulty === "easy"
+              ? "简化和弦伴奏，稳定节奏，留出换和弦的准备时间。"
+              : difficulty === "normal"
+                ? "常用和弦与扫弦或分解节奏，为弹唱留出空间。"
+                : difficulty === "hard"
+                  ? "以旋律和独立低音构成指弹，优先保持乐句。"
+                  : "保留独奏结构，处理连奏和指法；不通过堆叠音符增加难度。"}
+          </p>
+        </fieldset>
+        <details
+          className="generation-advanced-controls"
+          open={advanced}
+          onToggle={(e) => {
+            if (e.currentTarget.open !== advanced)
+              setAdvanced(e.currentTarget.open);
+          }}
+        >
+          <summary>高级设置：变调、速度与 AI</summary>
+          <fieldset disabled={!!busy}>
+            <div className="field-row">
+              <label>
+                变调夹
+                <select
+                  aria-label="变调夹"
+                  value={autoCapo ? "auto" : capo}
+                  onChange={(e) => {
+                    setAutoCapo(e.target.value === "auto");
+                    if (e.target.value !== "auto")
+                      setCapo(Number(e.target.value));
+                  }}
+                >
+                  <option value="auto">自动推荐</option>
+                  {Array.from({ length: 13 }, (_, i) => (
+                    <option value={i} key={i}>
+                      {i === 0 ? "不使用" : i + " 品"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                移调（半音）
+                <input
+                  aria-label="移调"
+                  type="number"
+                  min="-12"
+                  max="12"
+                  value={transpose}
+                  onChange={(e) =>
+                    setTranspose(
+                      Math.max(-12, Math.min(12, Number(e.target.value))),
+                    )
+                  }
+                />
+              </label>
+            </div>
+            <div className="field-row">
+              <label>
+                参考速度 BPM
+                <input
+                  aria-label="参考速度 BPM"
+                  type="number"
+                  min="20"
+                  max="300"
+                  value={Number(project.bpm.toFixed(1))}
+                  onChange={(e) =>
+                    edit({
+                      ...project,
+                      bpm: Math.max(20, Math.min(300, Number(e.target.value))),
+                    })
+                  }
+                />
+              </label>
+              <label>
+                吉他音色
+                <select
+                  value={tone}
+                  onChange={(e) => {
+                    stop();
+                    setTone(e.target.value);
+                  }}
+                >
+                  <option value="steel">钢弦 · 实录采样</option>
+                  <option value="nylon">尼龙 · 实录采样</option>
+                  <option value="synth">合成拨弦</option>
+                </select>
+              </label>
+            </div>
+            <label className="toggle-row">
+              <span>
+                <strong>AI 辅助建议</strong>
+                <small>可选 · 使用自己的百炼 Key</small>
               </span>
-              <strong>{label}</strong>
-            </button>
-          ))}
-        </div>
-        <p className="difficulty-description">
-          {difficulty === "easy"
-            ? "简化和弦伴奏，稳定节奏，留出换和弦的准备时间。"
-            : difficulty === "normal"
-              ? "常用和弦与扫弦或分解节奏，为弹唱留出空间。"
-              : difficulty === "hard"
-                ? "以旋律和独立低音构成指弹，优先保持乐句。"
-                : "保留独奏结构，处理连奏和指法；不通过堆叠音符增加难度。"}
-        </p>
-        <div className="field-row">
-          <label>
-            变调夹
-            <select
-              aria-label="变调夹"
-              value={autoCapo ? "auto" : capo}
-              onChange={(e) => {
-                setAutoCapo(e.target.value === "auto");
-                if (e.target.value !== "auto") setCapo(Number(e.target.value));
-              }}
-            >
-              <option value="auto">自动推荐</option>
-              {Array.from({ length: 13 }, (_, i) => (
-                <option value={i} key={i}>
-                  {i === 0 ? "不使用" : i + " 品"}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            移调（半音）
-            <input
-              aria-label="移调"
-              type="number"
-              min="-12"
-              max="12"
-              value={transpose}
-              onChange={(e) =>
-                setTranspose(
-                  Math.max(-12, Math.min(12, Number(e.target.value))),
-                )
-              }
-            />
-          </label>
-        </div>
-        <div className="field-row">
-          <label>
-            参考速度 BPM
-            <input
-              aria-label="参考速度 BPM"
-              type="number"
-              min="20"
-              max="300"
-              value={project.bpm}
-              onChange={(e) =>
-                edit({
-                  ...project,
-                  bpm: Math.max(20, Math.min(300, Number(e.target.value))),
-                })
-              }
-            />
-          </label>
-          <label>
-            吉他音色
-            <select
-              value={tone}
-              onChange={(e) => {
-                stop();
-                setTone(e.target.value);
-              }}
-            >
-              <option value="steel">钢弦 · 实录采样</option>
-              <option value="nylon">尼龙 · 实录采样</option>
-              <option value="synth">合成拨弦</option>
-            </select>
-          </label>
-        </div>
-        <label className="toggle-row">
-          <span>
-            <strong>AI 辅助建议</strong>
-            <small>可选 · 使用自己的百炼 Key</small>
-          </span>
-          <input
-            type="checkbox"
-            checked={useAI}
-            onChange={(e) => {
-              setUseAI(e.target.checked);
-              if (e.target.checked && !ai.key) setSettings(true);
-            }}
-          />
-        </label>
+              <input
+                type="checkbox"
+                checked={useAI}
+                onChange={(e) => {
+                  setUseAI(e.target.checked);
+                  if (e.target.checked && !ai.key) setSettings(true);
+                }}
+              />
+            </label>
+          </fieldset>
+        </details>
         <button
           className="button accent full generate-button"
           disabled={!ready || !!busy || !project.notes.length}
           onClick={generate}
         >
-          <Guitar size={18} />
-          {busy === "正在编配" ? "正在编配…" : "生成吉他编配"}
+          {generation?.status === "running" ? (
+            <LoaderCircle size={18} className="spin" />
+          ) : (
+            <Guitar size={18} />
+          )}
+          {generation?.status === "running"
+            ? "正在生成，请稍候…"
+            : "生成吉他编配"}
         </button>
-        <p className="center-caption">可随时修改谱面，再试听一次</p>
+        <GenerationFeedback />
+        <p className="center-caption">先生成谱面，再试听和校正</p>
         {advice && <p className="advice">{advice}</p>}
       </section>
       <div className="tip-card">

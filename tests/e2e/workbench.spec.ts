@@ -63,7 +63,7 @@ test("plugin lifecycle: disable, refuse execution, enable, uninstall, restore", 
   ).toBeVisible();
   await page.getByRole("button", { name: "音乐工作台", exact: true }).click();
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("安装并启用");
+  await expect(page.getByRole("status")).toContainText("插件需要处理");
   await page.getByRole("button", { name: "插件中心", exact: false }).click();
   await card.getByRole("button", { name: "启用插件", exact: true }).click();
   await card.getByRole("button", { name: "卸载", exact: true }).click();
@@ -118,6 +118,9 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   ).toBeGreaterThan(0);
   expect(result.timingAnalysis.method).toBe("spectral-flux-acf-v1");
   expect(result.timingAnalysis.candidates.length).toBeGreaterThan(0);
+  await page
+    .getByRole("button", { name: "高级校正：节拍、和弦与声部", exact: true })
+    .click();
   await page.locator(".structure-panel > summary").click();
   await page
     .getByRole("button", { name: /试听 .* BPM 拍点/ })

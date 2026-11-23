@@ -24,8 +24,13 @@ subprocess.run([str(python),'-m','PyInstaller','--noconfirm','--name','Stringcra
 bundle=stage/'Stringcraft'
 for name in ('LICENSE','NOTICE','README.md'):
     shutil.copy2(ROOT/name,bundle/name)
+shutil.copy2(ROOT/'dist'/'build-info.json', bundle/'build-info.json')
+shutil.copy2(ROOT/'docs'/'LOCAL_TRIAL.md', bundle/'使用说明.md')
 shutil.copytree(ROOT/'docs',bundle/'docs')
 (bundle/'runtime_plugins').mkdir(exist_ok=True)
 (bundle/'runtime_plugins'/'README.txt').write_text('Extract the local music environment here. The base application does not require it.\n',encoding='utf-8')
 archive=shutil.make_archive(str(ROOT/'artifacts'/f'Stringcraft-{VERSION}-preview-windows-x64'),'zip',root_dir=stage,base_dir='Stringcraft')
+import hashlib
+archive_path = Path(archive)
+archive_path.with_suffix('.zip.sha256').write_text(hashlib.sha256(archive_path.read_bytes()).hexdigest() + '  ' + archive_path.name + '\n', encoding='utf-8')
 print(archive)

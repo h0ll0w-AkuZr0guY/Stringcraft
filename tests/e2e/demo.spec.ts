@@ -22,7 +22,7 @@ test("record the actual preview workflow without a prerecorded recognition resul
   await page.getByRole("button", { name: "分析音乐片段", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("候选音");
   await page.getByRole("button", { name: "初学", exact: true }).click();
-  await page.getByLabel("编配目标",{exact:true}).selectOption("melody");
+  await page.getByLabel("编配目标", { exact: true }).selectOption("melody");
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
   await page.getByTestId("tablature").locator(".tab-note rect").first().click();
@@ -35,11 +35,14 @@ test("record the actual preview workflow without a prerecorded recognition resul
   await expect(
     page.getByRole("button", { name: "播放编配", exact: true }),
   ).toBeVisible({ timeout: 15000 });
-  await page.getByTestId("audio-input").setInputFiles("tests/fixtures/phrases/voices-and-legato.musicxml");
+  await page
+    .getByTestId("audio-input")
+    .setInputFiles("tests/fixtures/phrases/voices-and-legato.musicxml");
   await expect(page.getByRole("status")).toContainText("乐谱已导入");
-  await page.getByRole("button",{name:"进阶",exact:true}).click();
-  await page.getByLabel("变调夹",{exact:true}).selectOption("0");
-  await page.getByRole("button",{name:"生成吉他编配",exact:true}).click();
+  await page.getByRole("button", { name: "进阶", exact: true }).click();
+  await page.locator(".generation-advanced-controls > summary").click();
+  await page.getByLabel("变调夹", { exact: true }).selectOption("0");
+  await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
   await page.getByRole("button", { name: "节奏谱", exact: true }).click();
   await expect(page.locator(".at-surface")).toBeVisible();

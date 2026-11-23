@@ -24,6 +24,7 @@ test("opt-in actual Pages BYOK call uses the official provider and validated can
     await page.getByRole("button", { name: "API 设置", exact: true }).click();
     await page.getByPlaceholder("仅保留在当前页面内存").fill(key);
     await page.getByRole("button", { name: "完成设置", exact: true }).click();
+    await page.locator(".generation-advanced-controls > summary").click();
     await page.getByRole("checkbox", { name: /AI 辅助建议/ }).check();
     const response = page.waitForResponse(
       (r) =>
@@ -34,7 +35,7 @@ test("opt-in actual Pages BYOK call uses the official provider and validated can
       .getByRole("button", { name: "生成吉他编配", exact: true })
       .click();
     expect((await response).status()).toBe(200);
-    await expect(page.locator(".advice")).toContainText("AI 建议：");
+    await expect(page.locator(".advice")).toContainText("AI 已选择");
     const d = page.waitForEvent("download");
     await page.getByRole("button", { name: "导出项目", exact: true }).click();
     const file = await d;
