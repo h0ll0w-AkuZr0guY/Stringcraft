@@ -2,6 +2,7 @@ import {
   localCapabilities,
   type LocalEngineState,
 } from "../../packages/music/local";
+import { repairWorkbenchComponents } from "../../packages/music/maintenance";
 import {
   ArrowUpRight,
   Check,
@@ -110,6 +111,13 @@ export default function PluginCenter({
         <p>
           “已启用”表示允许使用，不代表本次任务调用过。具体模型和设备请看工作台的分析记录。
         </p>
+        <button
+          className="button secondary"
+          disabled={!!busy}
+          onClick={() => act("components", repairWorkbenchComponents)}
+        >
+          修复工作台组件
+        </button>
       </div>
       <div className="plugin-grid">
         {list.map((m) => {

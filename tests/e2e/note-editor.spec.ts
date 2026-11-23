@@ -3,6 +3,55 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { demoProject } from "../../packages/music/demo";
 import midiPackage from "@tonejs/midi";
 const { Midi } = midiPackage;
+test("hidden legacy components have an explicit repair path before analysis", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await expect(
+    page.getByRole("button", { name: "上传音频 / MIDI", exact: true }),
+  ).toBeEnabled();
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open("keyval-store");
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result,
+          tx = db.transaction("keyval", "readwrite"),
+          store = tx.objectStore("keyval");
+        const get = store.get("plugin:harmony-analysis");
+        get.onsuccess = () => {
+          const value = get.result;
+          value.manifest.sha256 = "legacy";
+          value.code = "export default {}";
+          store.put(value, "plugin:harmony-analysis");
+        };
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
+  });
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "上传音频 / MIDI", exact: true }),
+  ).toBeEnabled();
+  await page
+    .getByTestId("whole-audio-input")
+    .setInputFiles("tests/fixtures/audio/clean-melody.wav");
+  await expect(page.getByRole("status")).toContainText("工作台组件需要更新");
+  await page
+    .getByRole("button", { name: "修复工作台组件", exact: true })
+    .click();
+  await expect(page.getByRole("status")).toContainText("工作台组件已修复");
+  await page
+    .getByTestId("whole-audio-input")
+    .setInputFiles("tests/fixtures/audio/clean-melody.wav");
+  await expect(page.getByRole("status")).toContainText("转录完成", {
+    timeout: 120000,
+  });
+});
 async function saved(page: Page) {
   const pending = page.waitForEvent("download");
   await page
@@ -105,13 +154,11 @@ test("note editor: audition, gestures, nondestructive edits, exports and guitar 
       4,
     ),
   ).toBe("RIFF");
-  await page
-    .getByTestId("whole-audio-input")
-    .setInputFiles({
-      name: "roundtrip.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(edited)),
-    });
+  await page.getByTestId("whole-audio-input").setInputFiles({
+    name: "roundtrip.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(edited)),
+  });
   expect((await saved(page)).noteEditor).toEqual(edited.noteEditor);
   await mkdir("artifacts", { recursive: true });
   await page.screenshot({ path: "artifacts/note-editor.png", fullPage: true });
@@ -168,13 +215,11 @@ test("ten thousand notes stay virtualized and mobile stays within viewport", asy
     })),
   };
   const start = Date.now();
-  await page
-    .getByTestId("whole-audio-input")
-    .setInputFiles({
-      name: "ten-thousand.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(p)),
-    });
+  await page.getByTestId("whole-audio-input").setInputFiles({
+    name: "ten-thousand.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(p)),
+  });
   await expect(page.locator(".note-meta")).toContainText("原始 10000");
   await expect(page.getByTestId("note-roll")).toHaveAttribute(
     "data-ready",
@@ -235,13 +280,11 @@ test("cancel retains partial notes and corrections; replacing a task cannot over
       44 + i * 2,
     );
   const upload = () =>
-    page
-      .getByTestId("whole-audio-input")
-      .setInputFiles({
-        name: "long-synthetic.wav",
-        mimeType: "audio/wav",
-        buffer: data,
-      });
+    page.getByTestId("whole-audio-input").setInputFiles({
+      name: "long-synthetic.wav",
+      mimeType: "audio/wav",
+      buffer: data,
+    });
   await upload();
   await expect
     .poll(async () =>

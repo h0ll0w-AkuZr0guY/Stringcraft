@@ -97,3 +97,5 @@ HarmonyAnalysis 保存独立 start/end 秒区间、supported/candidate/none、�
 本地 jobs 增加 accompaniment 模式、offset/seconds，返回 notes、harmonyAnalysis、executions。任务先回传原始音符，再执行分离/和声；缓存按源摘要、范围和管线版本区分。完成任务的 assets 接口只允许预定义声部与和声 JSON，并使用本机会话认证。capabilities.engine 返回实际探测的 ready/device/models，promoted=false 表示仍为实验。项目不保存认证 token 或绝对路径。
 
 插件目录 audience/maturity/bundle 是可选兼容字段；普通中心只展示 user 项，不将示例当成可用乐器。
+
+`packages/music/maintenance` 提供 `workbenchComponentProblems/repairWorkbenchComponents`，按工作台必需的内部模块集合比较安装、启用状态和代码摘要。修复只能由用户明确点击触发，沿用宿主的验证与事务安装；不修改作品，不安装钢琴示例或其他可选算法。分析前检查旧组件并给出修复入口，避免旧插件缺少新方法时在推理结束后才报错。

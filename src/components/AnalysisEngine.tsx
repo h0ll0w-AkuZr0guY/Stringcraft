@@ -28,6 +28,13 @@ export default function AnalysisEngine() {
           )}
         </select>
       </label>
+      <button
+        className="text-button"
+        disabled={!!c.busy}
+        onClick={() => void c.repairComponents()}
+      >
+        修复工作台组件
+      </button>
       {c.localMode === "accompaniment" ? (
         <small>
           {c.engineState?.gpu ?? c.engineState?.message ?? "检查本地模型"}

@@ -1,5 +1,9 @@
 import { projectHarmony } from "../../packages/music/harmony";
 import {
+  workbenchComponentProblems,
+  repairWorkbenchComponents,
+} from "../../packages/music/maintenance";
+import {
   runGeneration,
   repairGenerationPlugins,
   GenerationError,
@@ -384,6 +388,10 @@ export function useWorkbench() {
     setMessage("");
     let id = "";
     try {
+      if ((await workbenchComponentProblems()).length)
+        throw new Error(
+          "工作台组件需要更新或启用，请点击“修复工作台组件”，再重新分析。原项目已保留。",
+        );
       const native = localMode === "accompaniment";
       if (native && !engineState?.ready)
         throw new Error(
@@ -1094,6 +1102,18 @@ export function useWorkbench() {
   }
   const stemPlayer = useRef<HTMLAudioElement | null>(null);
   const stemUrl = useRef("");
+  async function repairComponents() {
+    if (busy) return;
+    setBusy("正在修复工作台组件");
+    try {
+      await repairWorkbenchComponents();
+      notify("工作台组件已修复，请重新分析。原始材料与谱面保留。");
+    } catch (error) {
+      notify(errorMessage(error));
+    } finally {
+      setBusy("");
+    }
+  }
   async function compareHarmony(variant: "direct" | "separated" | "notes") {
     const current = projectRef.current;
     if (!current.localAnalysis) return;
@@ -1533,6 +1553,7 @@ export function useWorkbench() {
     localMode,
     setLocalMode: chooseAnalysis,
     playStem,
+    repairComponents,
     compareHarmony,
     abortRef,
     audioRef,
