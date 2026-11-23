@@ -1,4 +1,7 @@
+import { projectHarmony } from "../../packages/music/harmony";
+import { beatToSeconds } from "../../packages/contracts";
 import type { NoteEvent } from "../../packages/contracts";
+import { analyzeTimeline } from "./timeline";
 import { measureGrid } from "../../packages/music/structure";
 import {
   secondsToBeat,
@@ -15,7 +18,7 @@ export const chordIntervals: Record<ChordSymbol["quality"], number[]> = {
   sus4: [0, 5, 7],
 };
 /** Beat-window evidence, not a transcription oracle. Manual/imported harmony wins. */
-export function analyzeHarmony(
+export function analyzeHarmonyLegacy(
   notes: NoteEvent[],
   score: MusicalScore,
 ): MusicalScore {
@@ -136,4 +139,13 @@ export function tempoCandidates(
       kept.push(candidate);
   return kept.slice(0, 5);
 }
-export default { analyzeHarmony, tempoCandidates };
+export function analyzeHarmony(
+  notes: NoteEvent[],
+  score: MusicalScore,
+): MusicalScore {
+  return projectHarmony(
+    analyzeTimeline(notes, beatToSeconds(score, score.durationBeats)),
+    score,
+  );
+}
+export default { analyzeHarmony, analyzeTimeline, tempoCandidates };

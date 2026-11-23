@@ -1,0 +1,360 @@
+{
+  "protocol": "first-30s-no-alignment-v1",
+  "selection": "diagnostic; no training or tuning on these outputs",
+  "rows": [
+    {
+      "id": "05_BN1-129-Eb_comp",
+      "audioSha256": "a55c99690ece8135baa9b05ffc42ee13ee408bcd3c2b0ef01fe373f69e844c3a",
+      "annotationSha256": "e79cad99fdcc086ae3faf75e0d91c736d2baab98429b66973095f819b7f7b24d",
+      "annotationSource": "Semi-automatic chord transcription with manual verification",
+      "duration": 22.32439909297052,
+      "executions": [
+        {
+          "name": "HTDemucs",
+          "version": "4.0.1/htdemucs",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
+        },
+        {
+          "name": "Basic Pitch",
+          "version": "0.4.0",
+          "device": "cpu",
+          "provider": "ONNX Runtime CPU",
+          "weightsSha256": "2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec"
+        },
+        {
+          "name": "BTC chord network",
+          "version": "ISMIR19/25-class",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "71c2c5db17e8c43b8a9a9da5db36ef2d667158c07a214eba16344c154c00bf54"
+        }
+      ],
+      "variants": {
+        "direct": {
+          "scoredSeconds": 14.88253862785424,
+          "excludedSeconds": 7.44186046511628,
+          "rootAccuracy": 0.28662577764763386,
+          "majminAccuracy": 0.28662577764763386,
+          "coverage": 0.3398707479526966,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "separated": {
+          "scoredSeconds": 14.88253862785424,
+          "excludedSeconds": 7.44186046511628,
+          "rootAccuracy": 0.29053233796892924,
+          "majminAccuracy": 0.29053233796892924,
+          "coverage": 0.34609230698290777,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "cqt": {
+          "scoredSeconds": 14.88253862785424,
+          "excludedSeconds": 7.44186046511628,
+          "rootAccuracy": 0.5028109163149935,
+          "majminAccuracy": 0.4404023307123532,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        }
+      }
+    },
+    {
+      "id": "05_Rock1-90-C#_comp",
+      "audioSha256": "f8410ac3049cc8564487b1a83f921a068ad3dd919efc6fb34f8869151ac03046",
+      "annotationSha256": "5ba5cae947c4cb6997ce380d429c809bb05bb518b06a07ee86ca67a29b8804b3",
+      "annotationSource": "Semi-automatic chord transcription with manual verification",
+      "duration": 30.0,
+      "executions": [
+        {
+          "name": "HTDemucs",
+          "version": "4.0.1/htdemucs",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
+        },
+        {
+          "name": "Basic Pitch",
+          "version": "0.4.0",
+          "device": "cpu",
+          "provider": "ONNX Runtime CPU",
+          "weightsSha256": "2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec"
+        },
+        {
+          "name": "BTC chord network",
+          "version": "ISMIR19/25-class",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "71c2c5db17e8c43b8a9a9da5db36ef2d667158c07a214eba16344c154c00bf54"
+        }
+      ],
+      "variants": {
+        "direct": {
+          "scoredSeconds": 30.0,
+          "excludedSeconds": 0.0,
+          "rootAccuracy": 0.9888888888888892,
+          "majminAccuracy": 0.9888888888888892,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "separated": {
+          "scoredSeconds": 30.0,
+          "excludedSeconds": 0.0,
+          "rootAccuracy": 0.9888888888888892,
+          "majminAccuracy": 0.9888888888888892,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "cqt": {
+          "scoredSeconds": 30.0,
+          "excludedSeconds": 0.0,
+          "rootAccuracy": 0.9702252456538172,
+          "majminAccuracy": 0.6853938019652307,
+          "coverage": 0.9783280423280424,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        }
+      }
+    },
+    {
+      "id": "05_SS1-68-E_comp",
+      "audioSha256": "665b982fb9221b5c91b0ed0c3d2c271f3fab569e8a1f397f0e5f46fde8a298d5",
+      "annotationSha256": "28260bbb418d7d630b8b3729e913c0be53c6a2cf513c51beda1441e4e7513e44",
+      "annotationSource": "Semi-automatic chord transcription with manual verification",
+      "duration": 30.0,
+      "executions": [
+        {
+          "name": "HTDemucs",
+          "version": "4.0.1/htdemucs",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
+        },
+        {
+          "name": "Basic Pitch",
+          "version": "0.4.0",
+          "device": "cpu",
+          "provider": "ONNX Runtime CPU",
+          "weightsSha256": "2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec"
+        },
+        {
+          "name": "BTC chord network",
+          "version": "ISMIR19/25-class",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "71c2c5db17e8c43b8a9a9da5db36ef2d667158c07a214eba16344c154c00bf54"
+        }
+      ],
+      "variants": {
+        "direct": {
+          "scoredSeconds": 28.235294117647058,
+          "excludedSeconds": 1.764705882352942,
+          "rootAccuracy": 0.9681712962962964,
+          "majminAccuracy": 0.9265046296296297,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "separated": {
+          "scoredSeconds": 28.235294117647058,
+          "excludedSeconds": 1.764705882352942,
+          "rootAccuracy": 0.9681712962962964,
+          "majminAccuracy": 0.9265046296296297,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "cqt": {
+          "scoredSeconds": 28.235294117647058,
+          "excludedSeconds": 1.764705882352942,
+          "rootAccuracy": 0.9671126228269086,
+          "majminAccuracy": 0.9440861678004536,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        }
+      }
+    },
+    {
+      "id": "01_Funk1-114-Ab_comp",
+      "audioSha256": "9ee4888317faba89ba1a9929d6e3b044a3363eb925e6c432b2b30e4f3c83ab22",
+      "annotationSha256": "429e06078c84f38ae3d551bdf594d0cac75a58c43783b23e1d436363a9fbe97a",
+      "annotationSource": "Semi-automatic chord transcription with manual verification",
+      "duration": 25.258390022675737,
+      "executions": [
+        {
+          "name": "HTDemucs",
+          "version": "4.0.1/htdemucs",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
+        },
+        {
+          "name": "Basic Pitch",
+          "version": "0.4.0",
+          "device": "cpu",
+          "provider": "ONNX Runtime CPU",
+          "weightsSha256": "2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec"
+        },
+        {
+          "name": "BTC chord network",
+          "version": "ISMIR19/25-class",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "71c2c5db17e8c43b8a9a9da5db36ef2d667158c07a214eba16344c154c00bf54"
+        }
+      ],
+      "variants": {
+        "direct": {
+          "scoredSeconds": 25.258390022675737,
+          "excludedSeconds": 0.0,
+          "rootAccuracy": 0.9371023269619024,
+          "majminAccuracy": 0.8329159973895932,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "separated": {
+          "scoredSeconds": 25.258390022675737,
+          "excludedSeconds": 0.0,
+          "rootAccuracy": 0.9224390657628369,
+          "majminAccuracy": 0.8182527361905276,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "cqt": {
+          "scoredSeconds": 25.258390022675737,
+          "excludedSeconds": 0.0,
+          "rootAccuracy": 0.7671064621275605,
+          "majminAccuracy": 0.44248411394724196,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        }
+      }
+    },
+    {
+      "id": "02_BN2-131-B_comp",
+      "audioSha256": "6478e7ade863d3b84ec26b443499979ee8db10a726d60ad0836e805f5349af83",
+      "annotationSha256": "5a6d1d87cae3a9496395a671f3575f2de96d8a1939d2460cbc02eccc0a3b74b7",
+      "annotationSource": "Semi-automatic chord transcription with manual verification",
+      "duration": 29.30639455782313,
+      "executions": [
+        {
+          "name": "HTDemucs",
+          "version": "4.0.1/htdemucs",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
+        },
+        {
+          "name": "Basic Pitch",
+          "version": "0.4.0",
+          "device": "cpu",
+          "provider": "ONNX Runtime CPU",
+          "weightsSha256": "2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec"
+        },
+        {
+          "name": "BTC chord network",
+          "version": "ISMIR19/25-class",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "71c2c5db17e8c43b8a9a9da5db36ef2d667158c07a214eba16344c154c00bf54"
+        }
+      ],
+      "variants": {
+        "direct": {
+          "scoredSeconds": 23.81021135171626,
+          "excludedSeconds": 5.496183206106872,
+          "rootAccuracy": 0.9412527566512826,
+          "majminAccuracy": 0.9412527566512826,
+          "coverage": 0.9999999999999999,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "separated": {
+          "scoredSeconds": 23.81021135171626,
+          "excludedSeconds": 5.496183206106872,
+          "rootAccuracy": 0.9429151344317416,
+          "majminAccuracy": 0.9429151344317416,
+          "coverage": 0.9999999999999999,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "cqt": {
+          "scoredSeconds": 23.81021135171626,
+          "excludedSeconds": 5.496183206106872,
+          "rootAccuracy": 0.9328021730990073,
+          "majminAccuracy": 0.8113927237230197,
+          "coverage": 1.0,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        }
+      }
+    },
+    {
+      "id": "03_Jazz2-187-F#_comp",
+      "audioSha256": "96592fcfddeddd03ef3aecee798032c44aada53f4c3e56008ff52000b89c5b06",
+      "annotationSha256": "947781eeed8145ee9a861e3b98e28895fe8555b7fdb1b444dde8b66e9b1debcb",
+      "annotationSource": "Semi-automatic chord transcription with manual verification",
+      "duration": 20.531995464852606,
+      "executions": [
+        {
+          "name": "HTDemucs",
+          "version": "4.0.1/htdemucs",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
+        },
+        {
+          "name": "Basic Pitch",
+          "version": "0.4.0",
+          "device": "cpu",
+          "provider": "ONNX Runtime CPU",
+          "weightsSha256": "2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec"
+        },
+        {
+          "name": "BTC chord network",
+          "version": "ISMIR19/25-class",
+          "device": "cuda",
+          "provider": "PyTorch",
+          "weightsSha256": "71c2c5db17e8c43b8a9a9da5db36ef2d667158c07a214eba16344c154c00bf54"
+        }
+      ],
+      "variants": {
+        "direct": {
+          "scoredSeconds": 12.831460705494319,
+          "excludedSeconds": 7.7005347593582885,
+          "rootAccuracy": 0.7801448586712366,
+          "majminAccuracy": 0.7801448586712366,
+          "coverage": 0.915243397040332,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "separated": {
+          "scoredSeconds": 12.831460705494319,
+          "excludedSeconds": 7.7005347593582885,
+          "rootAccuracy": 0.7729287984955665,
+          "majminAccuracy": 0.7729287984955665,
+          "coverage": 0.908027336864662,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        },
+        "cqt": {
+          "scoredSeconds": 12.831460705494319,
+          "excludedSeconds": 7.7005347593582885,
+          "rootAccuracy": 0.6571730342495242,
+          "majminAccuracy": 0.6571730342495242,
+          "coverage": 0.9999999999999999,
+          "silenceSeconds": 0.0,
+          "falseChordSeconds": 0.0
+        }
+      }
+    }
+  ]
+}

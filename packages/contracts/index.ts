@@ -1,5 +1,12 @@
 /** SDK v2 plus the v1 workbench compatibility projection. Seconds remain source time. */
 export const SDK_VERSION = 2;
+import {
+  validateHarmony,
+  validateLocalAnalysis,
+  type HarmonyAnalysis,
+  type LocalAnalysisRun,
+} from "./harmony";
+export * from "./harmony";
 import type {
   NoteEditorState,
   TranscriptionState,
@@ -84,6 +91,8 @@ export interface MusicProject<N extends NoteEvent = GuitarNote> {
     dropped: { noteId: string; reason: string }[];
   };
   timingAnalysis?: TimingAnalysis;
+  harmonyAnalysis?: HarmonyAnalysis;
+  localAnalysis?: LocalAnalysisRun;
   noteEditor?: NoteEditorState;
   transcription?: TranscriptionState;
   sourceAudioSha256?: string;
@@ -116,6 +125,9 @@ export type Capability =
   | "note-view"
   | "note-renderer";
 export interface PluginManifest {
+  audience?: "user" | "internal" | "developer";
+  maturity?: "ready" | "experimental" | "example";
+  bundle?: string;
   id: string;
   name: string;
   version: string;
@@ -160,6 +172,7 @@ export interface MusicPlugin {
     noteProposalBpm?: number,
   ) => TimingAnalysis;
   analyzeHarmony?: (notes: NoteEvent[], score: MusicalScore) => MusicalScore;
+  analyzeTimeline?: (notes: NoteEvent[], duration: number) => HarmonyAnalysis;
   tempoCandidates?: (notes: NoteEvent[]) => { bpm: number; score: number }[];
   instrument?: InstrumentDefinition;
   extractMelody?: (notes: NoteEvent[]) => NoteEvent[];
@@ -206,6 +219,9 @@ export interface NoteRefinerPlugin<Options> {
   ): { notes: NoteEvent[]; dropped: { noteId: string; reason: string }[] };
 }
 export interface Job {
+  partial?: { notes: NoteEvent[]; duration: number };
+  cacheKey?: string;
+  cacheHit?: boolean;
   id: string;
   status: "queued" | "running" | "completed" | "failed" | "cancelled";
   progress: number;
@@ -269,6 +285,8 @@ export function validateProject(value: unknown): asserts value is MusicProject {
   )
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
+  if (p.harmonyAnalysis) validateHarmony(p.harmonyAnalysis, p.duration);
+  if (p.localAnalysis) validateLocalAnalysis(p.localAnalysis);
   validateNotes(p.melody);
   validateNoteEditor(p);
   if (p.transcription) {

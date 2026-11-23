@@ -188,6 +188,7 @@ export async function invoke<T>(
     | "arrange"
     | "analyzeTiming"
     | "analyzeHarmony"
+    | "analyzeTimeline"
     | "recommendCapos",
   args: unknown[],
   signal?: AbortSignal,

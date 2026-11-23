@@ -12,6 +12,9 @@ for (const {
   capabilities,
   description,
   license,
+  audience,
+  maturity,
+  bundle,
 } of defs) {
   const result = await build({
     entryPoints: [`plugins/${dir}/index.ts`],
@@ -47,16 +50,22 @@ for (const {
     entry,
     sha256,
     size: data.length,
+    audience,
+    maturity,
+    bundle,
     dependencies: [],
   });
 }
 catalog.push({
   id: "local-separation",
-  name: "本地分离与增强识别",
-  version: "0.1.0",
+  name: "本地伴奏增强",
+  audience: "user",
+  maturity: "experimental",
+  bundle: "local",
+  version: "0.3.0",
   sdk: 1,
   description:
-    "独立 Python 环境：FFmpeg、HTDemucs、Basic Pitch；从 Releases 下载",
+    "完整环境：HTDemucs GPU 分离、Basic Pitch ONNX、音频和弦分析；以实际探测为准",
   capabilities: ["separator", "transcriber"],
   runtime: "local",
   license: "MIT / Apache-2.0",

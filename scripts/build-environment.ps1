@@ -1,4 +1,4 @@
-param([switch]$WithModels, [string]$ResumeStage)
+param([switch]$WithModels, [string]$ResumeStage, [ValidateSet('cpu','cu124')][string]$TorchDevice='cpu')
 $ErrorActionPreference = 'Stop'
 $taskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $taskStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -25,8 +25,8 @@ if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $taskExisting)) {
 if ($LASTEXITCODE -gt 7) { throw 'Portable runtime copy failed' }
 New-Item -ItemType Directory -Force (Join-Path $taskPlugin 'python\Lib\site-packages') | Out-Null
 $taskPython = Join-Path $taskPlugin 'python\python.exe'
-& uv pip install --link-mode=copy --break-system-packages --python $taskPython --index-url 'https://download.pytorch.org/whl/cpu' 'torch==2.5.1' 'torchaudio==2.5.1'
-if ($LASTEXITCODE -ne 0) { throw 'CPU Torch installation failed' }
+& uv pip install --link-mode=copy --break-system-packages --python $taskPython --index-url "https://download.pytorch.org/whl/$TorchDevice" 'torch==2.5.1' 'torchaudio==2.5.1'
+if ($LASTEXITCODE -ne 0) { throw 'Torch installation failed' }
 & uv pip install --link-mode=copy --break-system-packages --python $taskPython -r (Join-Path $taskRoot 'plugins\local-separation\requirements.txt') 'imageio-ffmpeg==0.6.0'
 if ($LASTEXITCODE -ne 0) { throw 'Music environment installation failed' }
 & uv pip install --link-mode=copy --break-system-packages --python $taskPython --no-deps 'basic-pitch==0.4.0'
@@ -44,7 +44,7 @@ if ($WithModels) {
 & uv pip freeze --python $taskPython | Out-File -LiteralPath (Join-Path $taskPlugin 'installed-requirements.txt') -Encoding utf8
 & $taskPython (Join-Path $PSScriptRoot 'environment-tools.py') verify
 if ($LASTEXITCODE -ne 0) { throw 'Environment validation failed' }
-$taskArchive = Join-Path $taskRoot 'artifacts\Stringcraft-local-music-0.1.0-windows-x64.zip'
+$taskArchive = Join-Path $taskRoot "artifacts\Stringcraft-local-music-0.3.0-$TorchDevice-windows-x64.zip"
 if (Test-Path -LiteralPath $taskArchive) { throw 'Archive already exists; retain the old artifact and choose a new version before rebuilding' }
 & $taskPython (Join-Path $PSScriptRoot 'pack-environment.py') $taskStage $taskArchive
 if ($LASTEXITCODE -ne 0) { throw 'Environment archive verification failed' }

@@ -89,3 +89,11 @@ MusicPlugin 可选 `recommendCapos(notes, options): {capo,score}[]`，复用 Arr
 runGeneration 返回已校验的新项目、所选变调夹和建议文字，不直接修改传入项目。GenerationError 提供 plugins/structure/upgrade/retry 恢复入口；插件问题区分 missing/disabled/update。界面阶段使用不定进度与耗时，不编造百分比。
 
 本地 GET /api/v1/capabilities 增加 appVersion 与 buildSha，来自包内 dist/build-info.json；原字段兼容。启动器发现端口占用时，只复用版本和构建标识均相同的 Stringcraft 服务，否则提示退出，不静默打开旧程序。
+
+## 秒时间轴与本地和声
+
+HarmonyAnalysis 保存独立 start/end 秒区间、supported/candidate/none、候选和实际 ModelExecution。MusicProject.harmonyAnalysis/localAnalysis 均可选，旧项目兼容；validateHarmony 验证范围、次序、状态。projectHarmony 将其投影为 ChordSymbol，人工/导入和弦覆盖候选。analyzeTimeline 是固定秒窗的基础插件入口，未经过分离时明确注明来源。
+
+本地 jobs 增加 accompaniment 模式、offset/seconds，返回 notes、harmonyAnalysis、executions。任务先回传原始音符，再执行分离/和声；缓存按源摘要、范围和管线版本区分。完成任务的 assets 接口只允许预定义声部与和声 JSON，并使用本机会话认证。capabilities.engine 返回实际探测的 ready/device/models，promoted=false 表示仍为实验。项目不保存认证 token 或绝对路径。
+
+插件目录 audience/maturity/bundle 是可选兼容字段；普通中心只展示 user 项，不将示例当成可用乐器。

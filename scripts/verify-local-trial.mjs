@@ -49,7 +49,9 @@ try {
   const meta = await (
     await page.request.get(new URL("api/v1/capabilities", base).href)
   ).json();
-  expect(meta.appVersion).toBe("0.2.0-local.1");
+  expect(meta.appVersion).toBe(
+    JSON.parse(await readFile("package.json", "utf8")).version,
+  );
   report.version = meta.appVersion;
   report.build = meta.buildSha;
   await page.getByRole("button", { name: "用原创音频体验真实识别" }).click();

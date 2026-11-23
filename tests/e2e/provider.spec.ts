@@ -25,7 +25,7 @@ test("opt-in actual Pages BYOK call uses the official provider and validated can
     await page.getByPlaceholder("仅保留在当前页面内存").fill(key);
     await page.getByRole("button", { name: "完成设置", exact: true }).click();
     await page.locator(".generation-advanced-controls > summary").click();
-    await page.getByRole("checkbox", { name: /AI 辅助建议/ }).check();
+    await page.getByRole("checkbox", { name: /AI 变调夹建议/ }).check();
     const response = page.waitForResponse(
       (r) =>
         r.url() ===

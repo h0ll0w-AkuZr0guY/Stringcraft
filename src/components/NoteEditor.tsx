@@ -1,3 +1,4 @@
+import AnalysisEngine from "./AnalysisEngine";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Upload,
@@ -307,6 +308,7 @@ export default function NoteEditor() {
           }}
         />
       </header>
+      <AnalysisEngine />
       <div className="note-meta">
         <Music2 size={18} />
         <strong>{p.name}</strong>

@@ -18,3 +18,5 @@ FFmpeg 并非 Apache-2.0 组件，许可证取决于实际构建。本地环境�
 原创合成测试曲由 scripts/generate-fixtures.py 生成，随项目许可提供。仓库不含用户私人歌曲与谱件。贡献者新增媒体需说明来源和再分发授权。接口兼容不代表第三方许可自动兼容。
 
 交互设计研究参考 [hear-score](https://github.com/LiRenTech/hear-score) 与 [Basic Pitch 论文](https://arxiv.org/html/2203.09893v2)。此次核查未找到 hear-score 项目本身的 LICENSE，未复制其源码或资源；卷帘、编辑与导出独立实现。模型直接使用官方 @spotify/basic-pitch 1.0.1 的 Apache-2.0 发行资源，构建生成逐资源 SHA-256 与组合摘要。
+
+本地实验和弦网络使用 [BTC-ISMIR19 官方仓库](https://github.com/jayg996/BTC-ISMIR19) 的冻结 25 类检查点；上游仓库提供 MIT 许可（Jonggwon Park, 2019）。对应许可随源码和模型保留，检查点 SHA-256 为 71c2c5db17e8c43b8a9a9da5db36ef2d667158c07a214eba16344c154c00bf54，加载前强制核验。兼容修改仅涉及相对导入、NumPy 浮点别名和 YAML 安全加载。上游未单独说明权重或训练数据的分发条件，当前包仅供本地实验，不借此批准公开/商业模型发布。

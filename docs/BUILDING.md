@@ -22,7 +22,7 @@ Windows、Python 3.11+：先 npm run build，再 python scripts/build-local.py�
 
 需要官方 uv CLI。执行 powershell -File scripts/build-environment.ps1 -WithModels。
 
-脚本获取可重定位的 Python 3.11 独立发行版，安装固定 CPU Torch/torchaudio、Basic Pitch、HTDemucs、librosa 与 imageio-ffmpeg，保留安装依赖和许可证元数据。WithModels 预下载 HTDemucs 权重；Basic Pitch ONNX 资源随 Python 包。得到 runtime_plugins/local-separation/python、bin、models 与清单。
+脚本获取可重定位的 Python 3.11 独立发行版，安装固定 Torch/torchaudio 2.5.1、Basic Pitch、HTDemucs、librosa 与 imageio-ffmpeg，保留安装依赖和许可证元数据。默认 CPU，`-TorchDevice cu124` 安装同时支持 CPU 的 CUDA 12.4 运行库。WithModels 预下载 HTDemucs 和固定提交的 BTC 权重，BTC 加载前强制 SHA-256 校验；Basic Pitch ONNX 资源随 Python 包。得到 runtime_plugins/local-separation/python、bin、models 与清单。权重公开分发前需另行复核 LICENSING，实验包不构成分发许可判断。
 
 用户把环境 ZIP 解压到基础包同级后即可发现，无需覆盖 _internal。如未指定 WithModels，HTDemucs 首次使用需要联网；不要称为完整离线包。普通 venv 不可作为可移植运行环境直接分发。环境可能数百 MB 或更大，首次构建时间取决于网络；模型环境与基础包分别发版。
 
@@ -38,6 +38,8 @@ ci.yml 检查每个 PR。pages.yml 手动发布网页；release.yml 对明确 v 
 
 ## 本地试用包
 
-本轮版本为 0.2.0-local.1，不创建公开标签或 Release。构建后本机执行 python scripts/build-local.py，输出完整目录包、ZIP 与 .zip.sha256。使用说明随包提供；网页和服务从同一 build-info 识别版本。基础模型/WASM/采样已包含，不携带用户音频或 Key。
+本轮版本为 0.2.0-local.2，不创建公开标签或 Release。先完成源码提交与 npm run build，再执行 python scripts/build-local.py，输出基础目录包、ZIP 与 .zip.sha256。完整模型包追加 `--environment artifacts/<环境目录>/runtime_plugins/local-separation`，脚本只接受本仓库 artifacts 内的准备环境。使用说明随包提供；网页和服务从同一 build-info 识别版本。基础模型/WASM/采样已包含，不携带用户音频或 Key。
 
 先独立解压，再限制 PATH 只含 Windows 系统路径启动 EXE。以 TEST_BASE_URL 指向该进程，执行 scripts/verify-local-trial.mjs；它阻止外网请求，验证真实识别、生成、播放、WAV 非静音、MIDI、保存和重开。STRINGCRAFT_PRIVATE_AUDIO 可显式指定本机授权材料；私人阶段不录视频，结果只写 artifacts。端口相同版本复用、旧版本占用拒绝还需用实际 EXE 验证。
+
+完整包另外执行 scripts/verify-native-trial.mjs。STRINGCRAFT_NATIVE_AUDIO 指定本地授权的短音频，验证实际模型任务、分离试听、缓存、和声对照、68.5/135.7 BPM 的材料不变与导出；默认不调用付费 API。该流程验证可用性，不能替代带真值的质量评估。

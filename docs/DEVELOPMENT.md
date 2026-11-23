@@ -53,3 +53,7 @@ written-voices 负责已确认材料与弦位，reference 负责私人参考的�
 浏览器回归针对生产构建：先 npm run build，再 npm run test:e2e。旧吉他流程以 ?view=guitar 进入，新入口使用 note-editor.spec.ts。私人歌曲不进入 CI 或仓库，公开演示只用原创合成 fixture。
 
 本地试用生成调度集中于 packages/music/generate，应用任务反馈由 GenerationFeedback 展示。新增阶段/失败分支必须保持非空且校验后的提交才成功，并覆盖“旧缓存、停用、空结果、提交校验失败、取消/超时不覆盖原谱”。公开发布改为手动，本地试用不得自行推送或触发发布。
+
+本地音频和声入口为 plugins/audio-harmony/pipeline.py，冻结网络适配在 neural.py，上游兼容源码和许可在 btc/。秒区间契约在 packages/contracts/harmony，投影在 packages/music/harmony。不要在改 BPM 时重做音频识别，不要把 N 自动填成前一个和弦。修改输出语义后递增 backend.server.PIPELINE_VERSION，避免复用旧缓存。重计算与 HTTP 服务使用独立 Python。
+
+改识别算法前先读参考评估中的六段逐项失败和未支持类型；这批已用于开发，下一轮需要新的留出录音。不要只为提高覆盖率而补满所有小节，也不要用模型自身输出生成“真值”。在线训练尚未提供，新增纠错学习要保留原冻结核、明确启动/恢复、模型版本和独立留出指标。

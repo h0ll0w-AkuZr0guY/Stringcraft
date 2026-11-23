@@ -1,4 +1,8 @@
 import {
+  localCapabilities,
+  type LocalEngineState,
+} from "../../packages/music/local";
+import {
   ArrowUpRight,
   Check,
   Download,
@@ -34,10 +38,15 @@ export default function PluginCenter({
         }
       >
     >({}),
+    [localEngine, setLocalEngine] = useState<LocalEngineState | null>(null),
     [busy, setBusy] = useState("");
   async function refresh() {
-    const items = await catalog();
+    const all = await catalog();
+    const items = all.filter(
+      (m) => m.audience === "user" && m.maturity !== "example",
+    );
     setList(items);
+    setLocalEngine((await localCapabilities())?.engine ?? null);
     const pairs = await Promise.all(
       items.map(async (m) => {
         const p = await installed(m.id);
@@ -60,6 +69,13 @@ export default function PluginCenter({
   useEffect(() => {
     refresh().catch((e) => notify(e.message));
   }, []);
+  useEffect(() => {
+    if (localEngine?.status !== "checking") return;
+    const timer = setTimeout(() => {
+      void localCapabilities().then((c) => setLocalEngine(c?.engine ?? null));
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [localEngine?.status, localEngine]);
   async function act(id: string, fn: () => Promise<void>) {
     setBusy(id);
     try {
@@ -77,9 +93,9 @@ export default function PluginCenter({
       <div className="section-title">
         <div>
           <p className="eyebrow">A WORKBENCH THAT GROWS WITH YOU</p>
-          <h1>给创作，更多可能。</h1>
+          <h1>当前可使用的能力</h1>
           <p className="muted">
-            乐器、算法与音源，各自生长。按需安装，独立更新。
+            这里仅展示可独立使用的功能包，内部依赖和开发示例不计入插件数量。
           </p>
         </div>
         <button
@@ -92,7 +108,7 @@ export default function PluginCenter({
       <div className="plugin-notice">
         <Puzzle size={21} />
         <p>
-          当前提供官方插件。安装记录保存在此浏览器中；本地计算插件在下载的应用中运行。
+          “已启用”表示允许使用，不代表本次任务调用过。具体模型和设备请看工作台的分析记录。
         </p>
       </div>
       <div className="plugin-grid">
@@ -114,7 +130,8 @@ export default function PluginCenter({
               <p>{m.description}</p>
               <div className="plugin-meta">
                 <span>
-                  v{m.version} · SDK {m.sdk}
+                  v{m.version} ·{" "}
+                  {m.maturity === "experimental" ? "实验功能" : "可用功能"}
                 </span>
                 <span>
                   {m.size
@@ -124,14 +141,21 @@ export default function PluginCenter({
               </div>
               <div className="plugin-actions">
                 {m.runtime === "local" ? (
-                  <a
-                    className="button secondary"
-                    href="https://github.com/h0ll0w-AkuZr0guY/Stringcraft/releases"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    下载环境包 <ArrowUpRight size={15} />
-                  </a>
+                  <div className="local-engine-state">
+                    <strong>
+                      {localEngine?.ready
+                        ? `模型就绪 · ${localEngine.device?.toUpperCase()}`
+                        : (localEngine?.message ?? "完整本地环境未安装")}
+                    </strong>
+                    {localEngine?.executions?.map((e) => (
+                      <small key={e.name} style={{ display: "block" }}>
+                        {e.name} · {e.provider} · {e.device}
+                      </small>
+                    ))}
+                    <small style={{ display: "block" }}>
+                      从工作台的“识别方式”选择本地伴奏增强；当前为实验功能。
+                    </small>
+                  </div>
                 ) : (
                   <>
                     <button

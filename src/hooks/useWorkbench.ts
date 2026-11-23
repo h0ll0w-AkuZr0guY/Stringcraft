@@ -1,3 +1,4 @@
+import { projectHarmony } from "../../packages/music/harmony";
 import {
   runGeneration,
   repairGenerationPlugins,
@@ -18,6 +19,7 @@ import {
   type TimingCandidate,
   type NoteOverride,
   type NoteEditorState,
+  type HarmonyAnalysis,
 } from "../../packages/contracts";
 import { decode, transcribe, decodeWhole } from "../../packages/music/analyze";
 import {
@@ -40,7 +42,11 @@ import {
 import { get, set } from "idb-keyval";
 import { type AISettings } from "../../packages/music/advisor";
 import { importMidi, importMusicXML } from "../../packages/music/import";
-import { analyzeLocal, localCapabilities } from "../../packages/music/local";
+import {
+  analyzeLocal,
+  localCapabilities,
+  localAsset,
+} from "../../packages/music/local";
 import {
   listProjects,
   saveProject,
@@ -130,6 +136,14 @@ export function useWorkbench() {
     }),
     [useAI, setUseAI] = useState(false),
     [advice, setAdvice] = useState("");
+  const [engineState, setEngineState] = useState<
+    import("../../packages/music/local").LocalEngineState | null
+  >(null);
+  const analysisChoice = useRef(false);
+  const chooseAnalysis = (value: string) => {
+    analysisChoice.current = true;
+    setLocalMode(value);
+  };
   const [local, setLocal] = useState(false),
     [localReady, setLocalReady] = useState(false),
     [localMode, setLocalMode] = useState("browser");
@@ -189,6 +203,10 @@ export function useWorkbench() {
         JSON.stringify(project.arrangement.score) !==
           JSON.stringify(project.score)));
   function stop() {
+    stemPlayer.current?.pause();
+    stemPlayer.current = null;
+    if (stemUrl.current) URL.revokeObjectURL(stemUrl.current);
+    stemUrl.current = "";
     neutralStop.current?.();
     neutralStop.current = null;
     referenceLoad.current?.abort();
@@ -205,7 +223,8 @@ export function useWorkbench() {
     let active = true;
     bootstrap()
       .then(async (entries) => {
-        if (active) setPluginCount(entries.length);
+        if (active)
+          setPluginCount(entries.filter((m) => m.audience === "user").length);
         const plugin = await load("guitar-standard");
         if (
           (await installed("guitar-standard"))!.manifest.version === "0.1.0"
@@ -285,14 +304,31 @@ export function useWorkbench() {
       if (timerRef.current) clearInterval(timerRef.current);
       void audioRef.current?.close();
       referenceLoad.current?.abort();
+      stemPlayer.current?.pause();
+      if (stemUrl.current) URL.revokeObjectURL(stemUrl.current);
     },
     [],
   );
   useEffect(() => {
-    localCapabilities().then((c) => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const refresh = async () => {
+      const c = await localCapabilities();
+      if (!active) return;
       setLocal(!!c?.local);
-      setLocalReady(!!c?.plugin?.installed && !!c?.plugin?.ffmpeg);
-    });
+      setEngineState(c?.engine ?? null);
+      setLocalReady(!!c?.engine?.ready);
+      if (!analysisChoice.current)
+        setLocalMode(
+          c?.engine?.ready && c?.engine?.promoted ? "accompaniment" : "browser",
+        );
+      if (c?.engine?.status === "checking") timer = setTimeout(refresh, 2000);
+    };
+    void refresh();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, []);
   const neutralStop = useRef<(() => void) | null>(null);
   function updateEditorProject(next: MusicProject) {
@@ -328,7 +364,10 @@ export function useWorkbench() {
       notify(errorMessage(error));
     }
   }
-  async function analyzeWhole(f: File) {
+  async function analyzeWhole(
+    f: File,
+    range?: { offset: number; seconds: number },
+  ) {
     if (/\.(mid|midi|xml|musicxml)$/i.test(f.name)) {
       abortRef.current?.abort();
       abortRef.current = null;
@@ -345,7 +384,33 @@ export function useWorkbench() {
     setMessage("");
     let id = "";
     try {
-      const data = await decodeWhole(f, control.signal);
+      const native = localMode === "accompaniment";
+      if (native && !engineState?.ready)
+        throw new Error(
+          engineState?.message ??
+            "本地模型尚未就绪，请等待检查完成或明确选择基础识别。",
+        );
+      const data = native
+        ? await (async () => {
+            const { buffer, sha256 } = await readAudioFile(
+              f,
+              200,
+              control.signal,
+            );
+            if (buffer.duration > 1800)
+              throw new Error("本地分析上限为 30 分钟，请裁剪文件。");
+            return {
+              buffer,
+              duration: buffer.duration,
+              sourceSha256: sha256,
+              samples: new Float32Array(),
+            };
+          })()
+        : await decodeWhole(f, control.signal);
+      const offset = range?.offset ?? 0;
+      if (range)
+        data.duration = Math.min(range.seconds, data.duration - offset);
+      if (data.duration <= 0) throw new Error("分析起点超出录音范围");
       control.signal.throwIfAborted();
       let engine = await installed("basic-pitch-stream");
       if (!engine) {
@@ -364,40 +429,45 @@ export function useWorkbench() {
         duration: data.duration,
         bpm: 120,
         beatOffset: 0,
-        sourceOffset: 0,
+        sourceOffset: offset,
         sourceKind: "audio",
         notes: [],
         melody: [],
         arrangement: null,
-        pluginVersions: { "basic-pitch-stream": engine!.manifest.version },
+        pluginVersions: native
+          ? { "local-separation": "0.3.0" }
+          : { "basic-pitch-stream": engine!.manifest.version },
         sourceAudioSha256: data.sourceSha256,
         audioReference: {
           kind: "original",
           sha256: data.sourceSha256,
-          durationSeconds: data.duration,
-          offsetSeconds: 0,
+          durationSeconds: data.buffer.duration,
+          offsetSeconds: offset,
         },
         transcription: {
           jobId: crypto.randomUUID(),
           status: "running",
           processedSeconds: 0,
-          pluginVersion: engine!.manifest.version,
-          pluginSha256: engine!.manifest.sha256,
+          pluginVersion: native ? "0.3.0" : engine!.manifest.version,
+          pluginSha256: native
+            ? (engineState?.pluginSha256 ?? "")
+            : engine!.manifest.sha256,
         },
       };
       p.score = projectScore(p);
       id = p.id;
-      try {
-        const provenance = await (
-          await fetch(
-            new URL(
-              "models/basic-pitch/provenance.json",
-              new URL(import.meta.env.BASE_URL, location.href),
-            ),
-          )
-        ).json();
-        p.transcription!.modelSha256 = provenance.sha256;
-      } catch {}
+      if (!native)
+        try {
+          const provenance = await (
+            await fetch(
+              new URL(
+                "models/basic-pitch/provenance.json",
+                new URL(import.meta.env.BASE_URL, location.href),
+              ),
+            )
+          ).json();
+          p.transcription!.modelSha256 = provenance.sha256;
+        } catch {}
       control.signal.throwIfAborted();
       if (
         projectRef.current.noteEditor ||
@@ -408,12 +478,72 @@ export function useWorkbench() {
       edit(p, false);
       setFile(f);
       setSourceUrl(URL.createObjectURL(f));
-      setWave(referenceWaveform(data.buffer, 0, data.duration));
+      setWave(referenceWaveform(data.buffer, offset, data.duration));
       sourceBuffer.current.set(audioAssetKey(p), data.buffer);
       if (sourceBuffer.current.size > 3)
         sourceBuffer.current.delete(sourceBuffer.current.keys().next().value!);
       await set(audioAssetKey(p), f);
       control.signal.throwIfAborted();
+      if (native) {
+        const result = await analyzeLocal(
+          f,
+          "accompaniment",
+          control.signal,
+          (j) => {
+            if (control.signal.aborted || projectRef.current.id !== id) return;
+            setProgress(j.progress);
+            setBusy(j.message);
+            if (j.partial)
+              updateEditorProject({
+                ...projectRef.current,
+                notes: j.partial.notes,
+              });
+          },
+          { offset, seconds: data.duration },
+        );
+        control.signal.throwIfAborted();
+        if (projectRef.current.id !== id) return;
+        const current = projectRef.current;
+        const melody = await invoke<NoteEvent[]>(
+          "melody-tracker",
+          "extractMelody",
+          [filteredNotes({ ...current, notes: result.notes })],
+          control.signal,
+        );
+        control.signal.throwIfAborted();
+        if (projectRef.current !== current)
+          throw new Error("分析期间项目已改变，请重新送往编配。");
+        const next = {
+          ...current,
+          duration: result.duration,
+          notes: result.notes,
+          melody,
+          harmonyAnalysis: result.harmonyAnalysis,
+          localAnalysis: result.run,
+          pluginVersions: {
+            ...current.pluginVersions,
+            "local-separation": "0.3.0",
+          },
+          transcription: {
+            ...current.transcription!,
+            status: "complete" as const,
+            processedSeconds: result.duration,
+            pluginVersion: "0.3.0",
+            modelSha256: result.executions?.find(
+              (e) => e.name === "Basic Pitch",
+            )?.weightsSha256,
+          },
+        };
+        next.score = projectScore({ ...next, score: undefined });
+        if (next.harmonyAnalysis)
+          next.score = projectHarmony(next.harmonyAnalysis, next.score);
+        validateProject(next);
+        updateEditorProject(next);
+        notify(
+          `本地增强完成：${next.notes.length} 个原始音符、${next.harmonyAnalysis?.segments.filter((s) => s.root !== null).length ?? 0} 段和弦候选。${result.run?.cacheHit ? "已复用缓存。" : ""}请试听并核对待确认段落。`,
+        );
+        return;
+      }
       setBusy("正在识别整曲 · 音符将逐段出现");
       await transcribe(data.samples, control.signal, setProgress, (chunk) => {
         if (control.signal.aborted || projectRef.current.id !== id) return;
@@ -432,6 +562,17 @@ export function useWorkbench() {
           updatedAt: new Date().toISOString(),
         });
       });
+      if (!control.signal.aborted && projectRef.current.id === id) {
+        const current = projectRef.current;
+        const harmonyAnalysis = await invoke<HarmonyAnalysis>(
+          "harmony-analysis",
+          "analyzeTimeline",
+          [current.notes, current.duration],
+          control.signal,
+        );
+        if (projectRef.current.id === id)
+          updateEditorProject({ ...projectRef.current, harmonyAnalysis });
+      }
       if (projectRef.current.id === id)
         notify(
           `转录完成：${projectRef.current.notes.length} 个候选音符，可直接试听、编辑和导出。`,
@@ -526,6 +667,10 @@ export function useWorkbench() {
   }
   async function analyze() {
     if (!file) return;
+    if (localMode === "accompaniment") {
+      await analyzeWhole(file, { offset: start, seconds: length });
+      return;
+    }
     stop();
     setBusy("正在解码音频");
     setProgress(0);
@@ -947,6 +1092,85 @@ export function useWorkbench() {
       return false;
     }
   }
+  const stemPlayer = useRef<HTMLAudioElement | null>(null);
+  const stemUrl = useRef("");
+  async function compareHarmony(variant: "direct" | "separated" | "notes") {
+    const current = projectRef.current;
+    if (!current.localAnalysis) return;
+    try {
+      stop();
+      const harmonyAnalysis =
+        variant === "notes"
+          ? await invoke<HarmonyAnalysis>(
+              "harmony-analysis",
+              "analyzeTimeline",
+              [current.notes, current.duration],
+            )
+          : variant === "direct"
+            ? (JSON.parse(
+                await (
+                  await localAsset(
+                    current.localAnalysis.jobId,
+                    "direct-harmony.json",
+                  )
+                ).text(),
+              ) as HarmonyAnalysis)
+            : (JSON.parse(
+                await (
+                  await localAsset(
+                    current.localAnalysis.jobId,
+                    "separated-harmony.json",
+                  )
+                ).text(),
+              ) as HarmonyAnalysis);
+      if (projectRef.current !== current)
+        throw new Error("项目已改变，请重新选择对照。");
+      if (variant === "direct" && !harmonyAnalysis.method.endsWith("/original"))
+        harmonyAnalysis.method += "/original";
+      edit(
+        {
+          ...current,
+          harmonyAnalysis,
+          score: projectHarmony(harmonyAnalysis, projectScore(current)),
+        },
+        false,
+      );
+      notify("已切换和声对照，原始音符保留。请重新生成后试听本方案。");
+    } catch (error) {
+      notify(errorMessage(error));
+    }
+  }
+  async function playStem(asset: "accompaniment.wav" | "bass.wav") {
+    if (stemPlayer.current) {
+      stemPlayer.current.pause();
+      stemPlayer.current = null;
+      URL.revokeObjectURL(stemUrl.current);
+      stemUrl.current = "";
+    }
+    stop();
+    try {
+      const job = projectRef.current.localAnalysis?.jobId;
+      if (!job)
+        throw new Error("本作品没有本地分离结果，请先使用本地伴奏增强。");
+      const blob = await localAsset(job, asset);
+      stemUrl.current = URL.createObjectURL(blob);
+      const player = new Audio(stemUrl.current);
+      stemPlayer.current = player;
+      player.onended = () => {
+        URL.revokeObjectURL(stemUrl.current);
+        stemPlayer.current = null;
+        stemUrl.current = "";
+      };
+      await player.play();
+      notify(
+        asset === "bass.wav"
+          ? "正在试听分离低音；点击停止结束。"
+          : "正在试听分离伴奏；点击停止结束。",
+      );
+    } catch (error) {
+      notify(errorMessage(error));
+    }
+  }
   async function play(
     source = false,
     pulse?: TimingCandidate,
@@ -1301,12 +1525,15 @@ export function useWorkbench() {
     setUseAI,
     advice,
     setAdvice,
+    engineState,
     local,
     setLocal,
     localReady,
     setLocalReady,
     localMode,
-    setLocalMode,
+    setLocalMode: chooseAnalysis,
+    playStem,
+    compareHarmony,
     abortRef,
     audioRef,
     timerRef,

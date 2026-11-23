@@ -172,12 +172,12 @@ function WorkbenchView({
             </button>
             <a
               className="download-app"
-              href="https://github.com/h0ll0w-AkuZr0guY/Stringcraft/releases"
+              href={`${import.meta.env.BASE_URL}docs/LOCAL_TRIAL.html`}
               target="_blank"
               rel="noreferrer"
             >
-              <Download size={15} />
-              本地增强版
+              <BookOpen size={15} />
+              本地试用说明
             </a>
           </div>
         </header>

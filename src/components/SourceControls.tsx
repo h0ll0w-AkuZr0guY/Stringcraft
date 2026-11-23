@@ -1,3 +1,4 @@
+import AnalysisEngine from "./AnalysisEngine";
 import GenerationFeedback from "./GenerationFeedback";
 import {
   ArrowUpRight,
@@ -107,6 +108,7 @@ export default function SourceControls() {
           }}
           data-testid="audio-input"
         />
+        <AnalysisEngine />
         {file && (
           <>
             {localMode === "browser" && (
@@ -123,27 +125,6 @@ export default function SourceControls() {
                 <small>
                   适合清晰吉他录音，可能漏掉弱和弦音。下次分析应用，原候选始终保留。
                 </small>
-              </label>
-            )}
-            {local && (
-              <label className="local-mode">
-                分析方式
-                <select
-                  value={localMode}
-                  onChange={(e) => setLocalMode(e.target.value)}
-                >
-                  <option value="browser">浏览器片段识别</option>
-                  <option value="transcribe" disabled={!localReady}>
-                    本地整曲识别
-                  </option>
-                  <option value="vocals" disabled={!localReady}>
-                    分离人声，再提取旋律
-                  </option>
-                  <option value="instrumental" disabled={!localReady}>
-                    分离伴奏，再识别音符
-                  </option>
-                </select>
-                {!localReady && <small>请将增强环境包解压到应用目录</small>}
               </label>
             )}
             <div className="field-row">
@@ -221,7 +202,11 @@ export default function SourceControls() {
         </div>
         <div className="source-footer">
           <LockKeyhole size={13} />
-          <span>基础识别在浏览器内完成</span>
+          <span>
+            {localMode === "accompaniment"
+              ? "离线模型在本机运行"
+              : "基础识别在浏览器内完成"}
+          </span>
         </div>
       </section>
       <section className="panel settings-panel">
@@ -375,8 +360,8 @@ export default function SourceControls() {
             </div>
             <label className="toggle-row">
               <span>
-                <strong>AI 辅助建议</strong>
-                <small>可选 · 使用自己的百炼 Key</small>
+                <strong>AI 变调夹建议</strong>
+                <small>可选 · 不参与音符或和弦识别</small>
               </span>
               <input
                 type="checkbox"

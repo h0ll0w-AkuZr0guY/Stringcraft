@@ -101,3 +101,29 @@
     display: none !important;
   }
 }
+
+.analysis-engine {
+  background: #eff4e9;
+  border: 1px solid #dce6d5;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+}
+.analysis-engine label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+}
+.analysis-engine small {
+  display: block;
+  color: #6d7e64;
+  font-size: 11px;
+  margin: 5px 0;
+}
+.source-panel .analysis-engine label {
+  display: block;
+}
+.analysis-engine select {
+  max-width: 100%;
+}

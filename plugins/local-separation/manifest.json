@@ -1,1 +1,1 @@
-{"id":"local-separation","version":"0.1.0","sdk":1,"runtime":"local","capabilities":["separator","transcriber"],"python":"3.11","models":["htdemucs","basic-pitch-icassp-2022"],"license":"MIT / Apache-2.0"}
+{"id":"local-separation","version":"0.3.0","sdk":1,"runtime":"local","capabilities":["separator","transcriber","harmony-analysis"],"python":"3.11","models":["htdemucs","basic-pitch-icassp-2022","btc-ismir19-25"],"license":"MIT / Apache-2.0","devices":["cuda","cpu"],"maturity":"experimental","weightsLicensing":"See docs/LICENSING.md before public distribution"}

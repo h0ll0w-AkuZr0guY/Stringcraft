@@ -31,6 +31,8 @@ export interface ScoreEvent {
   slurFrom?: string;
 }
 export interface ChordSymbol {
+  analysisId?: string;
+  verification?: "supported" | "candidate";
   id: string;
   beat: number;
   durationBeats: number;

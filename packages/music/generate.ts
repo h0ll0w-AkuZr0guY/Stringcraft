@@ -1,3 +1,4 @@
+import { projectHarmony } from "./harmony";
 import {
   validateProject,
   soundingEvents,
@@ -6,6 +7,7 @@ import {
   type NoteEvent,
   type MusicalScore,
   type Arrangement,
+  type HarmonyAnalysis,
 } from "../contracts";
 import { catalog, installed, invoke, load, install } from "../plugin-host";
 import { filteredNotes } from "./note-edits";
@@ -107,15 +109,19 @@ export async function runGeneration(
         );
   const base = projectScore({ ...project, melody });
   mark("分析和弦");
-  const score =
-    base.chords.length && project.sourceKind !== "audio"
-      ? base
-      : await invoke<MusicalScore>(
+  const harmonyAnalysis =
+    (project.harmonyAnalysis?.method.startsWith("note-seconds")
+      ? undefined
+      : project.harmonyAnalysis) ??
+    (project.sourceKind === "audio"
+      ? await invoke<HarmonyAnalysis>(
           "harmony-analysis",
-          "analyzeHarmony",
-          [musicalInput, base],
+          "analyzeTimeline",
+          [musicalInput, project.duration],
           signal,
-        );
+        )
+      : undefined);
+  const score = harmonyAnalysis ? projectHarmony(harmonyAnalysis, base) : base;
   if (options.goal === "accompaniment" && !score.chords.length)
     throw new GenerationError(
       "没有找到可用和弦。请补充和弦，或选择单线旋律练习；已有谱面已保留。",
@@ -184,7 +190,14 @@ export async function runGeneration(
   ])
     pluginVersions[id] = (await installed(id))!.manifest.version;
   signal.throwIfAborted();
-  const next = { ...project, score, melody, arrangement, pluginVersions };
+  const next = {
+    ...project,
+    harmonyAnalysis,
+    score,
+    melody,
+    arrangement,
+    pluginVersions,
+  };
   validateProject(next);
   return { project: next, capo, advice };
 }

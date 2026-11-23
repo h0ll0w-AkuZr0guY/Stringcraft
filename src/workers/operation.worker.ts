@@ -7,6 +7,7 @@ self.onmessage = async (
       | "arrange"
       | "analyzeTiming"
       | "analyzeHarmony"
+      | "analyzeTimeline"
       | "recommendCapos";
     args: unknown[];
   }>,
