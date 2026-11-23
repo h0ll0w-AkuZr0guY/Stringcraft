@@ -59,7 +59,7 @@
     "id": "guitar-samples",
     "name": "吉他音色",
     "directory": "guitar-samples",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "capabilities": [
       "renderer"
     ],

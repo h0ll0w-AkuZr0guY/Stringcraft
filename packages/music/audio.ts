@@ -8,6 +8,12 @@ type Sample = {
   local_file: string;
 };
 const rawSamples = new Map<string, Promise<ArrayBuffer>>();
+// One decoded buffer per file and context. A whole score reuses each sample
+// hundreds of times; decoding it per note can exhaust the browser's memory.
+const decodedSamples = new WeakMap<
+  AudioCtx,
+  Map<string, Promise<AudioBuffer>>
+>();
 let manifest: Promise<Sample[]> | undefined;
 const resource = (path: string) =>
   new URL(path, new URL(".", location.href)).href;
@@ -45,8 +51,18 @@ async function getSample(ctx: AudioCtx, n: NoteEvent, tone: string) {
     rawSamples.set(sample.local_file, raw);
   }
   try {
+    let cache = decodedSamples.get(ctx);
+    if (!cache) {
+      cache = new Map();
+      decodedSamples.set(ctx, cache);
+    }
+    let decoded = cache.get(sample.local_file);
+    if (!decoded) {
+      decoded = raw.then((bytes) => ctx.decodeAudioData(bytes.slice(0)));
+      cache.set(sample.local_file, decoded);
+    }
     return {
-      buffer: await ctx.decodeAudioData((await raw).slice(0)),
+      buffer: await decoded,
       midi: sample.midi,
     };
   } catch {

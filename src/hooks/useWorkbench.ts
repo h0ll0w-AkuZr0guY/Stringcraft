@@ -1353,6 +1353,16 @@ export function useWorkbench() {
   async function exportAs(format: string) {
     try {
       if (format === "wav") {
+        const expected = (await catalog()).find(
+          (m) => m.id === "guitar-samples",
+        );
+        if (
+          (await installed("guitar-samples"))?.manifest.sha256 !==
+          expected?.sha256
+        )
+          throw new Error(
+            "请先在插件中心更新“吉他音色”，再导出 WAV。作品已保留。",
+          );
         setBusy("正在渲染 WAV");
         const renderer = await load("guitar-samples");
         const r = await renderer.renderAudio!(notes, project.duration, tone);

@@ -36,7 +36,7 @@ await context.addInitScript(() => {
 const page = await context.newPage();
 page.on("pageerror", (error) => errors.push(error.message));
 async function download(name, filename) {
-  const pending = page.waitForEvent("download");
+  const pending = page.waitForEvent("download", { timeout: 120000 });
   await page.getByRole("button", { name, exact: true }).click();
   const file = await pending;
   await file.saveAs(`${output}/${filename}`);

@@ -7,6 +7,63 @@ async function start(page: Page) {
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
 }
+test("whole-score WAV reuses decoded sample buffers instead of decoding each attack", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const decode = BaseAudioContext.prototype.decodeAudioData;
+    (window as any).__sampleDecodeCount = 0;
+    BaseAudioContext.prototype.decodeAudioData = function (
+      ...args: Parameters<typeof decode>
+    ) {
+      (window as any).__sampleDecodeCount++;
+      return decode.apply(this, args);
+    };
+  });
+  await start(page);
+  const p = demoProject();
+  p.schemaVersion = 1;
+  delete p.score;
+  p.duration = 300;
+  const notes = Array.from({ length: 1200 }, (_, i) => ({
+    id: `sample-${i}`,
+    start: i * 0.25,
+    duration: 0.2,
+    pitch: { midi: 40 },
+    score: 1,
+    velocity: 0.6,
+    source: "generated" as const,
+    string: 6,
+    fret: 0,
+  }));
+  p.notes = notes;
+  p.melody = notes;
+  p.arrangement = {
+    id: "sample-reuse",
+    instrumentId: "guitar",
+    difficulty: "normal",
+    capo: 0,
+    transpose: 0,
+    notes,
+    dropped: [],
+    warnings: [],
+  };
+  await page
+    .locator('input[accept=".json"]')
+    .setInputFiles({
+      name: "sample-reuse.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(p)),
+    });
+  const pending = page.waitForEvent("download");
+  await page.getByRole("button", { name: "WAV", exact: true }).click();
+  const data = await readFile((await (await pending).path())!);
+  expect(data.toString("ascii", 0, 4)).toBe("RIFF");
+  expect(data.length).toBeGreaterThan(10_000_000);
+  expect(await page.evaluate(() => (window as any).__sampleDecodeCount)).toBe(
+    1,
+  );
+});
 async function project(page: Page) {
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出项目", exact: true }).click();
@@ -222,13 +279,11 @@ test("unknown harmony gives a correction action and keeps the input unchanged", 
   p.arrangement = null;
   p.notes = p.notes.slice(0, 1);
   p.melody = p.notes;
-  await page
-    .locator('input[accept=".json"]')
-    .setInputFiles({
-      name: "unknown.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(p)),
-    });
+  await page.locator('input[accept=".json"]').setInputFiles({
+    name: "unknown.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(p)),
+  });
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByTestId("generation-result")).toContainText(
     "没有找到可用和弦",
