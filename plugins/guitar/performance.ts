@@ -133,6 +133,19 @@ export function arrangeScore(
       message:
         "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。",
     });
+  if (options.goal === "accompaniment")
+    for (const grip of grips)
+      if (
+        !actions.some(
+          (a) => a.beat >= grip.beat - 0.001 && a.beat < grip.endBeat - 0.001,
+        )
+      )
+        plan.issues.push({
+          code: "rhythm-rest",
+          severity: "warning",
+          eventIds: [grip.chordId],
+          message: `${grip.name} 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。`,
+        });
   if (options.goal === "accompaniment" && !grips.length)
     throw new Error(
       "没有可用和弦。请先确认和弦进行；单线旋律不足以可靠决定伴奏和弦。",

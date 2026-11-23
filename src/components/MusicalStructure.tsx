@@ -18,7 +18,8 @@ import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 
 const roots = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
 export default function MusicalStructure() {
-  const { project, edit, stop, upgrade } = useWorkbenchContext();
+  const { project, edit, stop, upgrade, playTiming, busy } =
+    useWorkbenchContext();
   const taps = useRef<number[]>([]);
   const score = projectScore(project),
     meter = score.meter[0],
@@ -169,6 +170,44 @@ export default function MusicalStructure() {
           确认当前节拍
         </button>
       </div>
+      {project.timingAnalysis && (
+        <div className="timing-candidates" aria-label="波形拍点候选">
+          <h3>听一听，哪组拍点更合适</h3>
+          <p className="muted">
+            试听会在原曲上叠加滴答声。合拍后再选用参考速度，并核对首个完整小节起点；候选不会自动改写谱面。
+          </p>
+          {project.timingAnalysis.candidates.map((candidate, index) => (
+            <div className="timing-candidate" key={candidate.bpm}>
+              <span>
+                候选 {index + 1} ·{" "}
+                <strong>{candidate.bpm.toFixed(1)} BPM</strong>
+                <small>拍点起点 {candidate.phaseSeconds.toFixed(2)} 秒</small>
+              </span>
+              <button
+                className="text-button"
+                disabled={!!busy}
+                aria-label={`试听 ${candidate.bpm.toFixed(1)} BPM 拍点`}
+                onClick={() => void playTiming(candidate)}
+              >
+                试听拍点
+              </button>
+              <button
+                className="text-button"
+                disabled={!!busy}
+                aria-label={`使用 ${candidate.bpm.toFixed(1)} BPM 参考速度`}
+                onClick={() => timing(candidate.bpm)}
+              >
+                使用速度
+              </button>
+            </div>
+          ))}
+          {project.timingAnalysis.warnings.map((w) => (
+            <p className="muted" key={w}>
+              {w}
+            </p>
+          ))}
+        </div>
+      )}
       {!!score.events.length && (
         <details className="voice-editor">
           <summary>声部用途 · 核对旋律、低音与内声部</summary>

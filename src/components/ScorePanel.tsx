@@ -83,7 +83,7 @@ export default function ScorePanel() {
             <span className="tag">
               Capo {project.arrangement?.capo ?? capo}
             </span>
-            <span className="tag">{project.bpm} BPM</span>
+            <span className="tag">{Number(project.bpm.toFixed(1))} BPM</span>
             {project.sourceKind === "demo" && (
               <span className="tag gold">原创演示</span>
             )}

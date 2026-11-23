@@ -1,4 +1,8 @@
-import type { GuitarNote, MusicProject } from "../../packages/contracts";
+import type {
+  GuitarNote,
+  MusicProject,
+  ChordSymbol,
+} from "../../packages/contracts";
 import { beatToSeconds, secondsToBeat } from "../../packages/contracts/score";
 import { projectScore } from "../../packages/music/score";
 import { measureGrid } from "../../packages/music/structure";
@@ -7,6 +11,7 @@ export interface TabColumn {
   beat: number;
   x: number;
   notes: GuitarNote[];
+  chord?: ChordSymbol;
 }
 export interface TabMeasure {
   index: number;
@@ -32,14 +37,35 @@ export function tabMeasures(project: MusicProject): TabMeasure[] {
       column.notes.push(n);
       group.set(key, column);
     }
+    const active = score.chords.find(
+      (c) => c.beat <= beat + 0.001 && c.beat + c.durationBeats > beat + 0.001,
+    );
+    for (const chord of [
+      ...(active ? [active] : []),
+      ...score.chords.filter(
+        (c) => c.beat > beat + 0.001 && c.beat < endBeat - 0.001,
+      ),
+    ]) {
+      const at = Math.max(beat, chord.beat),
+        column = [...group.values()].find(
+          (c) => Math.abs(c.beat - at) < 0.001,
+        ) ?? { key: `chord-${chord.id}`, beat: at, x: 0, notes: [] };
+      column.chord = chord;
+      group.set(column.key, column);
+    }
     const columns = [...group.values()].sort((a, b) => a.beat - b.beat);
     const width = Math.max(360, 90 + columns.length * 42);
-    let last = 38;
+    let last = 38,
+      lastChordRight = -100;
     for (const column of columns) {
       column.x = Math.max(
         last + 38,
         50 + ((column.beat - beat) / (endBeat - beat)) * (width - 105),
       );
+      if (column.chord) {
+        column.x = Math.max(column.x, lastChordRight + 12);
+        lastChordRight = column.x + 62;
+      }
       last = column.x;
     }
     measures.push({
@@ -48,7 +74,7 @@ export function tabMeasures(project: MusicProject): TabMeasure[] {
       endBeat,
       start: beatToSeconds(score, beat),
       end: beatToSeconds(score, endBeat),
-      width: Math.max(width, last + 38),
+      width: Math.max(width, last + 38, lastChordRight + 15),
       columns,
     });
   }

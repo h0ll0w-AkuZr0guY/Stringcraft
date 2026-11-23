@@ -8,6 +8,8 @@ import {
   type NoteEvent,
   type ArrangementGoal,
   soundingEvents,
+  type TimingAnalysis,
+  type TimingCandidate,
 } from "../../packages/contracts";
 import { decode, transcribe } from "../../packages/music/analyze";
 import { demoProject } from "../../packages/music/demo";
@@ -69,6 +71,7 @@ export function useWorkbench() {
     [saved, setSaved] = useState("原创示例 · 尚未修改"),
     [dirty, setDirty] = useState(false),
     [projects, setProjects] = useState<MusicProject[]>([]);
+  const [pluginCount,setPluginCount]=useState<number|null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>("normal"),
     [goal, setGoal] = useState<ArrangementGoal>("accompaniment"),
     [pattern, setPattern] = useState<"strum" | "arpeggio">("strum"),
@@ -157,7 +160,8 @@ export function useWorkbench() {
   useEffect(() => {
     let active = true;
     bootstrap()
-      .then(async () => {
+      .then(async (entries) => {
+        if(active)setPluginCount(entries.length);
         const plugin = await load("guitar-standard");
         if (
           (await installed("guitar-standard"))!.manifest.version === "0.1.0"
@@ -386,7 +390,24 @@ export function useWorkbench() {
       const harmony = await load("harmony-analysis");
       const tempos = harmony.tempoCandidates!(usable);
       if (tempos.length) p.bpm = tempos[0].bpm;
+      let timingWarning = "";
+      const timingPlugin = await installed("rhythm-analysis");
+      if (timingPlugin?.enabled && timingPlugin.code) {
+        try {
+          p.timingAnalysis = await invoke<TimingAnalysis>(
+            "rhythm-analysis",
+            "analyzeTiming",
+            [data.samples, 22050, p.bpm],
+            control.signal,
+          );
+          p.pluginVersions["rhythm-analysis"] = timingPlugin.manifest.version;
+        } catch (error) {
+          if (control.signal.aborted) throw error;
+          timingWarning = "波形拍点候选暂未生成，请手动确认参考速度与首拍。";
+        }
+      }
       p.score = harmony.analyzeHarmony!(usable, projectScore(p));
+      if (timingWarning) p.score.warnings.push(timingWarning);
       for (const id of [
         "melody-tracker",
         "harmony-analysis",
@@ -441,12 +462,13 @@ export function useWorkbench() {
         throw new Error("请在插件中心更新标准吉他到 0.2，再使用新的编配方式。");
       const harmony = await load("harmony-analysis");
       const baseScore = projectScore({ ...project, melody });
-      const score = baseScore.chords.length
-        ? baseScore
-        : harmony.analyzeHarmony!(
-            project.refinement?.notes ?? project.notes,
-            baseScore,
-          );
+      const score =
+        baseScore.chords.length && project.sourceKind !== "audio"
+          ? baseScore
+          : harmony.analyzeHarmony!(
+              project.refinement?.notes ?? project.notes,
+              baseScore,
+            );
       const candidates = (
         goal === "melody"
           ? recommend(melody, difficulty)
@@ -557,7 +579,7 @@ export function useWorkbench() {
       notify(errorMessage(e));
     }
   }
-  async function play(source = false) {
+  async function play(source = false, pulse?: TimingCandidate) {
     stop();
     const generation = playGeneration.current;
     const ctx = new AudioContext();
@@ -584,11 +606,40 @@ export function useWorkbench() {
         );
       }
       if (source) {
+        if (generation !== playGeneration.current || ctx.state === "closed")
+          return;
+        origin = ctx.currentTime + 0.06;
         const s = ctx.createBufferSource();
         s.buffer = sourceBuffer.current.get(project.id)!;
         s.playbackRate.value = speed;
         s.connect(ctx.destination);
         s.start(origin, project.sourceOffset + from, to - from);
+        if (pulse) {
+          const period = 60 / pulse.bpm;
+          for (
+            let beat =
+              pulse.phaseSeconds +
+              Math.max(0, Math.ceil((from - pulse.phaseSeconds) / period)) *
+                period;
+            beat < to;
+            beat += period
+          ) {
+            const oscillator = ctx.createOscillator(),
+              gain = ctx.createGain(),
+              when = origin + (beat - from) / speed;
+            oscillator.frequency.value = 1200;
+            gain.gain.setValueAtTime(0, when);
+            gain.gain.linearRampToValueAtTime(0.12, when + 0.002);
+            gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.045);
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.start(when);
+            oscillator.stop(when + 0.05);
+          }
+          notify(
+            `正在对照原曲试听 ${pulse.bpm.toFixed(1)} BPM 拍点；小节首拍仍需核对。`,
+          );
+        }
       } else {
         const renderer = await load("guitar-samples");
         const result = await renderer.scheduleAudio!(
@@ -611,7 +662,7 @@ export function useWorkbench() {
         setTime(Math.min(t, to));
         if (t >= to) {
           stop();
-          if (loop) void play(source);
+          if (loop) void play(source, pulse);
         }
       }, 40);
     } catch (e) {
@@ -720,6 +771,8 @@ export function useWorkbench() {
         .catch((e) => notify(errorMessage(e)));
   };
   return {
+    pluginCount,
+    playTiming: (candidate: TimingCandidate) => play(true, candidate),
     refineGuitar,
     setRefineGuitar,
     goal,

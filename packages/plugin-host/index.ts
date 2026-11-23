@@ -169,16 +169,18 @@ export async function bootstrap() {
     "standard-exporters",
     "guitar-samples",
     "harmony-analysis",
+    "rhythm-analysis",
   ]) {
     const p = await installed(id);
     if (!p) await install(list.find((m) => m.id === id)!);
   }
+  return list;
 }
 
 /** Pure musical computations run outside the UI; cancellation terminates the worker. */
 export async function invoke<T>(
   id: string,
-  method: "extractMelody" | "arrange",
+  method: "extractMelody" | "arrange" | "analyzeTiming",
   args: unknown[],
   signal?: AbortSignal,
 ): Promise<T> {

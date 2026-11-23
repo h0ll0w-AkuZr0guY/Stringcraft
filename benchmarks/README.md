@@ -11,6 +11,8 @@
 - `qingtian-section-glyph-audit.json`：另外 253 个弦品/X 字形的顺序复核。
 - `qingtian-suite.json`、`qingtian-suite-result.json`：三组私人输入的冻结摘要、用途、门槛及当前聚合结果，素材不分发。
 - `qingtian-recording-alignment.json`：使用检测起音拟合已知 riff 的未确认网格诊断；不作为识别准确率或独立对齐真值。
+- `timing-development.json`、`timing-heldout.json`：独立波形节拍插件的 12 段开发与 6 段跨曲目留出比较；因单项速度误差退化，不自动采用交叉提议。
+- `guitarset-audio-additional.json`：新增 Funk、Jazz、另一首 Bossa Nova 共 6 段真实录音的逐音识别基线。
 
 GuitarSet 原始资料采用 CC-BY-4.0：Qingyang Xi、Rachel M. Bittner、Johan Pauwels、Xuzhou Ye、Juan P. Bello，GuitarSet: A Dataset for Guitar Transcription，ISMIR 2018，数据版本 1.1.0，[原始发布](https://zenodo.org/records/3371780)。本项目生成上述统计，不重新分发原始录音及标注。
 

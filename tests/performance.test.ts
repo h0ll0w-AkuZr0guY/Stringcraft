@@ -61,6 +61,114 @@ const options = {
   pattern: "strum" as const,
 };
 describe("musical score and evidence", () => {
+  it("intra-bar chord changes keep the measure's strum pattern instead of restarting it", () => {
+    const s = score();
+    s.durationBeats = 8;
+    s.chords = [
+      {
+        id: "em",
+        beat: 0,
+        durationBeats: 3,
+        root: 4,
+        quality: "minor",
+        origin: "manual",
+      },
+      {
+        id: "g",
+        beat: 3,
+        durationBeats: 5,
+        root: 7,
+        quality: "major",
+        origin: "manual",
+      },
+    ];
+    const plan = arrangeScore(s, options),
+      starts = [...new Set(plan.actions.map((a) => a.strokeId))]
+        .map((id) =>
+          Math.min(
+            ...plan.actions.filter((a) => a.strokeId === id).map((a) => a.beat),
+          ),
+        )
+        .sort((a, b) => a - b);
+    expect(starts).toEqual([0, 1, 1.5, 2.5, 3, 3.5, 4, 5, 5.5, 6.5, 7, 7.5]);
+  });
+  it("a chord change in a rhythmic rest gets its own readable notation anchor", () => {
+    const p = demoProject(),
+      s = score();
+    s.chords = [
+      {
+        id: "em",
+        beat: 0,
+        durationBeats: 1.25,
+        root: 4,
+        quality: "minor",
+        origin: "manual",
+      },
+      {
+        id: "c",
+        beat: 1.25,
+        durationBeats: 6.75,
+        root: 0,
+        quality: "major",
+        origin: "manual",
+      },
+    ];
+    s.events = [
+      {
+        id: "e",
+        voice: "melody",
+        beat: 0,
+        durationBeats: 4,
+        midi: 64,
+        velocity: 0.7,
+        sourceIds: [],
+      },
+    ];
+    p.score = s;
+    p.arrangement = arrangeMusicalScore(s, {
+      ...options,
+      goal: "melody",
+      bpm: 120,
+    });
+    const bar = tabMeasures(p)[0],
+      change = bar.columns.find((c) => c.chord?.id === "c")!;
+    expect(change.beat).toBe(1.25);
+    expect(change.notes).toEqual([]);
+    expect(change.x + 62).toBeLessThan(bar.width);
+    const symbols = bar.columns.filter((c) => c.chord);
+    expect(symbols[1].x - symbols[0].x).toBeGreaterThanOrEqual(74);
+  });
+  it("simple waltz and compound duple patterns follow their own pulse groups", () => {
+    for (const [numerator, denominator, duration, expected] of [
+      [3, 4, 3, [0, 1, 2]],
+      [6, 8, 3, [0, 1.5]],
+    ] as const) {
+      const s = score();
+      s.durationBeats = duration;
+      s.meter = [{ beat: 0, numerator, denominator }];
+      s.chords = [
+        {
+          id: "em",
+          beat: 0,
+          durationBeats: duration,
+          root: 4,
+          quality: "minor",
+          origin: "manual",
+        },
+      ];
+      const plan = arrangeScore(s, { ...options, difficulty: "easy" }),
+        starts = [...new Set(plan.actions.map((a) => a.strokeId))]
+          .map((id) =>
+            Math.min(
+              ...plan.actions
+                .filter((a) => a.strokeId === id)
+                .map((a) => a.beat),
+            ),
+          )
+          .sort((a, b) => a - b);
+      expect(starts).toEqual(expected);
+    }
+  });
   it("authored muted attacks release the string without inventing a pitched score event", () => {
     const s = score();
     s.chords = [];

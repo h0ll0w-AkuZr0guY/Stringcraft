@@ -4,6 +4,9 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 
 ## SDK v2
 
+- `TimingAnalysis`：波形周期候选、拍点相位和相对证据，始终 `status=unconfirmed`。相位位于一个周期内，不能当成小节首拍。`MusicProject.timingAnalysis` 单独保存结果；`validateTiming` 校验范围和有限值。
+- `analyzeTiming(samples,sampleRate,noteProposalBpm?)`：节拍插件的纯计算入口，`invoke` 支持在可取消 Worker 中调用。当前波形实现接受 22050 Hz 单声道 Float32Array，最多 60 秒，短于 4 秒只提示；不修改音符或返回已确认拍号。交叉提议用于评估，不在工作台自动采用。
+
 - `NoteRefinerPlugin<Options>` 与 `loadRefiner`：选择现有候选，返回保留的 NoteEvent[] 和省略原因。乐器/模型专用参数留在插件。`MusicProject.refinement` 单独保存处理结果，原始 `notes` 不改写；项目校验拒绝清理结果伪造音高或起音。
 
 - `MusicalScore`：quarter-note beat 单位的速度图与拍号图、原音频网格偏移、独立声部事件、显式休止、和弦来源与证据、人工段落。识别的秒时间仍保存在 `NoteEvent`。
@@ -40,6 +43,7 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 | extractMelody(notes) | 返回引用稳定 ID 的主旋律；不发明 source=detected 的音符 |
 | arrange(notes, options) | 接收 difficulty、capo、transpose、bpm、previous；锁定冲突抛错 |
 | transcribe(samples, modelUrl, wasmUrl, progress) | 单声道 22050 Hz Float32Array；异步返回 NoteEvent，进度 0–1 |
+| analyzeTiming(samples, sampleRate, noteProposalBpm?) | 返回未确认的 TimingAnalysis；证据分数不作概率，拍点相位不作小节首拍 |
 | scheduleAudio(ctx, notes, tone, from, to, speed) | 调度播放，返回 origin 和合成回退计数 |
 | renderAudio(notes, duration, tone) | 返回 PCM WAV ArrayBuffer 与回退计数 |
 | exportFile(project, format) | 返回 data/mime/extension；现有 project/txt/midi |

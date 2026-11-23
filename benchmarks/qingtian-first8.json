@@ -6,7 +6,7 @@
     "page": 1,
     "bars": [1, 8],
     "arranger": "Steven Law",
-    "license": "Copyrighted reference; no score or note sequence redistributed. Aggregate evaluation only.",
+    "license": "Copyrighted score: private local evaluation only",
     "annotation": "Manually transcribed from visible six-line tab and rhythm beams; harmony labels derived from displayed triadic voicings, not printed chord symbols",
     "review": "Single-pass visual annotation; second independent review pending",
     "recordingAlignment": "Not aligned to user recording; this is the arranger version, not audio transcription truth"
@@ -168,35 +168,35 @@
     "generatedTexture": [
       {
         "bar": 1,
-        "notes": 28,
+        "notes": 26,
         "gestures": 6,
         "maxChordSize": 6,
         "legato": 0
       },
       {
         "bar": 2,
-        "notes": 22,
-        "gestures": 5,
+        "notes": 25,
+        "gestures": 6,
         "maxChordSize": 6,
         "legato": 0
       },
       {
         "bar": 3,
-        "notes": 28,
+        "notes": 26,
         "gestures": 6,
         "maxChordSize": 6,
         "legato": 0
       },
       {
         "bar": 4,
-        "notes": 22,
-        "gestures": 5,
+        "notes": 25,
+        "gestures": 6,
         "maxChordSize": 6,
         "legato": 0
       }
     ],
     "harmonicFit": {
-      "soundingSeconds": 43.171999999999976,
+      "soundingSeconds": 39.77999999999998,
       "chordToneFraction": 1
     },
     "hardErrors": 0,

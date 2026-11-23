@@ -7,6 +7,8 @@ import {
   type PerformancePlan,
 } from "./score";
 export * from "./score";
+import { validateTiming, type TimingAnalysis } from "./timing";
+export * from "./timing";
 export type Difficulty = "easy" | "normal" | "hard" | "expert";
 export interface Pitch {
   midi: number;
@@ -71,6 +73,7 @@ export interface MusicProject<N extends NoteEvent = GuitarNote> {
     notes: NoteEvent[];
     dropped: { noteId: string; reason: string }[];
   };
+  timingAnalysis?: TimingAnalysis;
   id: string;
   name: string;
   createdAt: string;
@@ -89,6 +92,7 @@ export type Capability =
   | "transcriber"
   | "melody"
   | "harmony"
+  | "timing"
   | "refiner"
   | "instrument"
   | "renderer"
@@ -124,6 +128,11 @@ export interface ArrangeOptions {
   pattern?: "strum" | "arpeggio";
 }
 export interface MusicPlugin {
+  analyzeTiming?: (
+    samples: Float32Array,
+    sampleRate: number,
+    noteProposalBpm?: number,
+  ) => TimingAnalysis;
   analyzeHarmony?: (notes: NoteEvent[], score: MusicalScore) => MusicalScore;
   tempoCandidates?: (notes: NoteEvent[]) => { bpm: number; score: number }[];
   instrument?: InstrumentDefinition;
@@ -230,6 +239,11 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
   validateNotes(p.melody);
+  if (p.timingAnalysis) {
+    validateTiming(p.timingAnalysis);
+    if (p.timingAnalysis.durationSeconds > p.duration + 0.01)
+      throw new Error("拍点分析超出项目时长");
+  }
   if (p.refinement) {
     validateNotes(p.refinement.notes);
     const originals = new Map(p.notes.map((n) => [n.id, n])),

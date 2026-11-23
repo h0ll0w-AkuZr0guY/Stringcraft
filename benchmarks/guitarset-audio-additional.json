@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "source": "https://zenodo.org/records/3371780",
+  "validation": "Selected ZIP members validated by CRC32 and recorded SHA-256; entire audio ZIP not downloaded",
+  "task": "real polyphonic note transcription, not lead melody extraction",
+  "primaryMetric": "one-to-one MIDI pitch and onset F1 at 50 ms",
+  "medianF1": 0.8015767561342901,
+  "externalUploads": 0,
+  "records": [
+    {
+      "id": "01_Funk1-114-Ab_comp",
+      "sha256": "9ee4888317faba89ba1a9929d6e3b044a3363eb925e6c432b2b30e4f3c83ab22",
+      "duration": 25.258375,
+      "at50ms": {
+        "reference": 232,
+        "prediction": 223,
+        "matched": 175,
+        "precision": 0.7847533632286996,
+        "recall": 0.7543103448275862,
+        "f1": 0.7692307692307693,
+        "onsetMae": 0.00964078004536207,
+        "durationMae": 0.03694556268222044
+      },
+      "at100msDiagnostic": {
+        "reference": 232,
+        "prediction": 223,
+        "matched": 176,
+        "precision": 0.7892376681614349,
+        "recall": 0.7586206896551724,
+        "f1": 0.7736263736263737,
+        "onsetMae": 0.009878409090919527,
+        "durationMae": 0.03690055916306352
+      }
+    },
+    {
+      "id": "01_Funk1-114-Ab_solo",
+      "sha256": "8e301305985cf6d26bfe0abfb76b60adb29df962d91071985b5dc65eba0cdd4e",
+      "duration": 25.258375,
+      "at50ms": {
+        "reference": 120,
+        "prediction": 140,
+        "matched": 109,
+        "precision": 0.7785714285714286,
+        "recall": 0.9083333333333333,
+        "f1": 0.8384615384615385,
+        "onsetMae": 0.013426607584938565,
+        "durationMae": 0.05957027190082476
+      },
+      "at100msDiagnostic": {
+        "reference": 120,
+        "prediction": 140,
+        "matched": 112,
+        "precision": 0.8,
+        "recall": 0.9333333333333333,
+        "f1": 0.8615384615384616,
+        "onsetMae": 0.014905482669265533,
+        "durationMae": 0.05978869857468327
+      }
+    },
+    {
+      "id": "03_Jazz2-187-F#_comp",
+      "sha256": "96592fcfddeddd03ef3aecee798032c44aada53f4c3e56008ff52000b89c5b06",
+      "duration": 20.531979166666666,
+      "at50ms": {
+        "reference": 102,
+        "prediction": 111,
+        "matched": 85,
+        "precision": 0.7657657657657657,
+        "recall": 0.8333333333333334,
+        "f1": 0.7981220657276996,
+        "onsetMae": 0.008393373349341269,
+        "durationMae": 0.06912456749366021
+      },
+      "at100msDiagnostic": {
+        "reference": 102,
+        "prediction": 111,
+        "matched": 85,
+        "precision": 0.7657657657657657,
+        "recall": 0.8333333333333334,
+        "f1": 0.7981220657276996,
+        "onsetMae": 0.008393373349341269,
+        "durationMae": 0.06912456749366021
+      }
+    },
+    {
+      "id": "03_Jazz2-187-F#_solo",
+      "sha256": "7d39e6e441440806d9427506ecc26da23d9e0b72fbf703b006795a2a761f85d6",
+      "duration": 20.531979166666666,
+      "at50ms": {
+        "reference": 72,
+        "prediction": 73,
+        "matched": 64,
+        "precision": 0.8767123287671232,
+        "recall": 0.8888888888888888,
+        "f1": 0.8827586206896552,
+        "onsetMae": 0.008478819444461176,
+        "durationMae": 0.03016395975058144
+      },
+      "at100msDiagnostic": {
+        "reference": 72,
+        "prediction": 73,
+        "matched": 64,
+        "precision": 0.8767123287671232,
+        "recall": 0.8888888888888888,
+        "f1": 0.8827586206896552,
+        "onsetMae": 0.008478819444461176,
+        "durationMae": 0.03016395975058144
+      }
+    },
+    {
+      "id": "02_BN2-131-B_comp",
+      "sha256": "6478e7ade863d3b84ec26b443499979ee8db10a726d60ad0836e805f5349af83",
+      "duration": 29.306375,
+      "at50ms": {
+        "reference": 278,
+        "prediction": 248,
+        "matched": 194,
+        "precision": 0.782258064516129,
+        "recall": 0.697841726618705,
+        "f1": 0.7376425855513308,
+        "onsetMae": 0.014145669401781559,
+        "durationMae": 0.0830349931037695
+      },
+      "at100msDiagnostic": {
+        "reference": 278,
+        "prediction": 248,
+        "matched": 202,
+        "precision": 0.8145161290322581,
+        "recall": 0.7266187050359713,
+        "f1": 0.7680608365019012,
+        "onsetMae": 0.016092988482523347,
+        "durationMae": 0.08442434610807996
+      }
+    },
+    {
+      "id": "02_BN2-131-B_solo",
+      "sha256": "5fbec1a2812360183811773320e7ad05016be2ab5af1dbcab09dd5f540511081",
+      "duration": 29.306375,
+      "at50ms": {
+        "reference": 66,
+        "prediction": 93,
+        "matched": 64,
+        "precision": 0.6881720430107527,
+        "recall": 0.9696969696969697,
+        "f1": 0.8050314465408805,
+        "onsetMae": 0.010086571712015754,
+        "durationMae": 0.04408163265306209
+      },
+      "at100msDiagnostic": {
+        "reference": 66,
+        "prediction": 93,
+        "matched": 66,
+        "precision": 0.7096774193548387,
+        "recall": 1,
+        "f1": 0.8301886792452831,
+        "onsetMae": 0.011461018346730172,
+        "durationMae": 0.04441695870267384
+      }
+    }
+  ]
+}

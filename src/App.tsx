@@ -100,7 +100,10 @@ function WorkbenchView({
             onClick={() => section("plugins")}
           >
             <Puzzle size={19} />
-            插件中心<span className="nav-badge">7</span>
+            插件中心
+            {controller.pluginCount !== null && (
+              <span className="nav-badge">{controller.pluginCount}</span>
+            )}
           </button>
           <a href="docs/index.html" target="_blank" rel="noreferrer">
             <BookOpen size={19} />

@@ -1,7 +1,7 @@
 import { alphaScore } from "../../plugins/guitar/alpha-score";
 import { tabMeasures } from "../../plugins/guitar/notation";
 import { chordName } from "../../plugins/guitar/voicings";
-import { secondsToBeat } from "../../packages/contracts/score";
+import { secondsToBeat, beatToSeconds } from "../../packages/contracts/score";
 import { projectScore } from "../../packages/music/score";
 let musicFont: Promise<void> | undefined;
 function prepareMusicFont(directory: URL) {
@@ -77,11 +77,6 @@ export function Tablature({
                     )
                 );
               };
-              const chord = score?.chords.find(
-                (c) =>
-                  c.beat <= bar.beat + 0.001 &&
-                  c.beat + c.durationBeats > bar.beat,
-              );
               return (
                 <g key={bar.index} transform={`translate(${left},0)`}>
                   <text x={5} y={20} className="measure-label">
@@ -90,21 +85,31 @@ export function Tablature({
                   <text x={50} y={20} className="time-label">
                     {bar.start.toFixed(1)}s
                   </text>
-                  {chord && (
-                    <text x={50} y={43} className="fret">
-                      {chordName({
-                        root:
-                          (((chord.root +
-                            (project.arrangement?.transpose ?? 0) -
-                            (project.arrangement?.capo ?? 0)) %
-                            12) +
-                            12) %
-                          12,
-                        quality: chord.quality,
-                      })}
-                      {chord.origin === "estimated" ? " ?" : ""}
-                    </text>
-                  )}
+                  {bar.columns
+                    .filter((c) => c.chord)
+                    .map((column) => {
+                      const chord = column.chord!;
+                      return (
+                        <text
+                          key={`symbol-${chord.id}`}
+                          x={column.x}
+                          y={43}
+                          className="fret chord-symbol"
+                        >
+                          {chordName({
+                            root:
+                              (((chord.root +
+                                (project.arrangement?.transpose ?? 0) -
+                                (project.arrangement?.capo ?? 0)) %
+                                12) +
+                                12) %
+                              12,
+                            quality: chord.quality,
+                          })}
+                          {chord.origin === "estimated" ? " ?" : ""}
+                        </text>
+                      );
+                    })}
                   {Array.from({ length: 6 }, (_, s) => (
                     <g key={s}>
                       <text x={5} y={78 + s * 23} className="string-label">
@@ -161,14 +166,14 @@ export function Tablature({
                     ))}
                   {bar.columns.map((column) => (
                     <g key={column.key}>
-                      {column.notes[0].stroke && (
+                      {column.notes[0]?.stroke && (
                         <text
                           x={column.x}
                           y={57}
                           textAnchor="middle"
                           className="time-label"
                         >
-                          {column.notes[0].stroke === "down" ? "↓" : "↑"}
+                          {column.notes[0]?.stroke === "down" ? "↓" : "↑"}
                         </text>
                       )}
                       {column.notes.map((n) => {
@@ -285,13 +290,13 @@ export function Tablature({
                       x1={Math.max(
                         40,
                         bar.columns
-                          .filter((c) => c.notes[0].start <= time)
+                          .filter((c) => beatToSeconds(score, c.beat) <= time)
                           .at(-1)?.x ?? 40,
                       )}
                       x2={Math.max(
                         40,
                         bar.columns
-                          .filter((c) => c.notes[0].start <= time)
+                          .filter((c) => beatToSeconds(score, c.beat) <= time)
                           .at(-1)?.x ?? 40,
                       )}
                       y1={58}

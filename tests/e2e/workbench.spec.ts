@@ -105,6 +105,26 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   expect(
     await page.getByTestId("tablature").locator(".tab-note").count(),
   ).toBeGreaterThan(0);
+  expect(result.timingAnalysis.method).toBe("spectral-flux-acf-v1");
+  expect(result.timingAnalysis.candidates.length).toBeGreaterThan(0);
+  await page.locator(".structure-panel > summary").click();
+  await page
+    .getByRole("button", { name: /试听 .* BPM 拍点/ })
+    .first()
+    .click();
+  await expect(page.getByRole("status")).toContainText("试听");
+  await page.getByRole("button", { name: "停止播放", exact: true }).click();
+  await page
+    .getByRole("button", { name: /使用 .* BPM 参考速度/ })
+    .first()
+    .click();
+  const afterWait = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  const after = JSON.parse(
+    await readFile((await (await afterWait).path())!, "utf8"),
+  );
+  expect(after.notes).toEqual(result.notes);
+  expect(after.bpm).toBeCloseTo(result.timingAnalysis.candidates[0].bpm, 6);
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "MIDI", exact: true }).click();
   expect((await download).suggestedFilename()).toMatch(/\.mid$/);

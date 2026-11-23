@@ -18,6 +18,8 @@ Python 3.11+：安装 backend/requirements.txt，先 `npm run build`，再 `pyth
 
 ## 新增乐器
 
+纯音频分析能力可参考 `plugins/rhythm-analysis`：接受有界解码数组，在 `invoke` Worker 中运行，返回中立的候选结构。波形数据由调用者复用，不能因转移 ArrayBuffer 破坏后续插件。周期相位与小节首拍分开，任何参考参数的自动采用都要通过逐曲退化审查；候选覆盖提升不能替代默认行为的质量证明。
+
 吉他包内部已按职责拆分：types（乐器动作）、voicing-planner（和弦指型路径）、accompaniment（伴奏型）、fingerstyle（主旋律与低音）、inner-voice（稀疏内声部）、hands（持续手指与右手分配）、validation（硬约束）、performance（编配入口与兼容投影）。算法改动先明确落在哪一层；真实参考比较见 [评估协议](REFERENCE_EVALUATION.md)。
 
 written-voices 负责已确认材料与弦位，reference 负责私人参考的发声投影，evaluation 负责吉他声部/弦品/技法/闷音指标。先区分事件来源再决定保留策略，不能用检测候选筛选规则删除用户导入的内声部。每轮先运行固定摘要验收集，新增真实参考要记录开发或留出用途；已用于修正的谱例不能重新标作留出。

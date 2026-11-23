@@ -90,6 +90,34 @@ node scripts/evaluate-reference-suite.mjs benchmarks/qingtian-suite.json artifac
 node scripts/align-reference.mjs artifacts/reference-corpus/qingtian/first8.json artifacts/private-recording-project.json artifacts/quality/qingtian-recording-alignment.json
 ```
 
+### 独立波形节拍插件与跨曲目检查
+
+新增无模型依赖的 `rhythm-analysis` 插件，以短时频谱的正向变化检测起音，再用自相关提供周期与拍点相位。方法依据 [Ellis 的节拍跟踪研究](https://www.ee.columbia.edu/~dpwe/pubs/Ellis07-beattrack.pdf)和 [librosa 的节奏分析说明](https://librosa.org/doc/latest/auto_tutorials/01-intro/06-rhythm.html)中的起音/周期思路；本实现只提供固定周期候选，没有声称实现完整动态节拍或小节重音识别。FFT 与信号处理为仓库内实现。
+
+开发集沿用演奏者 00、04 的 12 段录音；另冻结 Funk1-114、Jazz2-187、BN2-131 的伴奏/独奏六段，分别来自演奏者 01、03、02，与开发集曲目不同。音频逐文件校验，名义 BPM 与拍点取原始 JAMS。它们是点击网格参照，不等于独立人工标注的自由演奏首拍。
+
+| 指标（相对 BPM 误差不超过 4%） | 开发 12 段 | 跨曲目留出 6 段 |
+| --- | --- | --- |
+| 旧音符间隔估计，首选命中 | 4 | 2 |
+| 旧估计，前五个含参照速度 | 6 | 4 |
+| 波形估计，首选命中 | 6 | 1 |
+| 波形估计，前五个含参照速度 | 11 | 6 |
+| 交叉提议，首选命中 | 4 | 3 |
+
+候选覆盖改善，最高分周期仍可能落在倍速或三连音层级。交叉提议在一段 Jazz 伴奏中从 170 BPM 改到约 60.45 BPM，参照为 187 BPM，单项误差明显恶化。复核发现仅看命中次数的门槛不够，因此加上单段相对误差增加不能超过 0.03 的审查；没有继续用这批留出结果调参。两组均未通过自动采用门槛，产品只提供试听与人工选用，默认速度仍沿用原流程。逐段名义拍点 F1 与相位误差分开记录在 [开发结果](../benchmarks/timing-development.json)和[留出结果](../benchmarks/timing-heldout.json)，不以速度命中替代拍点准确率。
+
+用户《晴天》前 30 秒的实际浏览器流程给出 68.5116 BPM、拍点相位 0.7779 秒候选，与已知 riff 的独立拟合接近。界面可叠加滴答声后手动采用；仍不自动认定小节首拍或真实音符真值。另新增六段实际 Basic Pitch 运行，识别 F1 见 [跨曲目录音基线](../benchmarks/guitarset-audio-additional.json)。累计真实识别流程覆盖 24 个授权录音。
+
+```powershell
+python scripts/prepare-timing-corpus.py artifacts/reference-corpus/guitarset/annotation.zip artifacts/reference-corpus/guitarset/audio-timing-heldout/manifest.json artifacts/reference-corpus/guitarset/timing-heldout.json
+$env:STRINGCRAFT_TIMING_CORPUS='artifacts/reference-corpus/guitarset/timing-heldout.json'
+$env:STRINGCRAFT_TIMING_NOTES='artifacts/quality/reference-predictions-timing-heldout.json'
+$env:STRINGCRAFT_TIMING_LABEL='heldout'
+npx playwright test tests/e2e/timing-quality.spec.ts
+```
+
+这些资料在本轮审查后已使用，下一轮选择新算法或参数需再准备新的留出曲目。曾尝试在周期附近做脉冲拟合，开发集前五候选覆盖从 11/12 降至 10/12，未进入产品实现；保留失败原因，避免只报告平均改善。
+
 ## 基础复现
 
 先将官方 `annotation.zip` 下载到忽略的 artifacts 目录；脚本会核对官方 MD5。普通 CI 不下载大型语料。

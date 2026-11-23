@@ -38,6 +38,8 @@ test("opt-in local-only real recording smoke test", async ({ page }) => {
     melody: p.melody.length,
     arranged: p.arrangement.notes.length,
     externalUploads: outsideUploads.length,
+    timingCandidates: p.timingAnalysis?.candidates,
+    retainedBpm: p.bpm,
     quality: "Not annotated; no accuracy claim",
   };
   await mkdir("artifacts", { recursive: true });

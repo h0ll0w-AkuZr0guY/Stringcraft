@@ -94,14 +94,17 @@ export async function transcribe(
       done();
       reject(new Error(e.message || "浏览器识别环境不可用"));
     };
+    // Other analysis plugins may reuse the decoded clip after transcription.
+    // Transfer a private copy rather than detaching the caller's array.
+    const transferable = samples.slice();
     worker.postMessage(
       {
         code: p!.code,
-        samples,
+        samples: transferable,
         modelUrl: new URL("models/basic-pitch/model.json", base).href,
         wasmUrl: new URL("wasm/", base).href,
       },
-      [samples.buffer],
+      [transferable.buffer],
     );
   });
 }

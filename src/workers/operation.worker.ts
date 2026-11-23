@@ -2,7 +2,7 @@ import type { MusicPlugin } from "../../packages/contracts";
 self.onmessage = async (
   e: MessageEvent<{
     code: string;
-    method: "extractMelody" | "arrange";
+    method: "extractMelody" | "arrange" | "analyzeTiming";
     args: unknown[];
   }>,
 ) => {

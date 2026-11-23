@@ -1,4 +1,5 @@
 import type { NoteEvent } from "../../packages/contracts";
+import { measureGrid } from "../../packages/music/structure";
 import {
   secondsToBeat,
   type MusicalScore,
@@ -23,10 +24,7 @@ export function analyzeHarmony(
     (c) => c.origin !== "estimated",
   );
   let previous: ChordSymbol | undefined;
-  const meter = result.meter[0],
-    barLength = (meter.numerator * 4) / meter.denominator;
-  for (let beat = 0; beat < result.durationBeats; beat += barLength) {
-    const end = Math.min(result.durationBeats, beat + barLength);
+  for (const { beat, endBeat: end } of measureGrid(result)) {
     if (chords.some((c) => c.beat < end && c.beat + c.durationBeats > beat))
       continue;
     const chroma = Array<number>(12).fill(0),

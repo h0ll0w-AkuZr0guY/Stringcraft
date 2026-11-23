@@ -3,7 +3,7 @@
     "id": "guitar-standard",
     "name": "标准吉他",
     "directory": "guitar",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "capabilities": ["instrument"],
     "description": "和弦伴奏、独奏指弹与单线练习；独立按弦与演奏动作验证",
     "license": "Apache-2.0"
@@ -66,7 +66,7 @@
     "id": "harmony-analysis",
     "name": "和声与节拍候选",
     "directory": "harmony",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "capabilities": ["harmony"],
     "description": "按拍窗估计和弦证据，保留人工校正；速度仅提供候选",
     "license": "Apache-2.0"
@@ -78,6 +78,15 @@
     "version": "0.2.0",
     "capabilities": ["refiner"],
     "description": "可减少误报，也可能漏掉弱和弦音；保留原候选供对照，默认不应用。",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "rhythm-analysis",
+    "name": "波形节拍候选",
+    "directory": "rhythm-analysis",
+    "version": "0.1.0",
+    "capabilities": ["timing"],
+    "description": "独立波形起音与周期候选；相位不等于小节首拍，需试听确认。",
     "license": "Apache-2.0"
   }
 ]

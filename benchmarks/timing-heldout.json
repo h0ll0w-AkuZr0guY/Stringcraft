@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "source": "https://zenodo.org/records/3371780",
+  "task": "Nominal tempo and click-grid comparison; not independently annotated human downbeats",
+  "manifestSha256": "7115e7331eab6b2c6b135558c1a961216cd4c4d1f69fcf2b7d49c7b61a1e6363",
+  "noteCacheSha256": "eb61263dbb082265abfb5ac0308da14473ab5e66a4dbaa2b7391d02186f962a7",
+  "pluginSha256": "884ce4495cb601c84c44470d7474f48b4aa8c37839c1a35a33ac814259e7d298",
+  "criteria": {
+    "tempoRelativeTolerance": 0.04,
+    "nominalBeatToleranceSeconds": 0.07,
+    "defaultPromotion": "No previously correct primary may regress, primary count must not decrease, no per-track relative-tempo error increase above 0.03; phase never automatically applied",
+    "gateReview": "Continuous-error gate added after reviewing the inadequacy of correctness counts alone; no retuning on these held-out tracks"
+  },
+  "summary": {
+    "tracks": 6,
+    "baselineStrict": 2,
+    "baselineBest5Strict": 4,
+    "waveformPrimaryStrict": 1,
+    "waveformBest5Strict": 6,
+    "proposalStrict": 3,
+    "regressions": [],
+    "errorRegressions": ["03_Jazz2-187-F#_comp"],
+    "defaultPromotion": false
+  },
+  "records": [
+    {
+      "id": "01_Funk1-114-Ab_comp",
+      "sha256": "9ee4888317faba89ba1a9929d6e3b044a3363eb925e6c432b2b30e4f3c83ab22",
+      "referenceBpm": 114,
+      "baseline": {
+        "bpm": 220,
+        "strict": false,
+        "best5Strict": false,
+        "nominalGridF1": 0.34375000000000006
+      },
+      "waveform": {
+        "primaryBpm": 228.39987932212165,
+        "primaryStrict": false,
+        "best5Strict": true,
+        "closestPhaseError": 0.052244897959183675
+      },
+      "proposal": {
+        "bpm": 220,
+        "source": "note-supported",
+        "strict": false,
+        "nominalGridF1": 0.34375000000000006
+      },
+      "analysis": {
+        "method": "spectral-flux-acf-v1",
+        "durationSeconds": 25.258412698412698,
+        "status": "unconfirmed",
+        "candidates": [
+          {
+            "bpm": 228.39987932212165,
+            "phaseSeconds": 0.029024943310657598,
+            "score": 0.4270025681570153
+          },
+          {
+            "bpm": 152.98144414827377,
+            "phaseSeconds": 0.16253968253968254,
+            "score": 0.40777677306433446
+          },
+          {
+            "bpm": 76.60691148966878,
+            "phaseSeconds": 0.4295691609977324,
+            "score": 0.36986029819671395
+          },
+          {
+            "bpm": 114.3517437697611,
+            "phaseSeconds": 0.052244897959183675,
+            "score": 0.3668353729880964
+          },
+          {
+            "bpm": 45.63376367338622,
+            "phaseSeconds": 0.5340589569160997,
+            "score": 0.2931477354277732
+          }
+        ],
+        "warnings": [
+          "波形周期可能对应半速、倍速或其他分拍；拍点相位不代表小节首拍，请试听后确认。"
+        ],
+        "proposal": {
+          "bpm": 220,
+          "source": "note-supported"
+        }
+      }
+    },
+    {
+      "id": "01_Funk1-114-Ab_solo",
+      "sha256": "8e301305985cf6d26bfe0abfb76b60adb29df962d91071985b5dc65eba0cdd4e",
+      "referenceBpm": 114,
+      "baseline": {
+        "bpm": 220,
+        "strict": false,
+        "best5Strict": false,
+        "nominalGridF1": 0.34375000000000006
+      },
+      "waveform": {
+        "primaryBpm": 228.69959171731162,
+        "primaryStrict": false,
+        "best5Strict": true,
+        "closestPhaseError": 0.1799546485260771
+      },
+      "proposal": {
+        "bpm": 220,
+        "source": "note-supported",
+        "strict": false,
+        "nominalGridF1": 0.34375000000000006
+      },
+      "analysis": {
+        "method": "spectral-flux-acf-v1",
+        "durationSeconds": 25.258412698412698,
+        "status": "unconfirmed",
+        "candidates": [
+          {
+            "bpm": 228.69959171731162,
+            "phaseSeconds": 0.06385487528344672,
+            "score": 0.19852734800409175
+          },
+          {
+            "bpm": 152.7797188910844,
+            "phaseSeconds": 0.23219954648526078,
+            "score": 0.11848709254732823
+          },
+          {
+            "bpm": 112.13139700686956,
+            "phaseSeconds": 0.1799546485260771,
+            "score": 0.10344675291458226
+          },
+          {
+            "bpm": 77.66175483587932,
+            "phaseSeconds": 0.5108390022675737,
+            "score": 0.10199068723608837
+          },
+          {
+            "bpm": 56.632211075392505,
+            "phaseSeconds": 0.9926530612244898,
+            "score": 0.08915479400936444
+          }
+        ],
+        "warnings": [
+          "波形周期可能对应半速、倍速或其他分拍；拍点相位不代表小节首拍，请试听后确认。"
+        ],
+        "proposal": {
+          "bpm": 220,
+          "source": "note-supported"
+        }
+      }
+    },
+    {
+      "id": "03_Jazz2-187-F#_comp",
+      "sha256": "96592fcfddeddd03ef3aecee798032c44aada53f4c3e56008ff52000b89c5b06",
+      "referenceBpm": 187,
+      "baseline": {
+        "bpm": 170,
+        "strict": false,
+        "best5Strict": true,
+        "nominalGridF1": 0.4587155963302752
+      },
+      "waveform": {
+        "primaryBpm": 60.45144067380267,
+        "primaryStrict": false,
+        "best5Strict": true,
+        "closestPhaseError": 0.046439909297052155
+      },
+      "proposal": {
+        "bpm": 60.45144067380267,
+        "source": "waveform",
+        "strict": false,
+        "nominalGridF1": 0.16
+      },
+      "analysis": {
+        "method": "spectral-flux-acf-v1",
+        "durationSeconds": 20.532018140589567,
+        "status": "unconfirmed",
+        "candidates": [
+          {
+            "bpm": 60.45144067380267,
+            "phaseSeconds": 0.6733786848072563,
+            "score": 0.0789166155095249
+          },
+          {
+            "bpm": 63.90348938130367,
+            "phaseSeconds": 0.3250793650793651,
+            "score": 0.06570493642872359
+          },
+          {
+            "bpm": 182.22202079417056,
+            "phaseSeconds": 0.046439909297052155,
+            "score": 0.050251031920223226
+          },
+          {
+            "bpm": 80.16900198315251,
+            "phaseSeconds": 0.3250793650793651,
+            "score": 0.04866085900097984
+          },
+          {
+            "bpm": 44.57812600083614,
+            "phaseSeconds": 0.18575963718820862,
+            "score": 0.0455374036956022
+          }
+        ],
+        "warnings": [
+          "波形周期可能对应半速、倍速或其他分拍；拍点相位不代表小节首拍，请试听后确认。"
+        ],
+        "proposal": {
+          "bpm": 60.45144067380267,
+          "source": "waveform"
+        }
+      }
+    },
+    {
+      "id": "03_Jazz2-187-F#_solo",
+      "sha256": "7d39e6e441440806d9427506ecc26da23d9e0b72fbf703b006795a2a761f85d6",
+      "referenceBpm": 187,
+      "baseline": {
+        "bpm": 175,
+        "strict": false,
+        "best5Strict": true,
+        "nominalGridF1": 0.4144144144144144
+      },
+      "waveform": {
+        "primaryBpm": 183.67028238884134,
+        "primaryStrict": true,
+        "best5Strict": true,
+        "closestPhaseError": 0.040634920634920635
+      },
+      "proposal": {
+        "bpm": 183.67028238884134,
+        "source": "waveform",
+        "strict": true,
+        "nominalGridF1": 0.4424778761061947
+      },
+      "analysis": {
+        "method": "spectral-flux-acf-v1",
+        "durationSeconds": 20.532018140589567,
+        "status": "unconfirmed",
+        "candidates": [
+          {
+            "bpm": 183.67028238884134,
+            "phaseSeconds": 0.040634920634920635,
+            "score": 0.11916189214664273
+          },
+          {
+            "bpm": 88.6312581909778,
+            "phaseSeconds": 0.046439909297052155,
+            "score": 0.08673840647030008
+          },
+          {
+            "bpm": 123.05259961761377,
+            "phaseSeconds": 0.46439909297052157,
+            "score": 0.07472140207922975
+          },
+          {
+            "bpm": 44.84922351446267,
+            "phaseSeconds": 1.195827664399093,
+            "score": 0.0668418938015192
+          },
+          {
+            "bpm": 73.8341484807156,
+            "phaseSeconds": 0.5746938775510204,
+            "score": 0.05755612335082993
+          }
+        ],
+        "warnings": [
+          "波形周期可能对应半速、倍速或其他分拍；拍点相位不代表小节首拍，请试听后确认。"
+        ],
+        "proposal": {
+          "bpm": 183.67028238884134,
+          "source": "waveform"
+        }
+      }
+    },
+    {
+      "id": "02_BN2-131-B_comp",
+      "sha256": "6478e7ade863d3b84ec26b443499979ee8db10a726d60ad0836e805f5349af83",
+      "referenceBpm": 131,
+      "baseline": {
+        "bpm": 134,
+        "strict": true,
+        "best5Strict": true,
+        "nominalGridF1": 0.2666666666666667
+      },
+      "waveform": {
+        "primaryBpm": 87.08333085379714,
+        "primaryStrict": false,
+        "best5Strict": true,
+        "closestPhaseError": 0.06385487528344672
+      },
+      "proposal": {
+        "bpm": 134,
+        "source": "note-supported",
+        "strict": true,
+        "nominalGridF1": 0.2666666666666667
+      },
+      "analysis": {
+        "method": "spectral-flux-acf-v1",
+        "durationSeconds": 29.30639455782313,
+        "status": "unconfirmed",
+        "candidates": [
+          {
+            "bpm": 87.08333085379714,
+            "phaseSeconds": 0.18575963718820862,
+            "score": 0.3593632008251607
+          },
+          {
+            "bpm": 52.57167575325351,
+            "phaseSeconds": 0.748843537414966,
+            "score": 0.29684170828831685
+          },
+          {
+            "bpm": 132.244611300333,
+            "phaseSeconds": 0.06385487528344672,
+            "score": 0.2703635408279308
+          },
+          {
+            "bpm": 43.51285495253935,
+            "phaseSeconds": 0.8649433106575963,
+            "score": 0.24936413266858728
+          },
+          {
+            "bpm": 65.48585871966382,
+            "phaseSeconds": 0.45859410430839004,
+            "score": 0.21797096549581826
+          }
+        ],
+        "warnings": [
+          "波形周期可能对应半速、倍速或其他分拍；拍点相位不代表小节首拍，请试听后确认。"
+        ],
+        "proposal": {
+          "bpm": 134,
+          "source": "note-supported"
+        }
+      }
+    },
+    {
+      "id": "02_BN2-131-B_solo",
+      "sha256": "5fbec1a2812360183811773320e7ad05016be2ab5af1dbcab09dd5f540511081",
+      "referenceBpm": 131,
+      "baseline": {
+        "bpm": 133,
+        "strict": true,
+        "best5Strict": true,
+        "nominalGridF1": 0.23529411764705882
+      },
+      "waveform": {
+        "primaryBpm": 86.96347792304499,
+        "primaryStrict": false,
+        "best5Strict": true,
+        "closestPhaseError": 0.04665023226728238
+      },
+      "proposal": {
+        "bpm": 133,
+        "source": "note-supported",
+        "strict": true,
+        "nominalGridF1": 0.23529411764705882
+      },
+      "analysis": {
+        "method": "spectral-flux-acf-v1",
+        "durationSeconds": 29.30639455782313,
+        "status": "unconfirmed",
+        "candidates": [
+          {
+            "bpm": 86.96347792304499,
+            "phaseSeconds": 0.603718820861678,
+            "score": 0.18348001948195147
+          },
+          {
+            "bpm": 130.77467529223193,
+            "phaseSeconds": 0.4121541950113379,
+            "score": 0.17053381734310288
+          },
+          {
+            "bpm": 52.06243184056755,
+            "phaseSeconds": 0.09868480725623582,
+            "score": 0.11752771316765073
+          },
+          {
+            "bpm": 63.069398799395216,
+            "phaseSeconds": 0.7952834467120181,
+            "score": 0.051552486448620774
+          },
+          {
+            "bpm": 44.069472545806704,
+            "phaseSeconds": 0.13351473922902493,
+            "score": 0.050187538559620784
+          }
+        ],
+        "warnings": [
+          "波形周期可能对应半速、倍速或其他分拍；拍点相位不代表小节首拍，请试听后确认。"
+        ],
+        "proposal": {
+          "bpm": 133,
+          "source": "note-supported"
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Official beats are nominal click positions, not independent expressive downbeat annotations",
+    "Half/double tempo and offbeat phases remain ambiguous",
+    "A BPM improvement does not prove beat-grid or note-recognition accuracy"
+  ]
+}
