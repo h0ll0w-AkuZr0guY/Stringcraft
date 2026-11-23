@@ -77,6 +77,7 @@ for name in ("LICENSE", "NOTICE", "README.md"):
 shutil.copy2(ROOT / "dist" / "build-info.json", bundle / "build-info.json")
 shutil.copy2(ROOT / "docs" / "LOCAL_TRIAL.md", bundle / "使用说明.md")
 shutil.copytree(ROOT / "docs", bundle / "docs")
+shutil.copytree(ROOT / "benchmarks", bundle / "benchmarks")
 (bundle / "runtime_plugins").mkdir(exist_ok=True)
 if args.environment:
     environment = args.environment.resolve()

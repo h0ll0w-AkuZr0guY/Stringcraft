@@ -34,3 +34,4 @@ await writeFile(
 console.log(`Built ${files.length} documentation pages`);
 
 await cp("docs/assets", "public/docs/assets", { recursive: true });
+await cp("benchmarks", "public/benchmarks", { recursive: true });
