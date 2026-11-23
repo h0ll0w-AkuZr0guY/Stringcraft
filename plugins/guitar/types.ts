@@ -18,6 +18,11 @@ export interface GuitarAction {
   velocity: number;
   role: "melody" | "bass" | "harmony";
   sourceIds: string[];
+  articulation?: {
+    damp?: boolean;
+    releaseSeconds?: number;
+    sustainOffset?: number;
+  };
 }
 export interface GuitarGrip {
   beat: number;
@@ -36,7 +41,8 @@ export interface GuitarOptions {
   capo: number;
   transpose: number;
   goal: NonNullable<ArrangeOptions["goal"]>;
-  pattern: "strum" | "arpeggio";
+  pattern: "strum" | "arpeggio" | "auto";
+  phrases?: import("../../packages/contracts").ArrangementPhrase[];
   preferences?: FretPreferences;
   positionSource?: "written" | "optimize";
 }

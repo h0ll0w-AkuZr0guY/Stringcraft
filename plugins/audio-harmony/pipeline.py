@@ -9,7 +9,7 @@ import time
 import threading
 import numpy as np
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 DEMUCS_SHA256 = "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
 
 
@@ -356,6 +356,29 @@ def run(source, output, emit, offset=0.0, seconds=1800.0):
         stop.set()
         thread.join(timeout=4)
     mapping = {name: stems[i].numpy().T for i, name in enumerate(model.sources)}
+    emit(
+        {
+            "type": "progress",
+            "progress": 0.74,
+            "message": "提取人声旋律证据 · pYIN / CPU",
+        }
+    )
+    from melody import vocal_melody
+
+    melody_evidence = vocal_melody(
+        mapping["vocals"].mean(1),
+        (mapping["other"] + mapping["bass"]).mean(1),
+        rate,
+        notes,
+        emit,
+    )
+    if not melody_evidence:
+        warnings.append(
+            "本片段未提取到可靠人声旋律；编配沿用器乐候选，仍需核对旋律骨干。"
+        )
+    (output / "vocal-melody.json").write_text(
+        json.dumps(melody_evidence), encoding="utf-8"
+    )
     sf.write(output / "bass.wav", mapping["bass"], rate, subtype="PCM_16")
     accompaniment = mapping["other"] + mapping["bass"] + mapping["drums"]
     sf.write(output / "accompaniment.wav", accompaniment, rate, subtype="PCM_16")
@@ -395,6 +418,12 @@ def run(source, output, emit, offset=0.0, seconds=1800.0):
             "weightsSha256": hashlib.sha256(model_path.read_bytes()).hexdigest(),
         },
         *harmony["executions"],
+        {
+            "name": "pYIN vocal melody",
+            "version": "librosa-0.11.0",
+            "device": "cpu",
+            "provider": "librosa F0",
+        },
     ]
     harmony["executions"] = executions
     harmony["sourceAudioSha256"] = hashlib.sha256(Path(source).read_bytes()).hexdigest()
@@ -408,6 +437,7 @@ def run(source, output, emit, offset=0.0, seconds=1800.0):
         "duration": duration,
         "bpm": 120.0,
         "notes": notes,
+        "melodyEvidence": melody_evidence,
         "harmonyAnalysis": harmony,
         "executions": executions,
         "warnings": warnings,

@@ -1,11 +1,11 @@
 import type { GuitarNote, NoteEvent } from "../contracts";
-import { audioGestures, type AudioGesture } from "./performance-audio";
+import { articulationSegments, type AudioGesture } from "./performance-audio";
+import { sampleChoices, type GuitarSample } from "./sample-bank";
 type AudioCtx = AudioContext | OfflineAudioContext;
-type Sample = {
-  instrument: string;
-  string: number;
-  midi: number;
-  local_file: string;
+type Sample = GuitarSample;
+type RenderSession = {
+  decoded: Map<string, Promise<AudioBuffer>>;
+  fallbackIds: Set<string>;
 };
 const rawSamples = new Map<string, Promise<ArrayBuffer>>();
 // One decoded buffer per file and context. A whole score reuses each sample
@@ -26,49 +26,49 @@ async function bank(): Promise<Sample[]> {
     .then((d) => d.samples as Sample[])
     .catch(() => []));
 }
-async function getSample(ctx: AudioCtx, n: NoteEvent, tone: string) {
-  const list = await bank(),
-    string = (n as GuitarNote).string;
-  const candidates = list
-    .filter(
-      (s) =>
-        s.instrument === tone &&
-        (!string || s.string === string) &&
-        Math.abs(s.midi - n.pitch.midi) <= 2,
-    )
-    .sort(
-      (a, b) =>
-        Math.abs(a.midi - n.pitch.midi) - Math.abs(b.midi - n.pitch.midi),
-    );
-  const sample = candidates[0];
-  if (!sample) return null;
-  let raw = rawSamples.get(sample.local_file);
-  if (!raw) {
-    raw = fetch(resource("samples/" + sample.local_file)).then((r) => {
-      if (!r.ok) throw new Error();
-      return r.arrayBuffer();
-    });
-    rawSamples.set(sample.local_file, raw);
-  }
-  try {
-    let cache = decodedSamples.get(ctx);
-    if (!cache) {
-      cache = new Map();
-      decodedSamples.set(ctx, cache);
-    }
-    let decoded = cache.get(sample.local_file);
-    if (!decoded) {
-      decoded = raw.then((bytes) => ctx.decodeAudioData(bytes.slice(0)));
-      cache.set(sample.local_file, decoded);
-    }
-    return {
-      buffer: await decoded,
-      midi: sample.midi,
-    };
-  } catch {
-    return null;
-  }
+async function getSample(
+  ctx: AudioCtx,
+  n: NoteEvent,
+  tone: string,
+  session?: RenderSession,
+) {
+  const selected = sampleChoices(await bank(), n, tone);
+  if (!selected.length) return null;
+  const layers = await Promise.all(
+    selected.map(async ({ sample, gain }) => {
+      let raw = rawSamples.get(sample.local_file);
+      if (!raw) {
+        raw = fetch(resource("samples/" + sample.local_file)).then((r) => {
+          if (!r.ok) throw new Error("采样不可用");
+          return r.arrayBuffer();
+        });
+        rawSamples.set(sample.local_file, raw);
+      }
+      let cache = session?.decoded ?? decodedSamples.get(ctx);
+      if (!cache) {
+        cache = new Map();
+        decodedSamples.set(ctx, cache);
+      }
+      try {
+        let decoded = cache.get(sample.local_file);
+        if (!decoded) {
+          decoded = raw.then((bytes) => ctx.decodeAudioData(bytes.slice(0)));
+          cache.set(sample.local_file, decoded);
+        }
+        if (cache.size > 128) cache.delete(cache.keys().next().value!);
+        return { buffer: await decoded, midi: sample.midi, gain };
+      } catch {
+        cache.delete(sample.local_file);
+        return null;
+      }
+    }),
+  );
+  const available = layers.filter(
+    (x): x is NonNullable<typeof x> => x !== null,
+  );
+  return available.length ? available : null;
 }
+
 function synth(
   ctx: AudioCtx,
   n: NoteEvent,
@@ -147,14 +147,15 @@ export async function schedule(
   from = 0,
   to = Infinity,
   speed = 1,
+  session?: RenderSession,
 ) {
   const prepared = await Promise.all(
-    audioGestures(notes, from, to).map(async (gesture) => ({
+    articulationSegments(notes, from, to).map(async (gesture) => ({
       gesture,
-      sample:
+      samples:
         tone === "synth" || (gesture.note as GuitarNote).dead
           ? null
-          : await getSample(ctx, gesture.note, tone),
+          : await getSample(ctx, gesture.note, tone, session),
     })),
   );
   const origin =
@@ -163,58 +164,79 @@ export async function schedule(
   const mix = ctx.createGain(),
     compressor = ctx.createDynamicsCompressor();
   mix.gain.value = 0.7;
-  compressor.threshold.value = -10;
-  compressor.knee.value = 6;
-  compressor.ratio.value = 12;
-  compressor.attack.value = 0.003;
-  compressor.release.value = 0.12;
+  compressor.threshold.value = -8;
+  compressor.knee.value = 8;
+  compressor.ratio.value = 3;
+  compressor.attack.value = 0.006;
+  compressor.release.value = 0.18;
   mix.connect(compressor);
   compressor.connect(ctx.destination);
-  for (const { gesture, sample } of prepared) {
+  const solo = notes.some((n) => n.role === "melody");
+  for (const { gesture, samples } of prepared) {
     const n = {
       ...gesture.note,
       velocity:
         gesture.note.velocity *
-        (gesture.note.role === "melody"
-          ? 1
+        (solo
+          ? gesture.note.role === "melody"
+            ? 1.1
+            : gesture.note.role === "bass"
+              ? 0.8
+              : 0.55
           : gesture.note.role === "bass"
             ? 0.85
             : 0.7),
     };
     const when = origin + (n.start - from) / speed,
-      duration = Math.max(0.03, Math.min(n.duration, to - n.start) / speed);
-    if (!sample) {
+      duration = Math.max(0.015, Math.min(n.duration, to - n.start) / speed);
+    if (!samples) {
       synth(ctx, n, when, duration, mix, gesture.changes, from, origin, speed);
-      if (!(n as GuitarNote).dead) fallback++;
+      if (!(n as GuitarNote).dead) {
+        fallback++;
+        session?.fallbackIds.add(n.id);
+      }
       continue;
     }
-    const source = ctx.createBufferSource(),
-      gain = ctx.createGain();
-    source.buffer = sample.buffer;
-    source.playbackRate.value = 2 ** ((n.pitch.midi - sample.midi) / 12);
-    for (const change of gesture.changes)
-      source.playbackRate.setTargetAtTime(
-        2 ** ((change.midi - sample.midi) / 12),
-        origin + (change.time - from) / speed,
-        change.kind === "slide" ? 0.045 : 0.007,
+    for (const sample of samples) {
+      const source = ctx.createBufferSource(),
+        gain = ctx.createGain();
+      source.buffer = sample.buffer;
+      const rate = 2 ** ((n.pitch.midi - sample.midi) / 12);
+      if (gesture.glideFrom !== undefined) {
+        source.playbackRate.setValueAtTime(
+          2 ** ((gesture.glideFrom - sample.midi) / 12),
+          when,
+        );
+        source.playbackRate.linearRampToValueAtTime(
+          rate,
+          when + Math.min(0.075, duration * 0.5),
+        );
+      } else source.playbackRate.value = rate;
+      const release = (n as GuitarNote).articulation?.releaseSeconds ?? 0.06;
+      const peak = Math.max(0.001, n.velocity * 0.7 * sample.gain);
+      gain.gain.setValueAtTime(0.0001, when);
+      gain.gain.linearRampToValueAtTime(
+        peak,
+        when + (gesture.softAttack ? 0.02 : 0.004),
       );
-    gain.gain.setValueAtTime(0.0001, when);
-    gain.gain.exponentialRampToValueAtTime(
-      Math.max(0.01, n.velocity * 0.7),
-      when + 0.004,
-    );
-    gain.gain.setTargetAtTime(
-      0.0001,
-      when + Math.max(0.01, duration - 0.035),
-      0.012,
-    );
-    source.connect(gain);
-    gain.connect(mix);
-    source.start(when);
-    source.stop(when + duration + 0.15);
+      gain.gain.setTargetAtTime(
+        0.0001,
+        when + Math.max(0.01, duration - 0.008),
+        Math.max(0.003, release / 4),
+      );
+      source.connect(gain);
+      gain.connect(mix);
+      const offset = Math.min(
+        Math.max(0, sample.buffer.duration - 0.001),
+        ((gesture.sampleOffset ?? 0) * rate) / speed,
+      );
+      source.start(when, offset);
+      source.stop(when + duration + release + 0.02);
+    }
   }
   return { origin, fallback };
 }
+
 export function encodeWav(buffer: AudioBuffer): ArrayBuffer {
   const output = new ArrayBuffer(44 + buffer.length * 2),
     view = new DataView(output),
@@ -248,15 +270,35 @@ export async function renderWav(
   notes: NoteEvent[],
   duration: number,
   tone: string,
+  progress?: (processed: number, total: number) => void,
 ) {
-  const ctx = new OfflineAudioContext(
-    1,
-    Math.ceil((duration + 0.3) * 44100),
-    44100,
-  );
-  const result = await schedule(ctx, notes, tone);
+  const rate = 44100,
+    total = duration + 0.3,
+    output = new Float32Array(Math.ceil(total * rate));
+  const session: RenderSession = { decoded: new Map(), fallbackIds: new Set() };
+  const overlap = 0.02;
+  for (let from = 0; from < total; from += 16) {
+    const to = Math.min(total, from + 16 + overlap),
+      ctx = new OfflineAudioContext(1, Math.ceil((to - from) * rate), rate);
+    await schedule(ctx, notes, tone, from, to, 1, session);
+    const block = (await ctx.startRendering()).getChannelData(0),
+      offset = Math.round(from * rate);
+    for (let i = 0; i < block.length && offset + i < output.length; i++) {
+      const weight =
+        from > 0 && i < Math.round(overlap * rate)
+          ? i / Math.round(overlap * rate)
+          : 1;
+      output[offset + i] =
+        output[offset + i] * (1 - weight) + block[i] * weight;
+    }
+    progress?.(Math.min(duration, from + 16), duration);
+  }
   return {
-    data: encodeWav(await ctx.startRendering()),
-    fallback: result.fallback,
+    data: encodeWav({
+      length: output.length,
+      sampleRate: rate,
+      getChannelData: () => output,
+    } as unknown as AudioBuffer),
+    fallback: session.fallbackIds.size,
   };
 }

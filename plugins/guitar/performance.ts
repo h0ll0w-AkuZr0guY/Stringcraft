@@ -88,6 +88,20 @@ export function arrangeScore(
       },
     );
   assignRightHand(actions);
+  if (options.phrases?.length && options.goal === "fingerstyle") {
+    const kept = new Set(actions.flatMap((a) => a.sourceIds));
+    const missing = score.events.filter(
+      (e) =>
+        e.midi !== null &&
+        e.extensions?.arranger?.anchor &&
+        !e.tieFrom &&
+        !kept.has(e.id),
+    );
+    if (missing.length)
+      throw new Error(
+        `当前指法无法保留 ${missing.length} 个旋律骨干音；请调整难度或变调夹，原谱保留。`,
+      );
+  }
   for (const a of actions) {
     const energy = score.sections.find(
       (s) => s.beat <= a.beat && s.endBeat > a.beat,
@@ -181,6 +195,7 @@ export function soundEvents(
     stroke: a.stroke,
     strokeId: a.strokeId,
     technique: a.kind === "hammer" ? "h" : a.kind === "pull" ? "p" : undefined,
+    articulation: a.articulation,
   }));
 }
 export const guitarPerformancePlugin: InstrumentPluginV2<
@@ -200,7 +215,7 @@ export const guitarPerformancePlugin: InstrumentPluginV2<
         key: "pattern",
         label: "伴奏手法",
         kind: "choice",
-        values: ["strum", "arpeggio"],
+        values: ["auto", "strum", "arpeggio"],
       },
     ],
   },
@@ -215,6 +230,7 @@ export function arrangeMusicalScore(
     transpose: options.transpose,
     goal: options.goal ?? "accompaniment",
     pattern: options.pattern ?? "strum",
+    phrases: options.phrases,
   });
   let notes = soundEvents(plan, score);
   const locked = (options.previous ?? []).filter((n) => n.locked);
@@ -250,6 +266,19 @@ export function arrangeMusicalScore(
       (n) => plan.actions.find((a) => a.id === n.id)?.sourceIds ?? [],
     ),
   );
+  if (options.phrases?.length && plan.goal === "fingerstyle") {
+    const missing = score.events.filter(
+      (e) =>
+        e.midi !== null &&
+        !e.tieFrom &&
+        e.extensions?.arranger?.anchor &&
+        !kept.has(e.id),
+    );
+    if (missing.length)
+      throw new Error(
+        `锁定动作与 ${missing.length} 个旋律骨干冲突，无法完整保留；请校正锁定音符，原谱保留。`,
+      );
+  }
   return {
     id: crypto.randomUUID(),
     instrumentId: "guitar",

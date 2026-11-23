@@ -173,6 +173,7 @@ export async function bootstrap() {
     "guitar-samples",
     "harmony-analysis",
     "rhythm-analysis",
+    "arrangement-planner",
   ]) {
     const p = await installed(id);
     if (!p) await install(list.find((m) => m.id === id)!);
@@ -185,6 +186,7 @@ export async function invoke<T>(
   id: string,
   method:
     | "extractMelody"
+    | "planArrangement"
     | "arrange"
     | "analyzeTiming"
     | "analyzeHarmony"

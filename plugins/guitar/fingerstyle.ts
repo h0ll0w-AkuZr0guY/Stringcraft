@@ -12,6 +12,7 @@ import {
 import { rightFinger, assignFingers } from "./hands";
 import { tuning } from "./voicings";
 import { activePreferences, fingeringPath } from "./fingering";
+import { melodicPositions } from "./melodic-position";
 import {
   addWrittenVoices,
   writtenPosition,
@@ -28,6 +29,9 @@ export function fingerstyle(
   const limit = limits[options.difficulty],
     actions: GuitarAction[] = [];
   const melody = soundingEvents(score).filter((n) => n.role === "melody");
+  const planned = options.phrases?.length
+    ? melodicPositions(melody, score, options, grips)
+    : undefined;
   const preferred = fingeringPath(
     melody.map((n) => n.pitch.midi + options.transpose),
     options.preferences ?? activePreferences,
@@ -42,13 +46,25 @@ export function fingerstyle(
     lastString = 0;
   for (const [index, n] of melody.entries()) {
     const beat = times.get(n.id)!;
-    if (beat - lastBeat < limit.minBeats - 0.001) continue;
+    if (!planned && beat - lastBeat < limit.minBeats - 0.001) continue;
+    const position = planned?.get(n.id);
     const candidates = tuning
       .map((open, i) => ({
         string: i + 1,
-        fret: n.pitch.midi + options.transpose - options.capo - open,
+        fret:
+          n.pitch.midi +
+          options.transpose +
+          (position?.octave ?? 0) -
+          options.capo -
+          open,
       }))
-      .filter((p) => p.fret >= 0 && p.fret <= limit.fret)
+      .filter(
+        (p) =>
+          p.fret >= 0 &&
+          p.fret <= limit.fret &&
+          (!position ||
+            (p.string === position.string && p.fret === position.fret)),
+      )
       .sort((a, b) => {
         const grip = grips.find((g) => g.beat <= beat && g.endBeat > beat);
         const written = writtenPosition(
@@ -66,6 +82,7 @@ export function fingerstyle(
       });
     for (const pos of candidates) {
       if (
+        !planned &&
         lastBeat > 0 &&
         Math.abs(pos.fret - lastPosition) >
           limit.shiftPerBeat * Math.max(0.5, beat - lastBeat) + 1
@@ -78,16 +95,23 @@ export function fingerstyle(
           beat,
       );
       const previous = actions.at(-1);
+      const inferredConnection =
+        event.extensions?.arranger?.legatoCandidate === true &&
+        !!previous &&
+        previous.string === pos.string &&
+        (pos.fret > previous.fret || pos.fret === 0);
       const legato =
         options.difficulty !== "easy" &&
-        event.slurFrom &&
-        previous?.sourceIds.includes(
-          soundingOriginId(eventsById, event.slurFrom),
-        ) &&
+        (inferredConnection ||
+          (event.slurFrom &&
+            previous?.sourceIds.includes(
+              soundingOriginId(eventsById, event.slurFrom),
+            ))) &&
+        !!previous &&
         previous.string === pos.string &&
         previous.fret !== pos.fret &&
         Math.abs(previous.fret - pos.fret) <= 3 &&
-        Math.abs(previous.beat + previous.durationBeats - beat) < 0.05;
+        Math.abs(previous.beat + previous.durationBeats - beat) < 0.002;
       const kind = legato
         ? pos.fret > previous!.fret
           ? "hammer"
@@ -131,7 +155,8 @@ export function fingerstyle(
           continue;
         const active = actions.filter(
           (a) =>
-            a.beat <= beat + 0.001 && a.beat + a.durationBeats > beat + 0.001,
+            a.beat <= beat + 0.000001 &&
+            a.beat + a.durationBeats > beat + 0.000001,
         );
         const candidate: GuitarAction = {
           id: `bass-${grip.chordId}-${beat}`,

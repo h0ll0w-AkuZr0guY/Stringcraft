@@ -127,3 +127,24 @@
 .analysis-engine select {
   max-width: 100%;
 }
+.musical-draft {
+  margin: 0 24px 18px;
+  padding: 16px;
+  border: 1px solid #dce5d3;
+  border-radius: 8px;
+  background: #f5f8f0;
+}
+.musical-draft p {
+  color: #6d8060;
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 8px 0;
+}
+.musical-draft details {
+  margin-top: 12px;
+}
+.chord-sequence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

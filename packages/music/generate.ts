@@ -1,4 +1,5 @@
 import { projectHarmony } from "./harmony";
+import { arrangementRevision } from "./arrangement-revision";
 import {
   validateProject,
   soundingEvents,
@@ -8,6 +9,7 @@ import {
   type MusicalScore,
   type Arrangement,
   type HarmonyAnalysis,
+  type ArrangementDraft,
 } from "../contracts";
 import { catalog, installed, invoke, load, install } from "../plugin-host";
 import { filteredNotes } from "./note-edits";
@@ -18,6 +20,7 @@ export type GenerationPhase =
   | "检查输入与插件"
   | "提取旋律"
   | "分析和弦"
+  | "整理音乐与乐句"
   | "寻找可用指型"
   | "等待可选 AI 建议"
   | "生成谱面"
@@ -44,7 +47,9 @@ export async function generationPlugins(): Promise<PluginProblem[]> {
     "melody-tracker",
     "harmony-analysis",
     "guitar-standard",
+    "guitar-samples",
     "standard-exporters",
+    "arrangement-planner",
   ]) {
     const expected = list.find((m) => m.id === id);
     if (!expected)
@@ -107,6 +112,15 @@ export async function runGeneration(
           [musicalInput],
           signal,
         );
+  const melodyCandidates =
+    project.sourceKind === "audio"
+      ? await invoke<NoteEvent[]>(
+          "melody-tracker",
+          "extractMelody",
+          [musicalInput],
+          signal,
+        )
+      : undefined;
   const base = projectScore({ ...project, melody });
   mark("分析和弦");
   const harmonyAnalysis =
@@ -121,7 +135,36 @@ export async function runGeneration(
           signal,
         )
       : undefined);
-  const score = harmonyAnalysis ? projectHarmony(harmonyAnalysis, base) : base;
+  const sourceScore = harmonyAnalysis
+    ? projectHarmony(harmonyAnalysis, base)
+    : base;
+  let draft: ArrangementDraft | undefined;
+  if (project.schemaVersion === 2 && options.goal !== "melody") {
+    mark("整理音乐与乐句");
+    draft = await invoke<ArrangementDraft>(
+      "arrangement-planner",
+      "planArrangement",
+      [
+        {
+          score: sourceScore,
+          sourceKind: project.sourceKind,
+          melodyEvidence: project.melodyEvidence,
+          melodyCandidates,
+          inputFingerprint: arrangementRevision({
+            ...project,
+            score: sourceScore,
+          }),
+        },
+        {
+          goal: options.goal ?? "accompaniment",
+          difficulty: options.difficulty,
+          pattern: options.pattern ?? "auto",
+        },
+      ],
+      signal,
+    );
+  }
+  const score = draft?.score ?? sourceScore;
   if (options.goal === "accompaniment" && !score.chords.length)
     throw new GenerationError(
       "没有找到可用和弦。请补充和弦，或选择单线旋律练习；已有谱面已保留。",
@@ -132,7 +175,7 @@ export async function runGeneration(
     await invoke<{ capo: number; score: number }[]>(
       "guitar-standard",
       "recommendCapos",
-      [melody, { ...options, score }],
+      [melody, { ...options, score, phrases: draft?.phrases }],
       signal,
     )
   ).slice(0, 5);
@@ -172,7 +215,16 @@ export async function runGeneration(
   const arrangement = await invoke<Arrangement>(
     "guitar-standard",
     "arrange",
-    [melody, { ...options, capo, score, previous: project.arrangement?.notes }],
+    [
+      melody,
+      {
+        ...options,
+        capo,
+        score,
+        phrases: draft?.phrases,
+        previous: project.arrangement?.notes,
+      },
+    ],
     signal,
   );
   if (!arrangement.notes.length)
@@ -184,16 +236,19 @@ export async function runGeneration(
   const pluginVersions = { ...project.pluginVersions };
   for (const id of [
     "guitar-standard",
+    "guitar-samples",
     "melody-tracker",
     "harmony-analysis",
     "standard-exporters",
+    "arrangement-planner",
   ])
     pluginVersions[id] = (await installed(id))!.manifest.version;
   signal.throwIfAborted();
   const next = {
     ...project,
     harmonyAnalysis,
-    score,
+    score: sourceScore,
+    arrangementDraft: draft,
     melody,
     arrangement,
     pluginVersions,

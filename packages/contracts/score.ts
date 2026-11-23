@@ -39,7 +39,7 @@ export interface ChordSymbol {
   root: number;
   quality: "major" | "minor" | "7" | "maj7" | "m7" | "sus4";
   bass?: number;
-  origin: "manual" | "imported" | "estimated";
+  origin: "manual" | "imported" | "estimated" | "generated";
   /** Relative evidence margin, never calibrated probability. */
   evidence?: number;
   alternatives?: {
@@ -284,7 +284,7 @@ export function validateScore(score: MusicalScore): void {
       c.root < 0 ||
       c.root > 11 ||
       !["major", "minor", "7", "maj7", "m7", "sus4"].includes(c.quality) ||
-      !["manual", "imported", "estimated"].includes(c.origin)
+      !["manual", "imported", "estimated", "generated"].includes(c.origin)
     )
       throw new Error("和弦事件无效");
     chordIds.add(c.id);

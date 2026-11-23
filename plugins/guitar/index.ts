@@ -269,6 +269,7 @@ export default {
           transpose: options.transpose,
           goal: options.goal ?? "accompaniment",
           pattern: options.pattern ?? "strum",
+          phrases: options.phrases,
         })
       : recommend(notes, options.difficulty),
 } satisfies MusicPlugin;

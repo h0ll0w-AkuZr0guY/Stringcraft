@@ -45,7 +45,7 @@ JOBS: dict[str, dict] = {}
 PROCESSES: dict[str, asyncio.subprocess.Process] = {}
 TASKS: set[asyncio.Task] = set()
 ENGINE = {"status": "checking", "ready": False}
-PIPELINE_VERSION = "audio-harmony-0.3.0-btc25"
+PIPELINE_VERSION = "audio-harmony-0.3.1-melody"
 
 
 def engine_probe():

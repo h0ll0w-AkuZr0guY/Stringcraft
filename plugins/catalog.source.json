@@ -1,12 +1,22 @@
 [
   {
+    "id": "arrangement-planner",
+    "name": "音乐编配规划",
+    "directory": "arrangement-planner",
+    "version": "0.3.0",
+    "capabilities": ["harmony"],
+    "description": "整理和声、旋律骨干与乐句，保留原始识别和改编来源",
+    "license": "Apache-2.0",
+    "audience": "internal",
+    "maturity": "ready",
+    "bundle": "guitar"
+  },
+  {
     "id": "guitar-standard",
     "name": "标准吉他",
     "directory": "guitar",
-    "version": "0.2.3",
-    "capabilities": [
-      "instrument"
-    ],
+    "version": "0.3.0",
+    "capabilities": ["instrument"],
     "description": "和弦伴奏、独奏指弹与单线练习；独立按弦与演奏动作验证",
     "license": "Apache-2.0",
     "audience": "user",
@@ -17,10 +27,8 @@
     "id": "melody-tracker",
     "name": "旋律追踪",
     "directory": "melody",
-    "version": "0.1.0",
-    "capabilities": [
-      "melody"
-    ],
+    "version": "0.3.0",
+    "capabilities": ["melody"],
     "description": "结合起音、时长与音高连续性提取主声部",
     "license": "Apache-2.0",
     "audience": "internal",
@@ -32,9 +40,7 @@
     "name": "导出工具",
     "directory": "exporters",
     "version": "0.2.1",
-    "capabilities": [
-      "exporter"
-    ],
+    "capabilities": ["exporter"],
     "description": "项目、MIDI 和文本六线谱",
     "license": "Apache-2.0",
     "audience": "user",
@@ -46,9 +52,7 @@
     "name": "Basic Pitch",
     "directory": "basic-pitch",
     "version": "0.2.0",
-    "capabilities": [
-      "transcriber"
-    ],
+    "capabilities": ["transcriber"],
     "description": "浏览器神经音符识别，首次需下载模型",
     "license": "Apache-2.0",
     "audience": "internal",
@@ -59,10 +63,8 @@
     "id": "guitar-samples",
     "name": "吉他音色",
     "directory": "guitar-samples",
-    "version": "0.2.2",
-    "capabilities": [
-      "renderer"
-    ],
+    "version": "0.3.0",
+    "capabilities": ["renderer"],
     "description": "CC0 钢弦、尼龙采样，缺失音域明确回退合成",
     "license": "CC0-1.0 / Apache-2.0",
     "audience": "user",
@@ -74,9 +76,7 @@
     "name": "百炼编配建议",
     "directory": "bailian-advisor",
     "version": "0.1.0",
-    "capabilities": [
-      "advisor"
-    ],
+    "capabilities": ["advisor"],
     "description": "使用自己的 API Key 比较本地已验证的候选",
     "license": "Apache-2.0",
     "audience": "internal",
@@ -88,9 +88,7 @@
     "name": "钢琴契约验证包",
     "directory": "piano",
     "version": "0.2.0",
-    "capabilities": [
-      "instrument"
-    ],
+    "capabilities": ["instrument"],
     "description": "SDK v2 开发示例：双手、琴键与跨度。尚未接入工作台，不提供完整钢琴编配。",
     "license": "Apache-2.0",
     "audience": "developer",
@@ -102,9 +100,7 @@
     "name": "和声与节拍候选",
     "directory": "harmony",
     "version": "0.3.0",
-    "capabilities": [
-      "harmony"
-    ],
+    "capabilities": ["harmony"],
     "description": "按拍窗估计和弦证据，保留人工校正；速度仅提供候选",
     "license": "Apache-2.0",
     "audience": "internal",
@@ -116,9 +112,7 @@
     "name": "弱音候选清理（实验）",
     "directory": "note-refinement",
     "version": "0.2.0",
-    "capabilities": [
-      "refiner"
-    ],
+    "capabilities": ["refiner"],
     "description": "可减少误报，也可能漏掉弱和弦音；保留原候选供对照，默认不应用。",
     "license": "Apache-2.0",
     "audience": "developer",
@@ -130,9 +124,7 @@
     "name": "波形节拍候选",
     "directory": "rhythm-analysis",
     "version": "0.1.0",
-    "capabilities": [
-      "timing"
-    ],
+    "capabilities": ["timing"],
     "description": "独立波形起音与周期候选；相位不等于小节首拍，需试听确认。",
     "license": "Apache-2.0",
     "audience": "internal",
@@ -144,9 +136,7 @@
     "name": "音符卷帘",
     "directory": "piano-roll",
     "version": "0.2.0",
-    "capabilities": [
-      "note-view"
-    ],
+    "capabilities": ["note-view"],
     "description": "完整复音的时间与音高视图，可视区绘制。",
     "license": "Apache-2.0",
     "audience": "internal",
@@ -158,9 +148,7 @@
     "name": "键盘音符试听",
     "directory": "note-audio",
     "version": "0.2.0",
-    "capabilities": [
-      "note-renderer"
-    ],
+    "capabilities": ["note-renderer"],
     "description": "通用复音合成试听与 WAV 导出，不应用吉他弦位约束。",
     "license": "Apache-2.0",
     "audience": "internal",
@@ -172,9 +160,7 @@
     "name": "音符 MIDI 导出",
     "directory": "note-exporters",
     "version": "0.2.0",
-    "capabilities": [
-      "exporter"
-    ],
+    "capabilities": ["exporter"],
     "description": "直接导出校订音符和复音时序。",
     "license": "Apache-2.0",
     "audience": "internal",
@@ -186,9 +172,7 @@
     "name": "基础音频识别",
     "directory": "basic-pitch",
     "version": "0.2.0",
-    "capabilities": [
-      "transcriber"
-    ],
+    "capabilities": ["transcriber"],
     "description": "完整复音卷帘、逐音试听与基础识别；不包含 GPU 声部分离。",
     "license": "Apache-2.0",
     "audience": "user",

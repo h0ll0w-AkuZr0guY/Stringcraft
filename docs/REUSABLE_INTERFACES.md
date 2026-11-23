@@ -49,7 +49,8 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 | transcribe(samples, modelUrl, wasmUrl, progress, chunk?) | 单声道 22050 Hz Float32Array；异步返回 NoteEvent，进度 0–1；可选回调接收 TranscriptionChunk 全量快照 |
 | analyzeTiming(samples, sampleRate, noteProposalBpm?) | 返回未确认的 TimingAnalysis；证据分数不作概率，拍点相位不作小节首拍 |
 | scheduleAudio(ctx, notes, tone, from, to, speed) | 调度播放，返回 origin 和合成回退计数 |
-| renderAudio(notes, duration, tone) | 返回 PCM WAV ArrayBuffer 与回退计数 |
+| renderAudio(notes, duration, tone, progress?) | 返回 PCM WAV ArrayBuffer 与回退计数；可选回调报告实际处理秒数/总秒数 |
+| planArrangement(context, options) | 可选 SDK v2 能力，返回独立 ArrangementDraft，不修改来源结构 |
 | exportFile(project, format) | 返回 data/mime/extension；现有 project/txt/midi |
 | advise(settings, candidates, summary, signal) | 候选范围内返回变调夹与简短理由，失败抛错 |
 
@@ -97,5 +98,15 @@ HarmonyAnalysis 保存独立 start/end 秒区间、supported/candidate/none、�
 本地 jobs 增加 accompaniment 模式、offset/seconds，返回 notes、harmonyAnalysis、executions。任务先回传原始音符，再执行分离/和声；缓存按源摘要、范围和管线版本区分。完成任务的 assets 接口只允许预定义声部与和声 JSON，并使用本机会话认证。capabilities.engine 返回实际探测的 ready/device/models，promoted=false 表示仍为实验。项目不保存认证 token 或绝对路径。
 
 插件目录 audience/maturity/bundle 是可选兼容字段；普通中心只展示 user 项，不将示例当成可用乐器。
+
+## local.3 音乐规划扩展
+
+`ArrangementPlanningContext` 包含来源 score、sourceKind、inputFingerprint 和可选 melodyCandidates/melodyEvidence。候选按秒描述，规划时使用 score 的速度图转拍。`ArrangementPlanningOptions` 包含 goal、difficulty、pattern（strum/arpeggio/auto）。`ArrangementDraft` 保存版本、来源修订、派生 score、互不重叠的 phrases、决策来源 ID 和和弦种类/区间/旋律骨干统计。使用 validateArrangementDraft 校验。插件通过可选 planArrangement 暴露，普通用户列表无需增加内部算法卡片。
+
+MusicProject 可选 arrangementDraft、melodyEvidence；旧项目省略即可，不强制迁移。ChordSymbol.origin 增加 generated，必须和 estimated/manual/imported 区分。ArrangeOptions 可选 phrases 由乐器包解释；固定 strum/arpeggio 调用兼容。GuitarNote.articulation 是吉他投影扩展，包含可选 releaseSeconds/damp/sustainOffset，不得强加给钢琴。
+
+`arrangementRevision(project)` 覆盖来源音符、编辑、精修、来源 score、速度/偏移和人声证据，排除输出与时间戳。生成后保存来源 score 及对应标识；输入改变时派生编配失效。它不是内容完整性摘要，文件来源仍使用 SHA-256。不要用派生 draft.score 覆盖来源 score，也不要将自动编配和声算成识别准确率。
+
+本地 accompaniment 结果可选 melodyEvidence，pipeline 0.3.1 缓存键独立于 local.2。执行记录分别报告 HTDemucs/BTC GPU 或 CPU、Basic Pitch CPU、pYIN CPU，没有新增训练接口。
 
 `packages/music/maintenance` 提供 `workbenchComponentProblems/repairWorkbenchComponents`，按工作台必需的内部模块集合比较安装、启用状态和代码摘要。修复只能由用户明确点击触发，沿用宿主的验证与事务安装；不修改作品，不安装钢琴示例或其他可选算法。分析前检查旧组件并给出修复入口，避免旧插件缺少新方法时在推理结束后才报错。

@@ -48,20 +48,19 @@ test("whole-score WAV reuses decoded sample buffers instead of decoding each att
     dropped: [],
     warnings: [],
   };
-  await page
-    .locator('input[accept=".json"]')
-    .setInputFiles({
-      name: "sample-reuse.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(p)),
-    });
+  await page.locator('input[accept=".json"]').setInputFiles({
+    name: "sample-reuse.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(p)),
+  });
   const pending = page.waitForEvent("download");
   await page.getByRole("button", { name: "WAV", exact: true }).click();
   const data = await readFile((await (await pending).path())!);
   expect(data.toString("ascii", 0, 4)).toBe("RIFF");
   expect(data.length).toBeGreaterThan(10_000_000);
+  // Two actual velocity layers are blended once and reused across all 1,200 attacks.
   expect(await page.evaluate(() => (window as any).__sampleDecodeCount)).toBe(
-    1,
+    2,
   );
 });
 async function project(page: Page) {

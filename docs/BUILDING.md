@@ -38,7 +38,7 @@ ci.yml 检查每个 PR。pages.yml 手动发布网页；release.yml 对明确 v 
 
 ## 本地试用包
 
-本轮版本为 0.2.0-local.2，不创建公开标签或 Release。先完成源码提交与 npm run build，再执行 python scripts/build-local.py，输出基础目录包、ZIP 与 .zip.sha256。完整模型包追加 `--environment artifacts/<环境目录>/runtime_plugins/local-separation`，脚本只接受本仓库 artifacts 内的准备环境。使用说明随包提供；网页和服务从同一 build-info 识别版本。基础模型/WASM/采样已包含，不携带用户音频或 Key。
+本轮版本为 0.2.0-local.3，不创建公开标签或 Release。先完成源码提交与 npm run build，再执行 python scripts/build-local.py，输出基础目录包、ZIP 与 .zip.sha256。完整模型包追加 `--environment artifacts/<环境目录>/runtime_plugins/local-separation`，脚本只接受本仓库 artifacts 内的准备环境。空间不足时用 `--output-root <其他磁盘目录>` 指定独立构建和 ZIP 位置；不会删除或覆盖旧包。使用说明随包提供；网页和服务从同一 build-info 识别版本。基础模型/WASM/采样已包含，不携带用户音频或 Key。
 
 先独立解压，再限制 PATH 只含 Windows 系统路径启动 EXE。以 TEST_BASE_URL 指向该进程，执行 scripts/verify-local-trial.mjs；它阻止外网请求，验证真实识别、生成、播放、WAV 非静音、MIDI、保存和重开。STRINGCRAFT_PRIVATE_AUDIO 可显式指定本机授权材料；私人阶段不录视频，结果只写 artifacts。端口相同版本复用、旧版本占用拒绝还需用实际 EXE 验证。
 

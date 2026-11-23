@@ -122,6 +122,7 @@ export interface LocalAnalysisResult {
   bpm: number;
   notes: NoteEvent[];
   harmonyAnalysis?: HarmonyAnalysis;
+  melodyEvidence?: NoteEvent[];
   executions?: ModelExecution[];
   warnings?: string[];
   sourceOffset?: number;

@@ -4,6 +4,9 @@ export interface AudioGesture {
   end: number;
   changes: { time: number; midi: number; kind: string }[];
   resumed: boolean;
+  sampleOffset?: number;
+  softAttack?: boolean;
+  glideFrom?: number;
 }
 /** One excitation per pluck/strum; linked left-hand actions change the same string's pitch. */
 export function audioGestures(
@@ -56,6 +59,38 @@ export function audioGestures(
         end: Math.min(g.end, to),
         changes: g.changes.filter((c) => c.time > from && c.time < to),
         resumed: g.note.start < from,
+        sampleOffset:
+          Math.max(0, from - (before?.time ?? g.note.start)) +
+          (before?.kind ? 0.04 : 0),
       };
     });
+}
+
+/** Hammer/pull targets use a soft sustain transition; only slides glide continuously. */
+export function articulationSegments(
+  notes: NoteEvent[],
+  from = 0,
+  to = Infinity,
+): AudioGesture[] {
+  return audioGestures(notes, from, to).flatMap((g) => {
+    const points = [
+      { time: g.note.start, midi: g.note.pitch.midi, kind: "initial" },
+      ...g.changes,
+    ];
+    return points.map((point, i) => ({
+      ...g,
+      note: {
+        ...g.note,
+        start: point.time,
+        duration: (points[i + 1]?.time ?? g.end) - point.time,
+        pitch: { midi: point.midi },
+      },
+      end: points[i + 1]?.time ?? g.end,
+      changes: [],
+      resumed: g.resumed || i > 0,
+      softAttack: g.resumed || i > 0,
+      sampleOffset: i > 0 ? 0.04 : (g.sampleOffset ?? 0),
+      glideFrom: point.kind === "slide" ? points[i - 1].midi : undefined,
+    }));
+  });
 }

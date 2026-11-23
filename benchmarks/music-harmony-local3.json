@@ -1,0 +1,196 @@
+{
+  "protocol": "frozen-six-first30-no-alignment-planner-v1",
+  "scope": "Development regression of derived harmony; not new heldout or listening quality",
+  "rows": [
+    {
+      "id": "01_Funk1-114-Ab_comp",
+      "duration": 25.258390022675737,
+      "before": {
+        "scoredSeconds": 25.258390022675737,
+        "excludedSeconds": 0.0,
+        "rootAccuracy": 0.9224390657628369,
+        "majminAccuracy": 0.8182527361905276,
+        "coverage": 1.0,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "after": {
+        "scoredSeconds": 25.258390022675737,
+        "excludedSeconds": 0.0,
+        "rootAccuracy": 0.9187732504630702,
+        "majminAccuracy": 0.814586920890761,
+        "coverage": 1.0,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "statistics": {
+        "inputChordKinds": 5,
+        "outputChordKinds": 5,
+        "inputIntervals": 10,
+        "outputIntervals": 8,
+        "anchors": 55
+      },
+      "annotationSha256": "429e06078c84f38ae3d551bdf594d0cac75a58c43783b23e1d436363a9fbe97a",
+      "deltaMajmin": -0.003665815299766617
+    },
+    {
+      "id": "02_BN2-131-B_comp",
+      "duration": 29.30639455782313,
+      "before": {
+        "scoredSeconds": 23.81021135171626,
+        "excludedSeconds": 5.496183206106872,
+        "rootAccuracy": 0.9429151344317416,
+        "majminAccuracy": 0.9429151344317416,
+        "coverage": 0.9999999999999999,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "after": {
+        "scoredSeconds": 23.81021135171626,
+        "excludedSeconds": 5.496183206106872,
+        "rootAccuracy": 0.9429151344317416,
+        "majminAccuracy": 0.9429151344317416,
+        "coverage": 0.9999999999999999,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "statistics": {
+        "inputChordKinds": 9,
+        "outputChordKinds": 9,
+        "inputIntervals": 16,
+        "outputIntervals": 16,
+        "anchors": 71
+      },
+      "annotationSha256": "5a6d1d87cae3a9496395a671f3575f2de96d8a1939d2460cbc02eccc0a3b74b7",
+      "deltaMajmin": 0.0
+    },
+    {
+      "id": "03_Jazz2-187-F#_comp",
+      "duration": 20.531995464852606,
+      "before": {
+        "scoredSeconds": 12.831460705494319,
+        "excludedSeconds": 7.7005347593582885,
+        "rootAccuracy": 0.7729287984955665,
+        "majminAccuracy": 0.7729287984955665,
+        "coverage": 0.908027336864662,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "after": {
+        "scoredSeconds": 12.831460705494319,
+        "excludedSeconds": 7.7005347593582885,
+        "rootAccuracy": 0.7729287984955665,
+        "majminAccuracy": 0.7729287984955665,
+        "coverage": 0.908027336864662,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "statistics": {
+        "inputChordKinds": 7,
+        "outputChordKinds": 7,
+        "inputIntervals": 18,
+        "outputIntervals": 16,
+        "anchors": 22
+      },
+      "annotationSha256": "947781eeed8145ee9a861e3b98e28895fe8555b7fdb1b444dde8b66e9b1debcb",
+      "deltaMajmin": 0.0
+    },
+    {
+      "id": "05_BN1-129-Eb_comp",
+      "duration": 22.32439909297052,
+      "before": {
+        "scoredSeconds": 14.88253862785424,
+        "excludedSeconds": 7.44186046511628,
+        "rootAccuracy": 0.29053233796892924,
+        "majminAccuracy": 0.29053233796892924,
+        "coverage": 0.34609230698290777,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "after": {
+        "scoredSeconds": 14.88253862785424,
+        "excludedSeconds": 7.44186046511628,
+        "rootAccuracy": 0.29053233796892924,
+        "majminAccuracy": 0.29053233796892924,
+        "coverage": 0.34609230698290777,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "statistics": {
+        "inputChordKinds": 6,
+        "outputChordKinds": 6,
+        "inputIntervals": 10,
+        "outputIntervals": 10,
+        "anchors": 48
+      },
+      "annotationSha256": "e79cad99fdcc086ae3faf75e0d91c736d2baab98429b66973095f819b7f7b24d",
+      "deltaMajmin": 0.0
+    },
+    {
+      "id": "05_Rock1-90-C#_comp",
+      "duration": 30,
+      "before": {
+        "scoredSeconds": 30.0,
+        "excludedSeconds": 0.0,
+        "rootAccuracy": 0.9888888888888892,
+        "majminAccuracy": 0.9888888888888892,
+        "coverage": 1.0,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "after": {
+        "scoredSeconds": 30.0,
+        "excludedSeconds": 0.0,
+        "rootAccuracy": 0.9888888888888892,
+        "majminAccuracy": 0.9888888888888892,
+        "coverage": 1.0,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "statistics": {
+        "inputChordKinds": 3,
+        "outputChordKinds": 3,
+        "inputIntervals": 6,
+        "outputIntervals": 6,
+        "anchors": 62
+      },
+      "annotationSha256": "5ba5cae947c4cb6997ce380d429c809bb05bb518b06a07ee86ca67a29b8804b3",
+      "deltaMajmin": 0.0
+    },
+    {
+      "id": "05_SS1-68-E_comp",
+      "duration": 30,
+      "before": {
+        "scoredSeconds": 28.235294117647058,
+        "excludedSeconds": 1.764705882352942,
+        "rootAccuracy": 0.9681712962962964,
+        "majminAccuracy": 0.9265046296296297,
+        "coverage": 1.0,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "after": {
+        "scoredSeconds": 28.235294117647058,
+        "excludedSeconds": 1.764705882352942,
+        "rootAccuracy": 0.9681712962962964,
+        "majminAccuracy": 0.9265046296296297,
+        "coverage": 1.0,
+        "silenceSeconds": 0.0,
+        "falseChordSeconds": 0.0
+      },
+      "statistics": {
+        "inputChordKinds": 4,
+        "outputChordKinds": 4,
+        "inputIntervals": 6,
+        "outputIntervals": 6,
+        "anchors": 74
+      },
+      "annotationSha256": "28260bbb418d7d630b8b3729e913c0be53c6a2cf513c51beda1441e4e7513e44",
+      "deltaMajmin": 0.0
+    }
+  ],
+  "rejectedCandidate": {
+    "reason": "Long structural harmonies were incorrectly relabelled by non-chord melody tones; candidate rejected, restrict relabelling to short weak intervals and avoid snapping unconfirmed grids",
+    "worstDelta": -0.11257053874045264
+  }
+}

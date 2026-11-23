@@ -11,11 +11,18 @@ import zipfile
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--environment", type=Path)
+parser.add_argument(
+    "--output-root",
+    type=Path,
+    help="Stage and ZIP location (for disks with room for the full runtime)",
+)
 args = parser.parse_args()
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = json.loads((ROOT / "package.json").read_text())["version"]
 stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-stage = ROOT / "artifacts" / f"build-{stamp}"
+output_root = (args.output_root or ROOT / "artifacts").resolve()
+output_root.mkdir(parents=True, exist_ok=True)
+stage = output_root / f"build-{stamp}"
 stage.mkdir(parents=True)
 native_source = stage / "native-plugin"
 shutil.copytree(
@@ -98,8 +105,7 @@ if args.environment:
     encoding="utf-8",
 )
 archive = (
-    ROOT
-    / "artifacts"
+    output_root
     / f"Stringcraft-{VERSION}-{'full' if args.environment else 'preview'}-windows-x64.zip"
 )
 with zipfile.ZipFile(

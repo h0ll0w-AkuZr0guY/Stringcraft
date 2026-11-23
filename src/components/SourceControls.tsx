@@ -242,6 +242,7 @@ export default function SourceControls() {
                 value={pattern}
                 onChange={(e) => setPattern(e.target.value as typeof pattern)}
               >
+                <option value="auto">按段落安排</option>
                 <option value="strum">扫弦</option>
                 <option value="arpeggio">分解和弦</option>
               </select>

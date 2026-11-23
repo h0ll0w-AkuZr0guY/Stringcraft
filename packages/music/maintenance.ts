@@ -8,6 +8,7 @@ export async function workbenchComponentProblems() {
     "melody-tracker",
     "harmony-analysis",
     "rhythm-analysis",
+    "arrangement-planner",
   ]);
   const items = (await catalog()).filter((m) => required.has(m.id));
   const problems = [];

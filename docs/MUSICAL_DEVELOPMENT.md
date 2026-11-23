@@ -45,3 +45,11 @@
 ## 给接手 AI 的顺序
 
 先读 AGENTS、架构和公共接口；查看本表的缺口，再从最小失败短句开始。优先补乐句与段落、和弦内声部和可验证的指法准备，随后对同一批实曲完成分阶段评估。不得以调大密度、删掉难例、复用原先的合成 F1，或将算法检查改名为真人验收来通过发布门槛。
+
+## local.3 规则依据与边界
+
+和声变化的速度与旋律音符数量分开，参考 Puget Sound 的 [Harmonic Rhythm](https://musictheory.pugetsound.edu/mt21c/HarmonicRhythm.html)。弱拍经过音等旋律材料不自动要求换和弦，参考 [Non-Chord Tones](https://musictheory.pugetsound.edu/mt21c/NonChordTonesIntroduction.html)。实现采用持续时间与结构重音权重，避免长和弦为每个旋律音重命名；罕见的有准备/解决功能和弦仍保留。这里是工程启发式，不等同于完整乐理分析器。
+
+吉他声部与连奏参考 Berklee 的 [Voice Leading for Guitar](https://online.berklee.edu/takenote/voice-leading-for-guitar/) 及 [Hammer-ons, Pull-offs, and Slides](https://online.berklee.edu/takenote/guitar-techniques-hammer-ons-pull-offs-and-slides/)。实现将旋律置于连续乐句中求弦位，低音在持音全区间检查后加入；击勾弦与滑音分别处理。仍无真实技法采样或完整拉弦准备模型，自动候选以保守可行性为主，不声称复刻演奏者。
+
+当前增加音乐规划、重音/弦组扫弦、乐句搜索、分声部试听和固定输入的四组合声音对照。和声识别的跨风格失败、新曲目留出、独立节奏标注、真实连奏采样与更丰富的段落安排仍需后续工作；以 QUALITY 中的实际证据判断进展。

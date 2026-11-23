@@ -79,7 +79,13 @@ export default function MusicalStructure() {
   return (
     <details className="structure-panel" open={!project.arrangement}>
       <summary>
-        音乐结构 · {score.chords.length} 个和弦 ·{" "}
+        原始音乐结构 ·{" "}
+        {
+          new Set(
+            score.chords.map((c) => `${c.root}:${c.quality}:${c.bass ?? ""}`),
+          ).size
+        }{" "}
+        种和弦 · {score.chords.length} 段 ·{" "}
         {score.timing === "unconfirmed" ? "首拍与速度待确认" : "可校正"}
       </summary>
       <p className="muted">

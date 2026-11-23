@@ -1,6 +1,14 @@
 /** SDK v2 plus the v1 workbench compatibility projection. Seconds remain source time. */
 export const SDK_VERSION = 2;
 import {
+  validateArrangementDraft,
+  type ArrangementDraft,
+  type ArrangementPlanningContext,
+  type ArrangementPlanningOptions,
+  type AccompanimentPattern,
+} from "./arrangement-draft";
+export * from "./arrangement-draft";
+import {
   validateHarmony,
   validateLocalAnalysis,
   type HarmonyAnalysis,
@@ -57,6 +65,11 @@ export interface GuitarNote extends NoteEvent {
   stroke?: "down" | "up";
   strokeId?: string;
   letRing?: boolean;
+  articulation?: {
+    damp?: boolean;
+    releaseSeconds?: number;
+    sustainOffset?: number;
+  };
 }
 export interface InstrumentDefinition {
   id: string;
@@ -92,6 +105,8 @@ export interface MusicProject<N extends NoteEvent = GuitarNote> {
   };
   timingAnalysis?: TimingAnalysis;
   harmonyAnalysis?: HarmonyAnalysis;
+  arrangementDraft?: ArrangementDraft;
+  melodyEvidence?: NoteEvent[];
   localAnalysis?: LocalAnalysisRun;
   noteEditor?: NoteEditorState;
   transcription?: TranscriptionState;
@@ -153,9 +168,14 @@ export interface ArrangeOptions {
   previous?: GuitarNote[];
   goal?: ArrangementGoal;
   score?: MusicalScore;
-  pattern?: "strum" | "arpeggio";
+  pattern?: AccompanimentPattern;
+  phrases?: import("./arrangement-draft").ArrangementPhrase[];
 }
 export interface MusicPlugin {
+  planArrangement?: (
+    context: ArrangementPlanningContext,
+    options: ArrangementPlanningOptions,
+  ) => ArrangementDraft;
   noteView?: NoteViewPlugin;
   scheduleNotes?: (
     ctx: AudioContext,
@@ -204,6 +224,7 @@ export interface MusicPlugin {
     notes: NoteEvent[],
     duration: number,
     tone: string,
+    progress?: (processed: number, total: number) => void,
   ) => Promise<{ data: ArrayBuffer; fallback: number }>;
   advise?: (
     settings: { key: string; endpoint: string; model: string },
@@ -286,6 +307,12 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
   if (p.harmonyAnalysis) validateHarmony(p.harmonyAnalysis, p.duration);
+  if (p.arrangementDraft) validateArrangementDraft(p.arrangementDraft);
+  if (p.melodyEvidence) {
+    validateNotes(p.melodyEvidence);
+    if (p.melodyEvidence.some((n) => n.start + n.duration > p.duration + 0.01))
+      throw new Error("旋律证据超出片段");
+  }
   if (p.localAnalysis) validateLocalAnalysis(p.localAnalysis);
   validateNotes(p.melody);
   validateNoteEditor(p);

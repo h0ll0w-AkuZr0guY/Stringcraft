@@ -10,7 +10,9 @@ export function projectHarmony(
   input: MusicalScore,
 ): MusicalScore {
   const score = structuredClone(input);
-  const manual = score.chords.filter((c) => c.origin !== "estimated");
+  const manual = score.chords.filter(
+    (c) => c.origin === "manual" || c.origin === "imported",
+  );
   score.chords = [...manual];
   const protectedTimes = manual.map((c) => [
     beatToSeconds(score, c.beat),

@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { demoProject } from "../packages/music/demo";
 import { arrange } from "../plugins/guitar";
+import { planArrangement } from "../plugins/arrangement-planner";
 const state = vi.hoisted(() => ({
   disabled: "",
   outdated: "",
@@ -15,7 +16,9 @@ vi.mock("../packages/plugin-host", () => ({
       "melody-tracker",
       "harmony-analysis",
       "guitar-standard",
+      "guitar-samples",
       "standard-exporters",
+      "arrangement-planner",
     ].map((id) => ({ id, name: id, sha256: "current" })),
   installed: async (id: string) => ({
     code: "code",
@@ -33,6 +36,7 @@ vi.mock("../packages/plugin-host", () => ({
     },
   }),
   invoke: vi.fn(async (id: string, method: string, args: any[]) => {
+    if (method === "planArrangement") return planArrangement(args[0], args[1]);
     if (method === "analyzeHarmony") return args[1];
     if (method === "recommendCapos") return [{ capo: 0, score: 100 }];
     if (method === "arrange") {
@@ -80,6 +84,7 @@ it("returns a validated new project, preserving the original, and exposes worker
   expect(p).toEqual(before);
   expect(phases).toContain("寻找可用指型");
   expect(vi.mocked(invoke).mock.calls.map((c) => c[1])).toEqual([
+    "planArrangement",
     "recommendCapos",
     "arrange",
   ]);

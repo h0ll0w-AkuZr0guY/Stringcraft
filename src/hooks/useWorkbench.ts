@@ -1,4 +1,5 @@
 import { projectHarmony } from "../../packages/music/harmony";
+import { arrangementRevision } from "../../packages/music/arrangement-revision";
 import {
   workbenchComponentProblems,
   repairWorkbenchComponents,
@@ -108,7 +109,7 @@ export function useWorkbench() {
   );
   const [difficulty, setDifficulty] = useState<Difficulty>("normal"),
     [goal, setGoal] = useState<ArrangementGoal>("accompaniment"),
-    [pattern, setPattern] = useState<"strum" | "arpeggio">("strum"),
+    [pattern, setPattern] = useState<"strum" | "arpeggio" | "auto">("auto"),
     [capo, setCapo] = useState(0),
     [autoCapo, setAutoCapo] = useState(true),
     [transpose, setTranspose] = useState(0),
@@ -203,9 +204,13 @@ export function useWorkbench() {
       project.arrangement.transpose !== transpose ||
       project.arrangement.goal !== goal ||
       project.arrangement.score?.tempo[0].bpm !== project.bpm ||
-      (!!project.score &&
-        JSON.stringify(project.arrangement.score) !==
-          JSON.stringify(project.score)));
+      (project.arrangementDraft
+        ? project.arrangementDraft.inputFingerprint !==
+            arrangementRevision(project) ||
+          project.arrangementDraft.options.pattern !== pattern
+        : !!project.score &&
+          JSON.stringify(project.arrangement.score) !==
+            JSON.stringify(project.score)));
   function stop() {
     stemPlayer.current?.pause();
     stemPlayer.current = null;
@@ -443,7 +448,7 @@ export function useWorkbench() {
         melody: [],
         arrangement: null,
         pluginVersions: native
-          ? { "local-separation": "0.3.0" }
+          ? { "local-separation": "0.3.1" }
           : { "basic-pitch-stream": engine!.manifest.version },
         sourceAudioSha256: data.sourceSha256,
         audioReference: {
@@ -456,7 +461,7 @@ export function useWorkbench() {
           jobId: crypto.randomUUID(),
           status: "running",
           processedSeconds: 0,
-          pluginVersion: native ? "0.3.0" : engine!.manifest.version,
+          pluginVersion: native ? "0.3.1" : engine!.manifest.version,
           pluginSha256: native
             ? (engineState?.pluginSha256 ?? "")
             : engine!.manifest.sha256,
@@ -527,16 +532,17 @@ export function useWorkbench() {
           notes: result.notes,
           melody,
           harmonyAnalysis: result.harmonyAnalysis,
+          melodyEvidence: result.melodyEvidence,
           localAnalysis: result.run,
           pluginVersions: {
             ...current.pluginVersions,
-            "local-separation": "0.3.0",
+            "local-separation": "0.3.1",
           },
           transcription: {
             ...current.transcription!,
             status: "complete" as const,
             processedSeconds: result.duration,
-            pluginVersion: "0.3.0",
+            pluginVersion: "0.3.1",
             modelSha256: result.executions?.find(
               (e) => e.name === "Basic Pitch",
             )?.weightsSha256,
@@ -1350,6 +1356,46 @@ export function useWorkbench() {
       arrangement: { ...project.arrangement, notes: changed },
     });
   }
+  async function playVoice(role: "melody" | "bass" | "harmony") {
+    const from = time,
+      to = Math.min(project.duration, from + 12),
+      voice = notes.filter((n) => n.role === role);
+    stop();
+    if (!voice.length) {
+      notify("本编配没有这个声部。");
+      return;
+    }
+    const generation = playGeneration.current,
+      ctx = new AudioContext();
+    audioRef.current = ctx;
+    try {
+      await ctx.resume();
+      const renderer = await load("guitar-samples");
+      if (generation !== playGeneration.current) return;
+      const scheduled = await renderer.scheduleAudio!(
+        ctx,
+        voice,
+        tone,
+        from,
+        to,
+        speed,
+      );
+      if (generation !== playGeneration.current) return;
+      setPlaying(true);
+      notify("正在分声部试听，最长 12 秒；可随时停止。");
+      timerRef.current = setInterval(() => {
+        const t =
+          from + Math.max(0, ctx.currentTime - scheduled.origin) * speed;
+        setTime(Math.min(to, t));
+        if (t >= to) stop();
+      }, 40);
+    } catch (error) {
+      if (generation === playGeneration.current) {
+        stop();
+        notify(errorMessage(error));
+      }
+    }
+  }
   async function exportAs(format: string) {
     try {
       if (format === "wav") {
@@ -1365,7 +1411,15 @@ export function useWorkbench() {
           );
         setBusy("正在渲染 WAV");
         const renderer = await load("guitar-samples");
-        const r = await renderer.renderAudio!(notes, project.duration, tone);
+        const r = await renderer.renderAudio!(
+          notes,
+          project.duration,
+          tone,
+          (processed, total) =>
+            setBusy(
+              `正在渲染 WAV · ${Math.round(processed)} / ${Math.round(total)} 秒`,
+            ),
+        );
         download(r.data, "audio/wav", project.name + ".wav");
         if (r.fallback) notify(`已导出；${r.fallback} 个音符使用合成音回退。`);
       } else {
@@ -1399,6 +1453,7 @@ export function useWorkbench() {
       edit(p, false);
       if (p.arrangement) {
         setGoal(p.arrangement.goal ?? "melody");
+        if (p.arrangementDraft) setPattern(p.arrangementDraft.options.pattern);
         setDifficulty(p.arrangement.difficulty);
         setCapo(p.arrangement.capo);
         setAutoCapo(false);
@@ -1563,6 +1618,7 @@ export function useWorkbench() {
     localMode,
     setLocalMode: chooseAnalysis,
     playStem,
+    playVoice,
     repairComponents,
     compareHarmony,
     abortRef,

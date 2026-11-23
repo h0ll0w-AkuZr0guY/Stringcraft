@@ -1,4 +1,5 @@
 import GenerationFeedback from "./GenerationFeedback";
+import ArrangementDraftPanel from "./ArrangementDraftPanel";
 import {
   Check,
   Download,
@@ -112,6 +113,7 @@ export default function ScorePanel() {
           {saved}
         </span>
       </div>
+      <ArrangementDraftPanel />
       <div className="player">
         <div className="transport">
           <button

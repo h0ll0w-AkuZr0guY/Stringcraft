@@ -12,7 +12,14 @@ export function extractMelody(input: NoteEvent[]): NoteEvent[] {
     Math.min(0.55, (scores[Math.floor(scores.length * 0.75)] ?? 0) * 0.68),
   );
   const sorted = input
-    .filter((n) => n.score >= floor)
+    .filter(
+      (n) =>
+        n.score >= floor &&
+        !(
+          (n.source === "manual" || n.locked) &&
+          (n.role === "bass" || n.role === "harmony")
+        ),
+    )
     .sort((a, b) => a.start - b.start);
   const groups: NoteEvent[][] = [];
   for (const n of sorted) {
@@ -25,7 +32,7 @@ export function extractMelody(input: NoteEvent[]): NoteEvent[] {
   let states: State[] = [{ cost: 0, last: null, path: null }];
   for (const group of groups) {
     const candidates = group.sort((a, b) => b.score - a.score).slice(0, 6);
-    const next: State[] = [];
+    const next: State[] = states.map((s) => ({ ...s, cost: s.cost - 0.02 }));
     for (const n of candidates)
       for (const s of states) {
         const gap = s.last ? n.start - (s.last.start + s.last.duration) : 0;
@@ -37,11 +44,19 @@ export function extractMelody(input: NoteEvent[]): NoteEvent[] {
           : 0;
         // Lower accompaniment notes are less likely melody, but never rejected by range alone.
         const reward =
-          1.1 * n.score +
+          1.1 * n.score -
+          0.45 +
           0.15 * Math.min(n.duration, 1) +
           0.1 * Math.min(1, (n.pitch.midi - 40) / 36);
         next.push({
-          cost: s.cost + reward - continuity - Math.min(0.3, overlap * 0.2),
+          cost:
+            s.cost +
+            reward -
+            continuity -
+            Math.min(
+              0.7,
+              overlap * (leap <= 2 && n.score >= 0.75 ? 0.16 : 0.65),
+            ),
           last: n,
           path: { note: n, previous: s.path },
         });
@@ -51,7 +66,7 @@ export function extractMelody(input: NoteEvent[]): NoteEvent[] {
     const seen = new Set<number>();
     states = next
       .filter((s) => {
-        const p = s.last!.pitch.midi;
+        const p = s.last?.pitch.midi ?? -1;
         if (seen.has(p)) return false;
         seen.add(p);
         return true;

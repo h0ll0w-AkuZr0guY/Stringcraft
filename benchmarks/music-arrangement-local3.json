@@ -1,0 +1,2013 @@
+{
+  "protocol": "music-actions-local3-v1",
+  "baselineCommit": "e5b40ae8f2d9",
+  "scope": "Known-score and development diagnostics. Selected anchors are not recording ground truth. No claim of subjective quality, recognition improvement, or new heldout results.",
+  "recording": {
+    "duration": 269.7466667,
+    "seconds": 107.71,
+    "rawNotes": 3352,
+    "vocalEvidence": 113,
+    "devices": {
+      "HTDemucs": "cuda",
+      "BTC": "cuda",
+      "BasicPitch": "cpu",
+      "pYIN": "cpu"
+    }
+  },
+  "cases": [
+    {
+      "id": "first30",
+      "sourceKind": "audio",
+      "sourceSha256": "a34a0a124b3e57f30d86e6aca7fc8d93bffad15c4d50330bba15f7487c16fe58",
+      "variant": "strum",
+      "before": {
+        "notes": 366,
+        "melodyAnchors": 92,
+        "retainedMelody": 0,
+        "bassNotes": 43,
+        "innerNotes": 323,
+        "melodyBassOverlap": null,
+        "brushes": 87,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 261,
+        "melodyAnchors": 51,
+        "retainedMelody": 0,
+        "bassNotes": 41,
+        "innerNotes": 220,
+        "melodyBassOverlap": null,
+        "brushes": 75,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 51
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "first30",
+      "sourceKind": "audio",
+      "sourceSha256": "a34a0a124b3e57f30d86e6aca7fc8d93bffad15c4d50330bba15f7487c16fe58",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 116,
+        "melodyAnchors": 92,
+        "retainedMelody": 0,
+        "bassNotes": 15,
+        "innerNotes": 101,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 116,
+        "melodyAnchors": 51,
+        "retainedMelody": 0,
+        "bassNotes": 15,
+        "innerNotes": 101,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 51
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "first30",
+      "sourceKind": "audio",
+      "sourceSha256": "a34a0a124b3e57f30d86e6aca7fc8d93bffad15c4d50330bba15f7487c16fe58",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 111,
+        "melodyAnchors": 92,
+        "retainedMelody": 81,
+        "bassNotes": 25,
+        "innerNotes": 5,
+        "melodyBassOverlap": 0.7436507936507946,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 11
+      },
+      "after": {
+        "notes": 99,
+        "melodyAnchors": 51,
+        "retainedMelody": 51,
+        "bassNotes": 26,
+        "innerNotes": 22,
+        "melodyBassOverlap": 0.7738607050730877,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 51
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse",
+      "sourceKind": "audio",
+      "sourceSha256": "6d81ab028a921ceebec3d4dcacdaab7bc9a112ea23b5a0ff9c051b1b275e71a0",
+      "variant": "strum",
+      "before": {
+        "notes": 377,
+        "melodyAnchors": 168,
+        "retainedMelody": 0,
+        "bassNotes": 45,
+        "innerNotes": 332,
+        "melodyBassOverlap": null,
+        "brushes": 90,
+        "issues": [],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 252,
+        "melodyAnchors": 67,
+        "retainedMelody": 0,
+        "bassNotes": 42,
+        "innerNotes": 210,
+        "melodyBassOverlap": null,
+        "brushes": 73,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 67
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse",
+      "sourceKind": "audio",
+      "sourceSha256": "6d81ab028a921ceebec3d4dcacdaab7bc9a112ea23b5a0ff9c051b1b275e71a0",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 120,
+        "melodyAnchors": 168,
+        "retainedMelody": 0,
+        "bassNotes": 15,
+        "innerNotes": 105,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 120,
+        "melodyAnchors": 67,
+        "retainedMelody": 0,
+        "bassNotes": 15,
+        "innerNotes": 105,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 67
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse",
+      "sourceKind": "audio",
+      "sourceSha256": "6d81ab028a921ceebec3d4dcacdaab7bc9a112ea23b5a0ff9c051b1b275e71a0",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 136,
+        "melodyAnchors": 168,
+        "retainedMelody": 116,
+        "bassNotes": 18,
+        "innerNotes": 2,
+        "melodyBassOverlap": 0.48830111902340007,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 52
+      },
+      "after": {
+        "notes": 110,
+        "melodyAnchors": 67,
+        "retainedMelody": 67,
+        "bassNotes": 28,
+        "innerNotes": 15,
+        "melodyBassOverlap": 0.8096212896622322,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 67
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus",
+      "sourceKind": "audio",
+      "sourceSha256": "fdafbe54258e3ce4dddc98346040283350d898507c3dc12a7a4a4e98b731bee9",
+      "variant": "strum",
+      "before": {
+        "notes": 348,
+        "melodyAnchors": 165,
+        "retainedMelody": 0,
+        "bassNotes": 42,
+        "innerNotes": 306,
+        "melodyBassOverlap": null,
+        "brushes": 85,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 241,
+        "melodyAnchors": 69,
+        "retainedMelody": 0,
+        "bassNotes": 39,
+        "innerNotes": 202,
+        "melodyBassOverlap": null,
+        "brushes": 68,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 69
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus",
+      "sourceKind": "audio",
+      "sourceSha256": "fdafbe54258e3ce4dddc98346040283350d898507c3dc12a7a4a4e98b731bee9",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 113,
+        "melodyAnchors": 165,
+        "retainedMelody": 0,
+        "bassNotes": 14,
+        "innerNotes": 99,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 113,
+        "melodyAnchors": 69,
+        "retainedMelody": 0,
+        "bassNotes": 14,
+        "innerNotes": 99,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 69
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus",
+      "sourceKind": "audio",
+      "sourceSha256": "fdafbe54258e3ce4dddc98346040283350d898507c3dc12a7a4a4e98b731bee9",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 131,
+        "melodyAnchors": 165,
+        "retainedMelody": 110,
+        "bassNotes": 21,
+        "innerNotes": 0,
+        "melodyBassOverlap": 0.5771365149833539,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 55
+      },
+      "after": {
+        "notes": 114,
+        "melodyAnchors": 69,
+        "retainedMelody": 69,
+        "bassNotes": 36,
+        "innerNotes": 9,
+        "melodyBassOverlap": 1,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 69
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "whole",
+      "sourceKind": "audio",
+      "sourceSha256": "1d4e44ef0b27466b0ed191257919f7a803089f85ae48eed063aa938003757ef0",
+      "variant": "strum",
+      "before": {
+        "notes": 3295,
+        "melodyAnchors": 1418,
+        "retainedMelody": 0,
+        "bassNotes": 397,
+        "innerNotes": 2898,
+        "melodyBassOverlap": null,
+        "brushes": 796,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 2587,
+        "melodyAnchors": 635,
+        "retainedMelody": 0,
+        "bassNotes": 395,
+        "innerNotes": 2192,
+        "melodyBassOverlap": null,
+        "brushes": 737,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 119,
+          "anchors": 635
+        },
+        "decisions": 4
+      }
+    },
+    {
+      "id": "whole",
+      "sourceKind": "audio",
+      "sourceSha256": "1d4e44ef0b27466b0ed191257919f7a803089f85ae48eed063aa938003757ef0",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 1061,
+        "melodyAnchors": 1418,
+        "retainedMelody": 0,
+        "bassNotes": 135,
+        "innerNotes": 926,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 1061,
+        "melodyAnchors": 635,
+        "retainedMelody": 0,
+        "bassNotes": 135,
+        "innerNotes": 926,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 119,
+          "anchors": 635
+        },
+        "decisions": 4
+      }
+    },
+    {
+      "id": "whole",
+      "sourceKind": "audio",
+      "sourceSha256": "1d4e44ef0b27466b0ed191257919f7a803089f85ae48eed063aa938003757ef0",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 1200,
+        "melodyAnchors": 1418,
+        "retainedMelody": 1008,
+        "bassNotes": 181,
+        "innerNotes": 11,
+        "melodyBassOverlap": 0.5726419311577257,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 410
+      },
+      "after": {
+        "notes": 1006,
+        "melodyAnchors": 635,
+        "retainedMelody": 635,
+        "bassNotes": 271,
+        "innerNotes": 100,
+        "melodyBassOverlap": 0.8553363130927141,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 119,
+          "anchors": 635
+        },
+        "decisions": 4
+      }
+    },
+    {
+      "id": "reference-first8",
+      "sourceKind": "musicxml",
+      "sourceSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+      "variant": "strum",
+      "before": {
+        "notes": 102,
+        "melodyAnchors": 35,
+        "retainedMelody": 0,
+        "bassNotes": 12,
+        "innerNotes": 90,
+        "melodyBassOverlap": null,
+        "brushes": 24,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 80,
+        "melodyAnchors": 35,
+        "retainedMelody": 0,
+        "bassNotes": 12,
+        "innerNotes": 68,
+        "melodyBassOverlap": null,
+        "brushes": 23,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 8,
+          "outputIntervals": 8,
+          "anchors": 35
+        },
+        "decisions": 0
+      }
+    },
+    {
+      "id": "reference-first8",
+      "sourceKind": "musicxml",
+      "sourceSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 32,
+        "melodyAnchors": 35,
+        "retainedMelody": 0,
+        "bassNotes": 8,
+        "innerNotes": 24,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 32,
+        "melodyAnchors": 35,
+        "retainedMelody": 0,
+        "bassNotes": 8,
+        "innerNotes": 24,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 8,
+          "outputIntervals": 8,
+          "anchors": 35
+        },
+        "decisions": 0
+      }
+    },
+    {
+      "id": "reference-first8",
+      "sourceKind": "musicxml",
+      "sourceSha256": "2a77b82ac7e87f3a02c60c6671e9636af9f820a7604a70bca0dadfe4e8239e0d",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 45,
+        "melodyAnchors": 35,
+        "retainedMelody": 35,
+        "bassNotes": 10,
+        "innerNotes": 0,
+        "melodyBassOverlap": 0,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 184
+      },
+      "after": {
+        "notes": 45,
+        "melodyAnchors": 35,
+        "retainedMelody": 35,
+        "bassNotes": 10,
+        "innerNotes": 0,
+        "melodyBassOverlap": 0,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 184,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 8,
+          "outputIntervals": 8,
+          "anchors": 35
+        },
+        "decisions": 0
+      }
+    },
+    {
+      "id": "reference-verse8",
+      "sourceKind": "musicxml",
+      "sourceSha256": "1c98d7e5d2b0a95b435f18588aa88f73dcf49f270895a9e5a03b961b6953a59f",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 101,
+        "melodyAnchors": 64,
+        "retainedMelody": 64,
+        "bassNotes": 32,
+        "innerNotes": 5,
+        "melodyBassOverlap": 0.9498644986449868,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 101,
+        "melodyAnchors": 64,
+        "retainedMelody": 64,
+        "bassNotes": 32,
+        "innerNotes": 5,
+        "melodyBassOverlap": 0.9498644986449868,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 0,
+          "outputChordKinds": 0,
+          "inputIntervals": 0,
+          "outputIntervals": 0,
+          "anchors": 64
+        },
+        "decisions": 0
+      }
+    },
+    {
+      "id": "reference-chorus8",
+      "sourceKind": "musicxml",
+      "sourceSha256": "27a7430f00843d851ec1e5797f276c3afbac969a6ec411e5e7ef63291e2574d4",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 138,
+        "melodyAnchors": 51,
+        "retainedMelody": 51,
+        "bassNotes": 32,
+        "innerNotes": 55,
+        "melodyBassOverlap": 0.5655430711610511,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 138,
+        "melodyAnchors": 51,
+        "retainedMelody": 51,
+        "bassNotes": 32,
+        "innerNotes": 55,
+        "melodyBassOverlap": 0.5655430711610511,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 0,
+          "outputChordKinds": 0,
+          "inputIntervals": 0,
+          "outputIntervals": 0,
+          "anchors": 51
+        },
+        "decisions": 0
+      }
+    }
+  ],
+  "tempoCases": [
+    {
+      "id": "first30-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "f2364e03d449e9ad5ac57033fa4fd7741eb33346e7b5034d6bf2bc52fe78490e",
+      "variant": "strum",
+      "before": {
+        "notes": 209,
+        "melodyAnchors": 92,
+        "retainedMelody": 0,
+        "bassNotes": 25,
+        "innerNotes": 184,
+        "melodyBassOverlap": null,
+        "brushes": 50,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 115,
+        "melodyAnchors": 50,
+        "retainedMelody": 0,
+        "bassNotes": 20,
+        "innerNotes": 95,
+        "melodyBassOverlap": null,
+        "brushes": 33,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 50
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "first30-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "f2364e03d449e9ad5ac57033fa4fd7741eb33346e7b5034d6bf2bc52fe78490e",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 67,
+        "melodyAnchors": 92,
+        "retainedMelody": 0,
+        "bassNotes": 8,
+        "innerNotes": 59,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 63,
+        "melodyAnchors": 50,
+        "retainedMelody": 0,
+        "bassNotes": 9,
+        "innerNotes": 54,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 50
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "first30-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "f2364e03d449e9ad5ac57033fa4fd7741eb33346e7b5034d6bf2bc52fe78490e",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 91,
+        "melodyAnchors": 92,
+        "retainedMelody": 71,
+        "bassNotes": 17,
+        "innerNotes": 3,
+        "melodyBassOverlap": 0.705048715677592,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 21
+      },
+      "after": {
+        "notes": 74,
+        "melodyAnchors": 50,
+        "retainedMelody": 50,
+        "bassNotes": 16,
+        "innerNotes": 8,
+        "melodyBassOverlap": 0.5823888404533581,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 50
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "first30-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "cc3563cf42cebb0e0fa1b64e3d67d13eb7e0a680d06ea0cc996e8230dbf50331",
+      "variant": "strum",
+      "before": {
+        "notes": 411,
+        "melodyAnchors": 92,
+        "retainedMelody": 0,
+        "bassNotes": 49,
+        "innerNotes": 362,
+        "melodyBassOverlap": null,
+        "brushes": 99,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 305,
+        "melodyAnchors": 60,
+        "retainedMelody": 0,
+        "bassNotes": 47,
+        "innerNotes": 258,
+        "melodyBassOverlap": null,
+        "brushes": 86,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 60
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "first30-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "cc3563cf42cebb0e0fa1b64e3d67d13eb7e0a680d06ea0cc996e8230dbf50331",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 132,
+        "melodyAnchors": 92,
+        "retainedMelody": 0,
+        "bassNotes": 16,
+        "innerNotes": 116,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 132,
+        "melodyAnchors": 60,
+        "retainedMelody": 0,
+        "bassNotes": 27,
+        "innerNotes": 105,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 60
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "first30-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "cc3563cf42cebb0e0fa1b64e3d67d13eb7e0a680d06ea0cc996e8230dbf50331",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 121,
+        "melodyAnchors": 92,
+        "retainedMelody": 81,
+        "bassNotes": 31,
+        "innerNotes": 9,
+        "melodyBassOverlap": 0.7936507936507944,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 11
+      },
+      "after": {
+        "notes": 113,
+        "melodyAnchors": 60,
+        "retainedMelody": 60,
+        "bassNotes": 28,
+        "innerNotes": 25,
+        "melodyBassOverlap": 0.7190213101815321,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 17,
+          "outputIntervals": 17,
+          "anchors": 60
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "9223df872a70f131527f7fc328d910a4c291b003afe4dcbe3507d9bd3cb009eb",
+      "variant": "strum",
+      "before": {
+        "notes": 213,
+        "melodyAnchors": 168,
+        "retainedMelody": 0,
+        "bassNotes": 26,
+        "innerNotes": 187,
+        "melodyBassOverlap": null,
+        "brushes": 51,
+        "issues": [
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-18-29.630"
+            ],
+            "message": "Em 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 132,
+        "melodyAnchors": 62,
+        "retainedMelody": 0,
+        "bassNotes": 24,
+        "innerNotes": 108,
+        "melodyBassOverlap": null,
+        "brushes": 39,
+        "issues": [
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-18-29.630"
+            ],
+            "message": "Em 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 62
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "9223df872a70f131527f7fc328d910a4c291b003afe4dcbe3507d9bd3cb009eb",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 69,
+        "melodyAnchors": 168,
+        "retainedMelody": 0,
+        "bassNotes": 9,
+        "innerNotes": 60,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 69,
+        "melodyAnchors": 62,
+        "retainedMelody": 0,
+        "bassNotes": 22,
+        "innerNotes": 47,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 62
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "9223df872a70f131527f7fc328d910a4c291b003afe4dcbe3507d9bd3cb009eb",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 98,
+        "melodyAnchors": 168,
+        "retainedMelody": 82,
+        "bassNotes": 15,
+        "innerNotes": 1,
+        "melodyBassOverlap": 0.491501416430598,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 86
+      },
+      "after": {
+        "notes": 83,
+        "melodyAnchors": 62,
+        "retainedMelody": 62,
+        "bassNotes": 17,
+        "innerNotes": 4,
+        "melodyBassOverlap": 0.7013527575442261,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 62
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "e4a08721ad05b93b1ced11111d33ba7445ddaeb1e22a180ae0600b2d7b776b14",
+      "variant": "strum",
+      "before": {
+        "notes": 430,
+        "melodyAnchors": 168,
+        "retainedMelody": 0,
+        "bassNotes": 51,
+        "innerNotes": 379,
+        "melodyBassOverlap": null,
+        "brushes": 102,
+        "issues": [],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 291,
+        "melodyAnchors": 70,
+        "retainedMelody": 0,
+        "bassNotes": 47,
+        "innerNotes": 244,
+        "melodyBassOverlap": null,
+        "brushes": 82,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 70
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "e4a08721ad05b93b1ced11111d33ba7445ddaeb1e22a180ae0600b2d7b776b14",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 136,
+        "melodyAnchors": 168,
+        "retainedMelody": 0,
+        "bassNotes": 17,
+        "innerNotes": 119,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 136,
+        "melodyAnchors": 70,
+        "retainedMelody": 0,
+        "bassNotes": 24,
+        "innerNotes": 112,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 70
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "verse-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "e4a08721ad05b93b1ced11111d33ba7445ddaeb1e22a180ae0600b2d7b776b14",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 146,
+        "melodyAnchors": 168,
+        "retainedMelody": 120,
+        "bassNotes": 23,
+        "innerNotes": 3,
+        "melodyBassOverlap": 0.41881188118812135,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 48
+      },
+      "after": {
+        "notes": 118,
+        "melodyAnchors": 70,
+        "retainedMelody": 70,
+        "bassNotes": 36,
+        "innerNotes": 12,
+        "melodyBassOverlap": 0.8603238866396767,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 4,
+          "outputChordKinds": 4,
+          "inputIntervals": 19,
+          "outputIntervals": 19,
+          "anchors": 70
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "679954b3c49a06b10d01c0c3fd632ec1cd39ad2684c2d954585498cd03bad4a7",
+      "variant": "strum",
+      "before": {
+        "notes": 199,
+        "melodyAnchors": 165,
+        "retainedMelody": 0,
+        "bassNotes": 24,
+        "innerNotes": 175,
+        "melodyBassOverlap": null,
+        "brushes": 48,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-3-9.722"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 138,
+        "melodyAnchors": 66,
+        "retainedMelody": 0,
+        "bassNotes": 22,
+        "innerNotes": 116,
+        "melodyBassOverlap": null,
+        "brushes": 39,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 66
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "679954b3c49a06b10d01c0c3fd632ec1cd39ad2684c2d954585498cd03bad4a7",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 65,
+        "melodyAnchors": 165,
+        "retainedMelody": 0,
+        "bassNotes": 8,
+        "innerNotes": 57,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-3-9.722"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 65,
+        "melodyAnchors": 66,
+        "retainedMelody": 0,
+        "bassNotes": 13,
+        "innerNotes": 52,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 66
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "679954b3c49a06b10d01c0c3fd632ec1cd39ad2684c2d954585498cd03bad4a7",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 85,
+        "melodyAnchors": 165,
+        "retainedMelody": 76,
+        "bassNotes": 9,
+        "innerNotes": 0,
+        "melodyBassOverlap": 0.2662440570523019,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 89
+      },
+      "after": {
+        "notes": 87,
+        "melodyAnchors": 66,
+        "retainedMelody": 66,
+        "bassNotes": 19,
+        "innerNotes": 2,
+        "melodyBassOverlap": 0.9027081243731198,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 66
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "8a7c3ad10770764a499a12bcba90403bc88d9d840b667c6d3a3accb0eb6457f3",
+      "variant": "strum",
+      "before": {
+        "notes": 399,
+        "melodyAnchors": 165,
+        "retainedMelody": 0,
+        "bassNotes": 48,
+        "innerNotes": 351,
+        "melodyBassOverlap": null,
+        "brushes": 97,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 288,
+        "melodyAnchors": 65,
+        "retainedMelody": 0,
+        "bassNotes": 46,
+        "innerNotes": 242,
+        "melodyBassOverlap": null,
+        "brushes": 82,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 65
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "8a7c3ad10770764a499a12bcba90403bc88d9d840b667c6d3a3accb0eb6457f3",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 129,
+        "melodyAnchors": 165,
+        "retainedMelody": 0,
+        "bassNotes": 16,
+        "innerNotes": 113,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 128,
+        "melodyAnchors": 65,
+        "retainedMelody": 0,
+        "bassNotes": 21,
+        "innerNotes": 107,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 65
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "chorus-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "8a7c3ad10770764a499a12bcba90403bc88d9d840b667c6d3a3accb0eb6457f3",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 131,
+        "melodyAnchors": 165,
+        "retainedMelody": 112,
+        "bassNotes": 19,
+        "innerNotes": 0,
+        "melodyBassOverlap": 0.5115766262403552,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 53
+      },
+      "after": {
+        "notes": 112,
+        "melodyAnchors": 65,
+        "retainedMelody": 65,
+        "bassNotes": 36,
+        "innerNotes": 11,
+        "melodyBassOverlap": 0.9492600422832983,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 5,
+          "outputChordKinds": 5,
+          "inputIntervals": 12,
+          "outputIntervals": 12,
+          "anchors": 65
+        },
+        "decisions": 1
+      }
+    },
+    {
+      "id": "whole-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "2f42dabe97cc3a74ff0565764d1bcc4a63abf319b0ac149367f515d5c33770ab",
+      "variant": "strum",
+      "before": {
+        "notes": 1877,
+        "melodyAnchors": 1418,
+        "retainedMelody": 0,
+        "bassNotes": 228,
+        "innerNotes": 1649,
+        "melodyBassOverlap": null,
+        "brushes": 455,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-91-189.722"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 1456,
+        "melodyAnchors": 630,
+        "retainedMelody": 0,
+        "bassNotes": 222,
+        "innerNotes": 1234,
+        "melodyBassOverlap": null,
+        "brushes": 411,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 118,
+          "anchors": 630
+        },
+        "decisions": 6
+      }
+    },
+    {
+      "id": "whole-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "2f42dabe97cc3a74ff0565764d1bcc4a63abf319b0ac149367f515d5c33770ab",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 606,
+        "melodyAnchors": 1418,
+        "retainedMelody": 0,
+        "bassNotes": 77,
+        "innerNotes": 529,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-91-189.722"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 598,
+        "melodyAnchors": 630,
+        "retainedMelody": 0,
+        "bassNotes": 90,
+        "innerNotes": 508,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 118,
+          "anchors": 630
+        },
+        "decisions": 6
+      }
+    },
+    {
+      "id": "whole-68.5",
+      "sourceKind": "audio",
+      "sourceSha256": "2f42dabe97cc3a74ff0565764d1bcc4a63abf319b0ac149367f515d5c33770ab",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 834,
+        "melodyAnchors": 1418,
+        "retainedMelody": 717,
+        "bassNotes": 115,
+        "innerNotes": 2,
+        "melodyBassOverlap": 0.47817745803363276,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 701
+      },
+      "after": {
+        "notes": 802,
+        "melodyAnchors": 630,
+        "retainedMelody": 630,
+        "bassNotes": 154,
+        "innerNotes": 18,
+        "melodyBassOverlap": 0.651261846448612,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 118,
+          "anchors": 630
+        },
+        "decisions": 6
+      }
+    },
+    {
+      "id": "whole-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "0800e5a92cc4a6d0e1639eb67b20d5ae402854b41a3f7d98a394d79283dda905",
+      "variant": "strum",
+      "before": {
+        "notes": 3717,
+        "melodyAnchors": 1418,
+        "retainedMelody": 0,
+        "bassNotes": 450,
+        "innerNotes": 3267,
+        "melodyBassOverlap": null,
+        "brushes": 900,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-91-189.722"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 2942,
+        "melodyAnchors": 656,
+        "retainedMelody": 0,
+        "bassNotes": 448,
+        "innerNotes": 2494,
+        "melodyBassOverlap": null,
+        "brushes": 827,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 119,
+          "anchors": 656
+        },
+        "decisions": 4
+      }
+    },
+    {
+      "id": "whole-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "0800e5a92cc4a6d0e1639eb67b20d5ae402854b41a3f7d98a394d79283dda905",
+      "variant": "arpeggio",
+      "before": {
+        "notes": 1200,
+        "melodyAnchors": 1418,
+        "retainedMelody": 0,
+        "bassNotes": 150,
+        "innerNotes": 1050,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-91-189.722"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          },
+          {
+            "code": "rhythm-rest",
+            "severity": "warning",
+            "eventIds": [
+              "btc-h-93-189.907"
+            ],
+            "message": "G 所在的短区间没有节奏型起音，保持休止；可调整换和弦位置或手法。"
+          }
+        ],
+        "dropped": 0
+      },
+      "after": {
+        "notes": 1201,
+        "melodyAnchors": 656,
+        "retainedMelody": 0,
+        "bassNotes": 194,
+        "innerNotes": 1007,
+        "melodyBassOverlap": null,
+        "brushes": 0,
+        "issues": [
+          {
+            "code": "unknown-harmony",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "和弦进行尚未覆盖完整片段；未确定的区间保持空白，请在音乐结构中补充。"
+          },
+          {
+            "code": "missing-voicing",
+            "severity": "warning",
+            "eventIds": [],
+            "message": "部分和弦没有当前难度下可用的指型或换和弦准备时间；请改用变调夹、移调或手动简化。"
+          }
+        ],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 119,
+          "anchors": 656
+        },
+        "decisions": 4
+      }
+    },
+    {
+      "id": "whole-135.7",
+      "sourceKind": "audio",
+      "sourceSha256": "0800e5a92cc4a6d0e1639eb67b20d5ae402854b41a3f7d98a394d79283dda905",
+      "variant": "fingerstyle",
+      "before": {
+        "notes": 1258,
+        "melodyAnchors": 1418,
+        "retainedMelody": 1030,
+        "bassNotes": 211,
+        "innerNotes": 17,
+        "melodyBassOverlap": 0.5788780327148146,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 388
+      },
+      "after": {
+        "notes": 1059,
+        "melodyAnchors": 656,
+        "retainedMelody": 656,
+        "bassNotes": 302,
+        "innerNotes": 101,
+        "melodyBassOverlap": 0.8625970664365286,
+        "brushes": 0,
+        "issues": [],
+        "dropped": 0,
+        "harmony": {
+          "inputChordKinds": 6,
+          "outputChordKinds": 6,
+          "inputIntervals": 121,
+          "outputIntervals": 119,
+          "anchors": 656
+        },
+        "decisions": 4
+      }
+    }
+  ],
+  "limitations": [
+    "First8 mixed reference is evaluated by the frozen reference suite in separate riff/comp slices, not whole-score dropped count.",
+    "Bossa and Jazz recognition remain below the original quality gates.",
+    "Unknown harmony and missing voicings remain warnings, never filled from fabricated truth.",
+    "Actual guitar trials and independent rhythmic annotation have not been completed."
+  ]
+}

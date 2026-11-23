@@ -57,3 +57,9 @@ written-voices 负责已确认材料与弦位，reference 负责私人参考的�
 本地音频和声入口为 plugins/audio-harmony/pipeline.py，冻结网络适配在 neural.py，上游兼容源码和许可在 btc/。秒区间契约在 packages/contracts/harmony，投影在 packages/music/harmony。不要在改 BPM 时重做音频识别，不要把 N 自动填成前一个和弦。修改输出语义后递增 backend.server.PIPELINE_VERSION，避免复用旧缓存。重计算与 HTTP 服务使用独立 Python。
 
 改识别算法前先读参考评估中的六段逐项失败和未支持类型；这批已用于开发，下一轮需要新的留出录音。不要只为提高覆盖率而补满所有小节，也不要用模型自身输出生成“真值”。在线训练尚未提供，新增纠错学习要保留原冻结核、明确启动/恢复、模型版本和独立留出指标。
+
+local.3 音乐规划改动先定位 `plugins/arrangement-planner`（中立乐句/和声），再定位 `guitar/melodic-position`、`strumming`（演奏动作）。保持原始、来源校正、派生编配三层，不将吉他弦品塞进中立规划。新失败样本应包括音乐关系与实际动作，不能通过静默删除骨干音或放宽跨度过关。规划插件作为内部依赖安装，不增加用户插件数量。
+
+真实改编比较使用 `scripts/evaluate-musical-arrangement.mjs 私人输入清单.json 报告.json [冻结旧模块.mjs]`。清单每项有 id/path，可选 projectOutput；输出逐目标动作诊断及前后项目。没有和弦标注的独奏参考不评伴奏。首 8 小节混合参考请沿用 `evaluate-reference-suite` 的前奏/伴奏分段协议，整段 dropped 不能作为旋律丢失数。已知谱保真、录音识别和主观听感分别报告。音源 A/B 应固定同一动作，编配 A/B 固定同一音源，并统一响度。
+
+用完整模型 Python 运行 `tests/native_melody_check.py` 可验证原创正弦延音跨窗、独立同音重弹与静音/泄漏；不下载资源。采样更新通过 `scripts/prepare-guitar-bank.py` 获取固定 Meta Open Sound 提交与 SHA-256，完整成功后才替换清单。不要按力度混用尼龙手指/拨片奏法，也不要声称有尚未录制的 round-robin 或真连奏。
