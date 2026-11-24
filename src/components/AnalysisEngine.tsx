@@ -49,7 +49,7 @@ export default function AnalysisEngine() {
       ))}
       {c.local && c.engineState?.ready && !c.engineState?.promoted && (
         <small>
-          增强模型仍有逐曲退化，尚未自动设为默认；可在上方明确选择并对照试听。
+          本地先分离再识别；和声网络仍有逐曲退化，候选需要试听校订。
         </small>
       )}
       {run && (

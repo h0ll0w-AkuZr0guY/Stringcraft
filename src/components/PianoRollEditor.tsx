@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { NoteEvent, NoteViewPlugin } from "../../packages/contracts";
 import { load } from "../../packages/plugin-host";
+import { useScoreFollow } from "../hooks/useScoreFollow";
 type Props = {
   notes: NoteEvent[];
   selected: Set<string>;
@@ -17,8 +18,10 @@ type Props = {
   bpm: number;
   snap: boolean;
   editable: boolean;
+  onActivate?: (note: NoteEvent) => void;
 };
 export default function PianoRollEditor(p: Props) {
+  const follow = useScoreFollow();
   const container = useRef<HTMLDivElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     [view, setView] = useState<NoteViewPlugin | null>(null),
@@ -40,6 +43,8 @@ export default function PianoRollEditor(p: Props) {
     notes: NoteEvent[];
     kind: "move" | "left" | "right" | "box";
     moved: boolean;
+    clicked?: NoteEvent;
+    modified?: boolean;
   } | null>(null);
   useEffect(() => {
     let active = true;
@@ -86,6 +91,16 @@ export default function PianoRollEditor(p: Props) {
       () => index?.query(from, to, high - (size.h - 80) / row, high + 1) ?? [],
       [index, from, to, high, row, size.h],
     );
+  useEffect(() => {
+    const el = container.current;
+    if (el)
+      follow.reveal(el, {
+        left: 64 + p.time * scale,
+        top: el.scrollTop,
+        width: 2,
+        height: 0,
+      });
+  }, [p.time, scale, follow.following]);
   useEffect(() => {
     const el = canvas.current;
     if (!el || !view) return;
@@ -163,6 +178,10 @@ export default function PianoRollEditor(p: Props) {
         hi = pitch(box.y);
       p.onSelect(new Set(index?.query(a, b, low, hi).map((n) => n.id)));
     } else if (d.moved && ghost) p.onChange(ghost);
+    else if (!d.moved && d.clicked && !d.modified) {
+      if (p.onActivate) p.onActivate(d.clicked);
+      else p.onPreview(d.clicked);
+    }
     setGhost(null);
     setBox(null);
     if (e.currentTarget.hasPointerCapture(e.pointerId))
@@ -177,6 +196,9 @@ export default function PianoRollEditor(p: Props) {
   return (
     <div className="roll-editor">
       <div className="roll-tools">
+        <button aria-pressed={follow.following} onClick={follow.resume}>
+          {follow.following ? "跟随播放" : "回到播放位置"}
+        </button>
         <span>
           {shown.length} 个可见音符 ·
           拖动音符移动，拖动边缘调时长，空白处框选，双击添加
@@ -226,6 +248,9 @@ export default function PianoRollEditor(p: Props) {
       <div
         ref={container}
         className="roll-scroll"
+        onWheel={follow.manual}
+        onPointerDown={follow.scrollbar}
+        onTouchMove={follow.manual}
         onScroll={(e) =>
           setScroll({
             x: e.currentTarget.scrollLeft,
@@ -289,7 +314,6 @@ export default function PianoRollEditor(p: Props) {
               }
               const n = hit(x, y);
               if (n) {
-                p.onPreview(n);
                 const selection = e.shiftKey
                   ? new Set(p.selected)
                   : p.selected.has(n.id)
@@ -298,7 +322,19 @@ export default function PianoRollEditor(p: Props) {
                 if (e.shiftKey && selection.has(n.id)) selection.delete(n.id);
                 else selection.add(n.id);
                 p.onSelect(selection);
-                if (!p.editable) return;
+                if (!p.editable) {
+                  drag.current = {
+                    x,
+                    y,
+                    notes: [],
+                    kind: "move",
+                    moved: false,
+                    clicked: n,
+                    modified: e.shiftKey || e.ctrlKey || e.metaKey,
+                  };
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  return;
+                }
                 const width = n.duration * scale,
                   start = 64 + (n.start - from) * scale,
                   kind =
@@ -317,6 +353,8 @@ export default function PianoRollEditor(p: Props) {
                     .map((n) => structuredClone(n)),
                   kind,
                   moved: false,
+                  clicked: n,
+                  modified: e.shiftKey || e.ctrlKey || e.metaKey,
                 };
               } else {
                 p.onSelect(new Set());
@@ -341,6 +379,7 @@ export default function PianoRollEditor(p: Props) {
                 });
                 return;
               }
+              if (!p.editable) return;
               let delta = dx / scale;
               const step = 60 / p.bpm / 4;
               if (p.snap) delta = Math.round(delta / step) * step;

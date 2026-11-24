@@ -1,8 +1,8 @@
 import type {
-  Job,
-  NoteEvent,
   HarmonyAnalysis,
+  Job,
   ModelExecution,
+  NoteEvent,
 } from "../contracts";
 let session: string | undefined;
 export interface LocalEngineState {
@@ -34,7 +34,7 @@ export async function localCapabilities(): Promise<LocalCapabilities | null> {
     return null;
   }
 }
-async function request(path: string, init?: RequestInit) {
+async function authenticatedResponse(path: string, init?: RequestInit) {
   if (!session) {
     const r = await fetch("/api/v1/session");
     session = (await r.json()).token;
@@ -55,7 +55,10 @@ async function request(path: string, init?: RequestInit) {
     const data = await r.json().catch(() => null);
     throw new Error(data?.detail ?? `本地服务错误 ${r.status}`);
   }
-  return r.json();
+  return r;
+}
+async function request(path: string, init?: RequestInit) {
+  return (await authenticatedResponse(path, init)).json();
 }
 export async function analyzeLocal(
   file: File,
@@ -118,6 +121,7 @@ export async function analyzeLocal(
 }
 
 export interface LocalAnalysisResult {
+  tracks?: import("../contracts").ProjectTrack[];
   duration: number;
   bpm: number;
   notes: NoteEvent[];
@@ -127,6 +131,95 @@ export interface LocalAnalysisResult {
   warnings?: string[];
   sourceOffset?: number;
   run?: import("../contracts").LocalAnalysisRun;
+}
+export async function savedAudioAsset(
+  id: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const response = await authenticatedResponse(
+    `assets/${encodeURIComponent(id)}`,
+    { signal },
+  );
+  if (!response.ok)
+    throw new Error("轨道音频不可用，请重新关联工程音频或分析录音。");
+  return response.blob();
+}
+export async function pinAudioAssets(
+  project: import("../contracts").MusicProject,
+) {
+  const ids =
+    project.tracks?.flatMap((t) => (t.asset ? [t.asset.id] : [])) ?? [];
+  if (ids.length)
+    await request("assets/references", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: project.id, assetIds: ids }),
+    });
+}
+export async function releaseAudioAssets(id: string) {
+  await request(`assets/references/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+export async function exportAudioProject(
+  project: import("../contracts").MusicProject,
+) {
+  return (
+    await authenticatedResponse("project-bundles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project }),
+    })
+  ).blob();
+}
+export async function importAudioProject(file: File) {
+  const form = new FormData();
+  form.set("file", file);
+  return (
+    await request("project-bundles/import", { method: "POST", body: form })
+  ).project as import("../contracts").MusicProject;
+}
+export async function analyzeSavedTrack(
+  assetId: string,
+  operation: "vocal-melody" | "transcribe",
+  signal: AbortSignal,
+  progress: (j: Job) => void,
+  backingAssetId?: string,
+): Promise<LocalAnalysisResult> {
+  const job: Job = await request("jobs/from-asset", {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ assetId, operation, backingAssetId }),
+  });
+  const cancel = () => {
+    void request("jobs/" + job.id, { method: "DELETE" }).catch(() => {});
+  };
+  signal.addEventListener("abort", cancel, { once: true });
+  try {
+    for (;;) {
+      signal.throwIfAborted();
+      const current: Job = await request("jobs/" + job.id, { signal });
+      progress(current);
+      if (current.status === "completed")
+        return {
+          ...(current.result as LocalAnalysisResult),
+          run: {
+            jobId: job.id,
+            cacheKey: job.cacheKey ?? "",
+            cacheHit: !!job.cacheHit,
+            executions:
+              (current.result as LocalAnalysisResult).executions ?? [],
+            warnings: (current.result as LocalAnalysisResult).warnings ?? [],
+          },
+        };
+      if (current.status === "failed" || current.status === "cancelled")
+        throw new Error(current.error?.message ?? current.message);
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+    }
+  } finally {
+    signal.removeEventListener("abort", cancel);
+  }
 }
 export async function localAsset(
   jobId: string,

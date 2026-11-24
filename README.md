@@ -95,3 +95,5 @@ python -m unittest discover -s tests -p '*_test.py'
 ## 下一步
 
 纠错记录可在本地导出，尚未接入训练。下一阶段按固定参考标注比较识别和编配，增加模型适配与钢琴双手/踏板插件。实现与未完成验收见 [音乐开发验收](docs/MUSICAL_DEVELOPMENT.md) 和 [音符编辑器](docs/NOTE_EDITOR.md)。
+
+本地 local.4：统一多轨、播放定位与跟随、先分离再转录、含音频工程。参见 [本地试用](docs/LOCAL_TRIAL.md) 与 [音乐约束](docs/MUSIC_KNOWLEDGE.md)。尚未公开发布。

@@ -14,6 +14,22 @@ def emit(value):
 
 
 def run(source: Path, mode: str):
+    if mode in ("track-vocal", "track-transcribe"):
+        sys.path.insert(
+            0, str(Path(__file__).resolve().parents[1] / "plugins/audio-harmony")
+        )
+        from transcription import analyze_saved_track
+
+        settings = json.loads(sys.argv[4]) if len(sys.argv) > 4 else {}
+        result = analyze_saved_track(
+            source,
+            Path(sys.argv[3]),
+            mode == "track-vocal",
+            emit,
+            settings.get("backing"),
+        )
+        emit({"type": "result", "result": result})
+        return
     if mode == "accompaniment":
         import runpy
 

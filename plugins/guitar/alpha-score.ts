@@ -1,6 +1,6 @@
 import type * as Alpha from "@coderline/alphatab";
-import type { MusicProject } from "../../packages/contracts";
-import { secondsToBeat } from "../../packages/contracts/score";
+import type { MusicProject, ScoreHit } from "../../packages/contracts";
+import { beatToSeconds, secondsToBeat } from "../../packages/contracts/score";
 import { projectScore } from "../../packages/music/score";
 import { tabMeasures } from "./notation";
 
@@ -9,6 +9,7 @@ export function alphaScore(
   alpha: typeof Alpha,
   project: MusicProject,
   showFingering = false,
+  bind?: (beat: Alpha.model.Beat, hit: ScoreHit) => void,
 ) {
   const m = alpha.model,
     score = new m.Score(),
@@ -146,6 +147,36 @@ export function alphaScore(
             origins.set(n.id, note);
             cell.addNote(note);
           }
+          const sounding = roleNotes.filter(
+            (n) => n.start <= beat + 0.001 && n.end > beat + 0.001,
+          );
+          const hit: ScoreHit = {
+            noteIds: sounding.map((n) => n.note.id),
+            startSeconds: Math.min(
+              project.duration,
+              Math.max(
+                0,
+                Math.min(
+                  ...(sounding.length
+                    ? sounding.map((n) =>
+                        n.start < beat - 0.001
+                          ? beatToSeconds(musical, beat)
+                          : n.note.start,
+                      )
+                    : [beatToSeconds(musical, beat)]),
+                ),
+              ),
+            ),
+            endSeconds: Math.min(
+              project.duration,
+              beatToSeconds(musical, beat + length),
+            ),
+          };
+          hit.endSeconds = Math.max(
+            hit.endSeconds,
+            Math.min(project.duration, hit.startSeconds + 0.001),
+          );
+          bind?.(cell, hit);
           beat += length;
         }
       }

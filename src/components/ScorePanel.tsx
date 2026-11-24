@@ -1,55 +1,38 @@
-import GenerationFeedback from "./GenerationFeedback";
-import ArrangementDraftPanel from "./ArrangementDraftPanel";
 import {
-  Check,
   Download,
   Guitar,
   LockKeyhole,
-  Pause,
-  Play,
   Plus,
   Redo2,
   Save,
   Trash2,
   Undo2,
-  Volume2,
   X,
 } from "lucide-react";
 import { type GuitarNote } from "../../packages/contracts";
-import { useRef, useState, useEffect } from "react";
 import { noteName } from "../../packages/music/demo";
+import ArrangementDraftPanel from "./ArrangementDraftPanel";
 
 import { violations } from "../../plugins/guitar";
 import { RhythmScore, Tablature } from "./Tablature";
 
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
-import { labels } from "../hooks/useWorkbench";
-import MusicalStructure from "./MusicalStructure";
-import ChordDiagrams from "./ChordDiagrams";
+import { useTransport } from "../hooks/useTransport";
 export default function ScorePanel() {
+  const controller = useWorkbenchContext();
+  const { position: time } = useTransport(
+    controller.transport,
+    controller.mode === "guitar",
+  );
   const {
     section,
     project,
     difficulty,
     capo,
-    saved,
-    playing,
     notes,
     length,
     busy,
     stop,
-    play,
-    tone,
-    loop,
-    setLoopStart,
-    loopEnd,
-    wave,
-    time,
-    speed,
-    setSpeed,
-    setLoop,
-    loopStart,
-    setLoopEnd,
     stale,
     view,
     setView,
@@ -68,238 +51,17 @@ export default function ScorePanel() {
     edit,
     transpose,
     exportAs,
-    bindRecording,
-    updateReferenceOffset,
     generation,
-    advanced,
-    setAdvanced,
   } = useWorkbenchContext();
-  const referenceInput = useRef<HTMLInputElement>(null),
-    [referenceOffset, setReferenceOffset] = useState(
-      project.audioReference?.offsetSeconds ?? project.sourceOffset,
-    );
-  useEffect(
-    () =>
-      setReferenceOffset(
-        project.audioReference?.offsetSeconds ?? project.sourceOffset,
-      ),
-    [project.id, project.audioReference?.offsetSeconds, project.sourceOffset],
-  );
   return (
     <section className="panel score-panel">
-      <div className="score-heading">
-        <div>
-          <span className="eyebrow">YOUR ARRANGEMENT</span>
-          <h2>{project.name}</h2>
-          <div className="score-tags">
-            <span className="tag green">
-              <Guitar size={12} />
-              标准吉他
-            </span>
-            <span className="tag">
-              {labels[project.arrangement?.difficulty ?? difficulty]}
-            </span>
-            <span className="tag">
-              Capo {project.arrangement?.capo ?? capo}
-            </span>
-            <span className="tag">{Number(project.bpm.toFixed(1))} BPM</span>
-            {project.sourceKind === "demo" && (
-              <span className="tag gold">原创演示</span>
-            )}
-          </div>
-        </div>
-        <span className="save-state">
-          <Check size={13} />
-          {saved}
-        </span>
-      </div>
       <ArrangementDraftPanel />
-      <div className="player">
-        <div className="transport">
-          <button
-            className="play-button"
-            aria-label={playing ? "停止播放" : "播放编配"}
-            disabled={!playing && (!notes.length || !!busy)}
-            onClick={() => (playing ? stop() : void play())}
-          >
-            {playing ? (
-              <Pause size={19} />
-            ) : (
-              <Play size={19} fill="currentColor" />
-            )}
-          </button>
-          <div>
-            <strong>{playing ? "正在试听" : "听听你的编配"}</strong>
-            <span>
-              {tone === "synth"
-                ? "合成拨弦音色"
-                : "实录采样 · 缺失音域回退合成"}
-            </span>
-          </div>
-          <button
-            className="original-button"
-            disabled={!!busy}
-            onClick={() => void play(true)}
-          >
-            {project.audioReference?.kind === "reference"
-              ? "参考录音对照"
-              : "原曲对照"}
-          </button>
-        </div>
-        <div className="reference-controls">
-          <button
-            className="text-button"
-            disabled={!!busy}
-            onClick={() => referenceInput.current?.click()}
-          >
-            关联录音
-          </button>
-          <input
-            ref={referenceInput}
-            type="file"
-            accept="audio/*,video/mp4,.flac"
-            className="visually-hidden"
-            data-testid="reference-audio-input"
-            aria-label="关联录音文件"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void bindRecording(file, referenceOffset);
-              e.target.value = "";
-            }}
-          />
-          <label>
-            对照起点（秒）
-            <input
-              aria-label="录音对照起点"
-              type="number"
-              min={0}
-              step={0.01}
-              disabled={!!busy}
-              value={Number(referenceOffset.toFixed(3))}
-              onChange={(e) => {
-                const value = Number(e.target.value);
-                if (
-                  value >= 0 &&
-                  Number.isFinite(value) &&
-                  (!project.audioReference || updateReferenceOffset(value))
-                )
-                  setReferenceOffset(value);
-              }}
-            />
-          </label>
-          <small>
-            {project.audioReference?.kind === "original"
-              ? "已记录原文件摘要，可重新关联文件"
-              : project.audioReference
-                ? "已记录参考录音，可重新关联文件"
-                : "可重新关联录音，保留已有谱面"}
-          </small>
-        </div>
-        <div
-          className="waveform"
-          onClick={(e) => {
-            if (!loop) return;
-            const t =
-              ((e.clientX - e.currentTarget.getBoundingClientRect().left) /
-                e.currentTarget.clientWidth) *
-              project.duration;
-            setLoopStart(Math.max(0, Math.min(t, loopEnd - 0.1)));
-          }}
-        >
-          {Array.from({ length: 100 }, (_, i) => (
-            <i
-              key={i}
-              style={{
-                height: `${12 + (wave[i % wave.length] ?? 0.2 + 0.5 * Math.abs(Math.sin(i * 0.39) * Math.cos(i * 0.17))) * 70}%`,
-                background:
-                  (i / 100) * project.duration < time ? "#b68c58" : undefined,
-              }}
-            />
-          ))}
-          <span
-            className="playhead"
-            style={{ left: `${(time / project.duration) * 100}%` }}
-          />
-        </div>
-        <div className="player-footer">
-          <span>
-            {time.toFixed(1)}{" "}
-            <span className="muted">/ {project.duration.toFixed(1)} 秒</span>
-          </span>
-          <div>
-            <label>
-              速度
-              <select
-                aria-label="播放速度"
-                value={speed}
-                onChange={(e) => {
-                  stop();
-                  setSpeed(Number(e.target.value));
-                }}
-              >
-                <option value=".5">0.5×</option>
-                <option value=".75">0.75×</option>
-                <option value="1">1.0×</option>
-              </select>
-            </label>
-            <Volume2 size={15} />
-          </div>
-        </div>
-      </div>
-      <div className="loop-controls">
-        <label>
-          <input
-            type="checkbox"
-            checked={loop}
-            onChange={(e) => {
-              stop();
-              setLoop(e.target.checked);
-            }}
-          />
-          片段循环
-        </label>
-        {loop && (
-          <>
-            <input
-              aria-label="循环起点"
-              type="number"
-              min="0"
-              max={project.duration}
-              step=".1"
-              value={loopStart}
-              onChange={(e) => {
-                stop();
-                setLoopStart(Math.max(0, Number(e.target.value)));
-              }}
-            />
-            <span>至</span>
-            <input
-              aria-label="循环终点"
-              type="number"
-              min="0"
-              max={project.duration}
-              step=".1"
-              value={loopEnd}
-              onChange={(e) => {
-                stop();
-                setLoopEnd(Math.min(project.duration, Number(e.target.value)));
-              }}
-            />
-            <span>秒</span>
-          </>
-        )}
-        <span className="muted">
-          {project.arrangement?.goal === "accompaniment"
-            ? `${new Set(notes.map((n) => n.strokeId ?? n.id)).size} 次扫拨动作 · 和弦伴奏`
-            : `${project.melody.length} 个旋律候选 · ${notes.length} 个编配音符`}
-        </span>
-      </div>
       {stale && (
         <p className="stale-note">
           设置已改变，谱面仍为上次结果。重新生成后应用新设置。
         </p>
       )}
-      <GenerationFeedback result />
+
       <div className="notation-toolbar">
         <div className="tabs">
           <button
@@ -376,11 +138,24 @@ export default function ScorePanel() {
           <Tablature
             project={project}
             selected={selected}
-            onSelect={(n) => setSelected(n.id)}
+            onSelect={(n) => {
+              setSelected(n.id);
+              controller.setInspectorOpen(true);
+              controller.activateNotes([n], n.start, true);
+            }}
             time={time}
+            onSeek={controller.seek}
           />
         ) : view === "rhythm" ? (
-          <RhythmScore project={project} />
+          <RhythmScore
+            project={project}
+            time={time}
+            onActivate={(ns, at) => {
+              if (ns[0]) setSelected(ns[0].id);
+              controller.setInspectorOpen(true);
+              controller.activateNotes(ns, at, true);
+            }}
+          />
         ) : (
           <pre className="text-tab">{textTab}</pre>
         )}
@@ -393,7 +168,7 @@ export default function ScorePanel() {
         </span>
         <span>点击谱上音符可修改 · 品位相对变调夹</span>
       </div>
-      {chosen && (
+      {chosen && controller.inspectorOpen && (
         <div className="note-editor">
           <div className="note-editor-heading">
             <strong>
@@ -705,41 +480,6 @@ export default function ScorePanel() {
           </button>
         </div>
       </div>
-      <div className="advanced-music-toggle">
-        <button
-          className="button secondary small"
-          aria-expanded={advanced}
-          onClick={() => setAdvanced(!advanced)}
-        >
-          {advanced ? "收起音乐结构校正" : "高级校正：节拍、和弦与声部"}
-        </button>
-      </div>
-      {advanced && (
-        <div className="advanced-music">
-          {" "}
-          <MusicalStructure />
-          {project.refinement && (
-            <p className="refinement-summary">
-              原始 {project.notes.length} 个候选均已保留；本次编配使用清理后的{" "}
-              {project.refinement.notes.length}{" "}
-              个候选。弱和弦音可能被省略，关闭清理后可重新分析对照。
-            </p>
-          )}
-          <ChordDiagrams />
-          {!!project.arrangement?.warnings.length && (
-            <details className="arrangement-report">
-              <summary>编配说明与待核对项</summary>
-              {project.arrangement.warnings.map((w) => (
-                <p key={w}>{w}</p>
-              ))}
-              <p>
-                省略 {project.arrangement.dropped.length}{" "}
-                个输入事件。演奏约束通过不代表真人试弹已通过。
-              </p>
-            </details>
-          )}
-        </div>
-      )}
     </section>
   );
 }

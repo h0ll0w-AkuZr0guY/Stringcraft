@@ -140,6 +140,18 @@ function synth(
     osc.stop(when + duration + 0.02);
   }
 }
+export async function prepareAudio(
+  ctx: AudioCtx,
+  notes: NoteEvent[],
+  tone: string,
+) {
+  if (tone !== "synth")
+    await Promise.all(
+      notes
+        .filter((n) => !(n as GuitarNote).dead)
+        .map((n) => getSample(ctx, n, tone)),
+    );
+}
 export async function schedule(
   ctx: AudioCtx,
   notes: NoteEvent[],
@@ -148,6 +160,7 @@ export async function schedule(
   to = Infinity,
   speed = 1,
   session?: RenderSession,
+  atTime?: number,
 ) {
   const prepared = await Promise.all(
     articulationSegments(notes, from, to).map(async (gesture) => ({
@@ -159,7 +172,7 @@ export async function schedule(
     })),
   );
   const origin =
-    ctx instanceof OfflineAudioContext ? 0 : ctx.currentTime + 0.06;
+    atTime ?? (ctx instanceof OfflineAudioContext ? 0 : ctx.currentTime + 0.06);
   let fallback = 0;
   const mix = ctx.createGain(),
     compressor = ctx.createDynamicsCompressor();

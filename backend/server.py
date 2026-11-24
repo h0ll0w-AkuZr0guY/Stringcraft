@@ -1,6 +1,7 @@
 """Loopback-only, same-origin local compute host with cancellable subprocess jobs."""
 
 from __future__ import annotations
+import zipfile, wave
 import argparse
 import asyncio
 from contextlib import asynccontextmanager
@@ -18,7 +19,10 @@ import webbrowser
 import socket
 import hashlib
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, Body
+from backend.assets import AudioAssets
+from backend.bundles import export_bundle, import_bundle, MAX_EXPANDED
+from starlette.background import BackgroundTask
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -45,7 +49,8 @@ JOBS: dict[str, dict] = {}
 PROCESSES: dict[str, asyncio.subprocess.Process] = {}
 TASKS: set[asyncio.Task] = set()
 ENGINE = {"status": "checking", "ready": False}
-PIPELINE_VERSION = "audio-harmony-0.3.1-melody"
+PIPELINE_VERSION = "audio-harmony-0.4.0-tracks"
+ASSETS = AudioAssets(USER_ROOT / "assets")
 
 
 def engine_probe():
@@ -301,6 +306,23 @@ async def run_job(identifier: str, source: Path, mode: str, settings=None):
                     "duration": event["duration"],
                 }
             elif event.get("type") == "result" and job["status"] != "cancelled":
+                filenames = {
+                    "original": "original.wav",
+                    "vocal": "vocals.wav",
+                    "instrumental": "accompaniment.wav",
+                    "bass": "bass.wav",
+                    "drums": "drums.wav",
+                    "other": "other.wav",
+                }
+                for track in event["result"].get("tracks", []):
+                    filename = filenames.get(track.get("role"))
+                    if not filename or track.pop("assetFile", None) != filename:
+                        raise ValueError("Invalid stem output")
+                    track["asset"] = ASSETS.register(source.parent / filename)
+                    if track["role"] == "instrumental":
+                        track["harmonyAnalysis"] = event["result"].get(
+                            "harmonyAnalysis"
+                        )
                 (source.parent / "result.json").write_text(
                     json.dumps(event["result"], allow_nan=False), encoding="utf-8"
                 )
@@ -311,7 +333,7 @@ async def run_job(identifier: str, source: Path, mode: str, settings=None):
             if code != 0 or "result" not in job:
                 raise RuntimeError("模型执行失败，请检查环境包、模型下载与输入格式")
             job.update(status="completed", progress=1, message="本地分析完成")
-            if mode == "accompaniment":
+            if mode == "accompaniment" or mode.startswith("track-"):
                 (source.parent / "cache.json").write_text(
                     json.dumps(
                         {"pipeline": PIPELINE_VERSION, "cacheKey": job["cacheKey"]}
@@ -430,6 +452,123 @@ async def submit(
     return JOBS[identifier]
 
 
+@app.get("/api/v1/assets/{identifier}")
+def saved_asset(identifier: str):
+    try:
+        return FileResponse(ASSETS.path(identifier), media_type="audio/wav")
+    except (ValueError, FileNotFoundError):
+        raise HTTPException(404, "Audio asset unavailable; relink or analyze again")
+
+
+@app.post("/api/v1/project-bundles")
+def make_bundle(body: dict = Body(...)):
+    folder = USER_ROOT / "exports"
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / (uuid.uuid4().hex + ".zip")
+    try:
+        export_bundle(body.get("project"), ASSETS, target)
+    except (ValueError, KeyError, FileNotFoundError):
+        target.unlink(missing_ok=True)
+        raise HTTPException(400, "Project audio is missing or invalid; relink it first")
+    return FileResponse(
+        target,
+        media_type="application/zip",
+        filename="Stringcraft-project.stringcraft.zip",
+        background=BackgroundTask(target.unlink, missing_ok=True),
+    )
+
+
+@app.post("/api/v1/project-bundles/import")
+async def open_bundle(file: UploadFile = File(...)):
+    with tempfile.TemporaryDirectory(prefix="stringcraft-bundle-") as temp:
+        source = Path(temp) / "input.zip"
+        size = 0
+        with source.open("wb") as output:
+            while chunk := await file.read(1024**2):
+                size += len(chunk)
+                if size > MAX_EXPANDED:
+                    raise HTTPException(413, "Project archive exceeds 2 GB")
+                output.write(chunk)
+        try:
+            return {"project": import_bundle(source, ASSETS)}
+        except (
+            ValueError,
+            KeyError,
+            TypeError,
+            OSError,
+            EOFError,
+            zipfile.BadZipFile,
+            wave.Error,
+        ):
+            raise HTTPException(400, "Invalid project archive or audio digest")
+
+
+@app.post("/api/v1/assets/references")
+def pin_assets(body: dict = Body(...)):
+    try:
+        ASSETS.pin(body.get("projectId"), body.get("assetIds"))
+        return {"saved": True}
+    except (ValueError, FileNotFoundError):
+        raise HTTPException(400, "Invalid audio asset references")
+
+
+@app.delete("/api/v1/assets/references/{project}")
+def release_assets(project: str):
+    try:
+        ASSETS.release(project)
+        return {"released": True}
+    except ValueError:
+        raise HTTPException(400, "Invalid project identity")
+
+
+@app.post("/api/v1/jobs/from-asset", status_code=202)
+async def analyze_asset(body: dict = Body(...)):
+    operation = body.get("operation")
+    if operation not in ("vocal-melody", "transcribe"):
+        raise HTTPException(400, "Unknown asset analysis")
+    if not ENGINE.get("ready"):
+        raise HTTPException(409, "Local models are not ready")
+    if any(j["status"] in ("queued", "running") for j in JOBS.values()):
+        raise HTTPException(409, "A local analysis is already running")
+    try:
+        original = ASSETS.path(body.get("assetId"))
+        backing = (
+            ASSETS.path(body["backingAssetId"]) if body.get("backingAssetId") else None
+        )
+    except (ValueError, FileNotFoundError):
+        raise HTTPException(404, "Audio asset unavailable")
+    mode = "track-vocal" if operation == "vocal-melody" else "track-transcribe"
+    cache_key = hashlib.sha256(
+        (
+            body["assetId"]
+            + str(body.get("backingAssetId", ""))
+            + mode
+            + PIPELINE_VERSION
+        ).encode()
+    ).hexdigest()
+    for old in JOBS.values():
+        if old.get("status") == "completed" and old.get("cacheKey") == cache_key:
+            return {**old, "cacheHit": True}
+    identifier = uuid.uuid4().hex
+    directory = RUNTIME / identifier
+    directory.mkdir(parents=True)
+    source = directory / "source.audio"
+    shutil.copyfile(original, source)
+    JOBS[identifier] = {
+        "id": identifier,
+        "status": "queued",
+        "progress": 0,
+        "message": "分析独立轨道",
+        "cacheKey": cache_key,
+    }
+    task = asyncio.create_task(
+        run_job(identifier, source, mode, {"backing": str(backing)} if backing else {})
+    )
+    TASKS.add(task)
+    task.add_done_callback(TASKS.discard)
+    return JOBS[identifier]
+
+
 @app.get("/api/v1/jobs/{identifier}/assets/{asset}")
 def asset(identifier: str, asset: str):
     if (
@@ -439,6 +578,10 @@ def asset(identifier: str, asset: str):
         not in (
             "accompaniment.wav",
             "bass.wav",
+            "vocals.wav",
+            "original.wav",
+            "drums.wav",
+            "other.wav",
             "direct-harmony.json",
             "separated-harmony.json",
             "cqt-harmony.json",

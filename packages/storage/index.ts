@@ -1,5 +1,6 @@
-import { get, set, delMany, keys } from "idb-keyval";
+import { delMany, get, keys, set } from "idb-keyval";
 import { validateProject, type MusicProject } from "../contracts";
+import { releaseAudioAssets } from "../music/local";
 export async function saveProject(p: MusicProject) {
   validateProject(p);
   await set(`project:${p.id}`, { ...p, updatedAt: new Date().toISOString() });
@@ -19,9 +20,12 @@ export const audioAssetKey = (
 export const audioAssetPrefix = (id: string) =>
   `audio-v2:${encodeURIComponent(id)}:`;
 export async function removeProject(id: string) {
+  const project = await get<MusicProject>(`project:${id}`);
   const prefix = audioAssetPrefix(id);
   const audio = (await keys()).filter(
     (key) => typeof key === "string" && key.startsWith(prefix),
   );
   await delMany([`project:${id}`, `audio:${id}`, ...audio]);
+  if (project?.tracks?.some((t) => t.asset))
+    await releaseAudioAssets(id).catch(() => {});
 }

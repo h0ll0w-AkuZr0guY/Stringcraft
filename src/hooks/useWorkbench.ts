@@ -1,39 +1,47 @@
-import { projectHarmony } from "../../packages/music/harmony";
-import { arrangementRevision } from "../../packages/music/arrangement-revision";
+import { savedAudioAsset } from "../../packages/music/local";
 import {
-  workbenchComponentProblems,
-  repairWorkbenchComponents,
-} from "../../packages/music/maintenance";
-import {
-  runGeneration,
-  repairGenerationPlugins,
-  GenerationError,
-} from "../../packages/music/generate";
-import type { GenerationTask } from "./generation-state";
-import { useCallback, useEffect, useRef, useState } from "react";
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   validateProject,
-  type Arrangement,
+  type ArrangementGoal,
   type Difficulty,
   type GuitarNote,
+  type HarmonyAnalysis,
   type MusicProject,
+  type NoteEditorState,
   type NoteEvent,
-  type ArrangementGoal,
-  soundingEvents,
+  type NoteOverride,
   type TimingAnalysis,
   type TimingCandidate,
-  type NoteOverride,
-  type NoteEditorState,
-  type HarmonyAnalysis,
 } from "../../packages/contracts";
-import { decode, transcribe, decodeWhole } from "../../packages/music/analyze";
-import {
-  filteredNotes,
-  commitNotes,
-  emptyNoteEditor,
-} from "../../packages/music/note-edits";
-import { readAudioFile, referenceWaveform } from "../../packages/music/media";
+import { decode, decodeWhole, transcribe } from "../../packages/music/analyze";
+import { arrangementRevision } from "../../packages/music/arrangement-revision";
 import { demoProject } from "../../packages/music/demo";
+import {
+  GenerationError,
+  repairGenerationPlugins,
+  runGeneration,
+} from "../../packages/music/generate";
+import { projectHarmony } from "../../packages/music/harmony";
+import {
+  repairWorkbenchComponents,
+  workbenchComponentProblems,
+} from "../../packages/music/maintenance";
+import { readAudioFile, referenceWaveform } from "../../packages/music/media";
+import { filteredNotes } from "../../packages/music/note-edits";
+import { trackPlayback } from "../../packages/music/track-playback";
+import {
+  changeTrackEditor,
+  commitTrackNotes,
+  editorTrackProject,
+  projectTracks,
+} from "../../packages/music/tracks";
+import { Transport } from "../../packages/music/transport";
 import {
   bootstrap,
   catalog,
@@ -43,28 +51,33 @@ import {
   load,
   loadRefiner,
 } from "../../packages/plugin-host";
+import type { GenerationTask } from "./generation-state";
 
 import { get, set } from "idb-keyval";
 import { type AISettings } from "../../packages/music/advisor";
 import { importMidi, importMusicXML } from "../../packages/music/import";
 import {
   analyzeLocal,
-  localCapabilities,
+  analyzeSavedTrack,
+  exportAudioProject,
+  importAudioProject,
   localAsset,
+  localCapabilities,
+  pinAudioAssets,
 } from "../../packages/music/local";
-import {
-  listProjects,
-  saveProject,
-  audioAssetKey,
-  audioAssetPrefix,
-} from "../../packages/storage";
-import { violations } from "../../plugins/guitar";
-import { syncPerformance } from "../../plugins/guitar/performance";
 import {
   projectScore,
   upgradeProject,
   withReferenceTempo,
 } from "../../packages/music/score";
+import {
+  audioAssetKey,
+  audioAssetPrefix,
+  listProjects,
+  saveProject,
+} from "../../packages/storage";
+import { violations } from "../../plugins/guitar";
+import { syncPerformance } from "../../plugins/guitar/performance";
 import {
   experimentalGuitarParameters,
   type RefinementParameters,
@@ -101,6 +114,21 @@ export function useWorkbench() {
   const [generation, setGeneration] = useState<GenerationTask | null>(null);
   const generationLock = useRef(false);
   const [advanced, setAdvanced] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [activeTrackId, setActiveTrackId] = useState("legacy");
+  const [mutedTracks, setMutedTracks] = useState<Set<string>>(new Set());
+  const [soloTrackId, setSoloTrackId] = useState<string | null>(null);
+  const [trackVolumes, setTrackVolumes] = useState<Record<string, number>>({});
+  const [monitorMode, setMonitorMode] = useState<"audio" | "notes" | "mix">(
+    "audio",
+  );
+  const [mixTrackIds, setMixTrackIds] = useState<Set<string>>(
+    new Set(["instrumental"]),
+  );
+  const audibleTrackIds = useRef<string[]>([]);
+  const previewContext = useRef<AudioContext | null>(null);
+  const previewRevision = useRef(0);
   const [pluginCount, setPluginCount] = useState<number | null>(null);
   const [mode, setMode] = useState<"editor" | "guitar">(() =>
     new URLSearchParams(location.search).get("view") === "guitar"
@@ -127,12 +155,40 @@ export function useWorkbench() {
     [textTab, setTextTab] = useState("");
   const [history, setHistory] = useState<MusicProject[]>([]),
     [future, setFuture] = useState<MusicProject[]>([]),
-    [playing, setPlaying] = useState(false),
-    [time, setTime] = useState(0),
     [speed, setSpeed] = useState(1),
     [loop, setLoop] = useState(false),
     [loopStart, setLoopStart] = useState(0),
     [loopEnd, setLoopEnd] = useState(8);
+  const transportRef = useRef<Transport | null>(null);
+  if (!transportRef.current) transportRef.current = new Transport();
+  const transport = transportRef.current;
+  const playbackStatus = useSyncExternalStore(
+    transport.subscribe,
+    transport.status,
+    transport.status,
+  );
+  const playing = playbackStatus !== "paused";
+  useEffect(() => {
+    transport.setDuration(project.duration);
+  }, [project.duration, transport]);
+  useEffect(() => {
+    transport.stop();
+  }, [project.id, transport]);
+  useEffect(() => {
+    transport.setSpeed(speed);
+  }, [speed, transport]);
+  useEffect(() => {
+    try {
+      transport.setLoop(
+        loop
+          ? { start: loopStart, end: Math.min(loopEnd, project.duration) }
+          : null,
+      );
+    } catch {
+      setLoop(false);
+      notify("循环范围无效，请重新设置 A/B。");
+    }
+  }, [loop, loopStart, loopEnd, project.duration, transport]);
   const [settings, setSettings] = useState(false),
     [ai, setAI] = useState<AISettings>({
       key: "",
@@ -194,7 +250,24 @@ export function useWorkbench() {
   useEffect(() => {
     setGeneration(null);
     setAdvanced(false);
+    setInspectorOpen(false);
+    setActiveTrackId(
+      project.tracks?.find((t) => t.role === "instrumental")?.id ?? "legacy",
+    );
+    setSoloTrackId(null);
+    setMutedTracks(new Set());
+    setTrackVolumes({});
+    setMixTrackIds(
+      new Set([
+        project.tracks?.find((t) => t.role === "instrumental")?.id ?? "legacy",
+      ]),
+    );
   }, [project.id]);
+  const tracks = projectTracks(project);
+  const selectedTrackId = tracks.some((t) => t.id === activeTrackId)
+    ? activeTrackId
+    : (tracks.find((t) => t.role === "instrumental")?.id ?? "legacy");
+  const editorProject = editorTrackProject(project, selectedTrackId);
   const notes = project.arrangement?.notes ?? [],
     chosen = notes.find((n) => n.id === selected);
   const stale =
@@ -212,22 +285,28 @@ export function useWorkbench() {
           JSON.stringify(project.arrangement.score) !==
             JSON.stringify(project.score)));
   function stop() {
-    stemPlayer.current?.pause();
-    stemPlayer.current = null;
-    if (stemUrl.current) URL.revokeObjectURL(stemUrl.current);
-    stemUrl.current = "";
-    neutralStop.current?.();
-    neutralStop.current = null;
+    transport.pause();
     referenceLoad.current?.abort();
     referenceLoad.current = null;
     playGeneration.current++;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
+    neutralStop.current?.();
+    neutralStop.current = null;
     void audioRef.current?.close().catch(() => {});
     audioRef.current = null;
-    setPlaying(false);
-    setTime(0);
+    if (stemPlayer.current) {
+      stemPlayer.current.pause();
+      stemPlayer.current = null;
+    }
+    if (stemUrl.current) {
+      URL.revokeObjectURL(stemUrl.current);
+      stemUrl.current = "";
+    }
   }
+  function seek(at: number) {
+    if (loop && (at < loopStart || at >= loopEnd)) setLoop(false);
+    transport.seek(at);
+  }
+
   useEffect(() => {
     let active = true;
     bootstrap()
@@ -284,7 +363,10 @@ export function useWorkbench() {
     const timer = setTimeout(
       () =>
         saveProject(project)
-          .then(() => setSaved("已保存在此浏览器"))
+          .then(async () => {
+            await pinAudioAssets(project);
+            setSaved("已保存在此浏览器");
+          })
           .catch(() => setSaved("存储不可用，请导出项目")),
       500,
     );
@@ -308,6 +390,7 @@ export function useWorkbench() {
   }, [sourceUrl]);
   useEffect(
     () => () => {
+      transport.dispose();
       abortRef.current?.abort();
       neutralStop.current?.();
       if (timerRef.current) clearInterval(timerRef.current);
@@ -328,9 +411,7 @@ export function useWorkbench() {
       setEngineState(c?.engine ?? null);
       setLocalReady(!!c?.engine?.ready);
       if (!analysisChoice.current)
-        setLocalMode(
-          c?.engine?.ready && c?.engine?.promoted ? "accompaniment" : "browser",
-        );
+        setLocalMode(c?.engine?.ready ? "accompaniment" : "browser");
       if (c?.engine?.status === "checking") timer = setTimeout(refresh, 2000);
     };
     void refresh();
@@ -349,7 +430,11 @@ export function useWorkbench() {
   function commitEditor(changes: NoteOverride[]) {
     try {
       stop();
-      const next = commitNotes(projectRef.current, changes);
+      const next = commitTrackNotes(
+        projectRef.current,
+        selectedTrackId,
+        changes,
+      );
       validateProject(next);
       updateEditorProject(next);
     } catch (error) {
@@ -361,12 +446,7 @@ export function useWorkbench() {
   ) {
     try {
       const current = projectRef.current,
-        next = {
-          ...current,
-          noteEditor: change(
-            structuredClone(current.noteEditor ?? emptyNoteEditor()),
-          ),
-        };
+        next = changeTrackEditor(current, selectedTrackId, change);
       validateProject(next);
       updateEditorProject(next);
     } catch (error) {
@@ -448,7 +528,7 @@ export function useWorkbench() {
         melody: [],
         arrangement: null,
         pluginVersions: native
-          ? { "local-separation": "0.3.1" }
+          ? { "local-separation": "0.4.0" }
           : { "basic-pitch-stream": engine!.manifest.version },
         sourceAudioSha256: data.sourceSha256,
         audioReference: {
@@ -461,7 +541,7 @@ export function useWorkbench() {
           jobId: crypto.randomUUID(),
           status: "running",
           processedSeconds: 0,
-          pluginVersion: native ? "0.3.1" : engine!.manifest.version,
+          pluginVersion: native ? "0.4.0" : engine!.manifest.version,
           pluginSha256: native
             ? (engineState?.pluginSha256 ?? "")
             : engine!.manifest.sha256,
@@ -533,16 +613,17 @@ export function useWorkbench() {
           melody,
           harmonyAnalysis: result.harmonyAnalysis,
           melodyEvidence: result.melodyEvidence,
+          tracks: result.tracks,
           localAnalysis: result.run,
           pluginVersions: {
             ...current.pluginVersions,
-            "local-separation": "0.3.1",
+            "local-separation": "0.4.0",
           },
           transcription: {
             ...current.transcription!,
             status: "complete" as const,
             processedSeconds: result.duration,
-            pluginVersion: "0.3.1",
+            pluginVersion: "0.4.0",
             modelSha256: result.executions?.find(
               (e) => e.name === "Basic Pitch",
             )?.weightsSha256,
@@ -619,6 +700,11 @@ export function useWorkbench() {
   async function handoffToGuitar() {
     if (busy) return;
     const current = projectRef.current;
+    if (current.tracks?.length) {
+      setMode("guitar");
+      setAdvanced(true);
+      return;
+    }
     if (current.sourceKind !== "audio" && !current.noteEditor) {
       setMode("guitar");
       return;
@@ -854,7 +940,7 @@ export function useWorkbench() {
     if (generationLock.current || abortRef.current || busy) return;
     generationLock.current = true;
     stop();
-    const current = projectRef.current;
+    let current = projectRef.current;
     const control = new AbortController();
     abortRef.current = control;
     const task: GenerationTask = {
@@ -873,8 +959,19 @@ export function useWorkbench() {
       setGeneration((previous) =>
         previous?.id === task.id ? { ...previous, ...changes } : previous,
       );
-    const timeout = setTimeout(() => control.abort("timeout"), 120000);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
+      const vocal = current.tracks?.find((t) => t.role === "vocal");
+      if (goal === "fingerstyle" && vocal?.asset && !vocal.analysisRevision) {
+        update({
+          phase: "分析人声轨",
+          message: "正在独立转录人声，不重复分离。",
+        });
+        setBusy("正在分析独立人声轨");
+        const revised = await analyzeVocalTrack(control.signal);
+        current = revised;
+      }
+      timeout = setTimeout(() => control.abort("timeout"), 120000);
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => resolve()),
       );
@@ -907,6 +1004,8 @@ export function useWorkbench() {
       setCapo(result.capo);
       setAdvice(result.advice);
       setSelected(null);
+      setActiveTrackId("arrangement");
+      setMode("guitar");
       update({
         status: "success",
         endedAt: Date.now(),
@@ -1167,6 +1266,15 @@ export function useWorkbench() {
     }
   }
   async function playStem(asset: "accompaniment.wav" | "bass.wav") {
+    const track = projectRef.current.tracks?.find(
+      (t) => t.role === (asset === "bass.wav" ? "bass" : "instrumental"),
+    );
+    if (track) {
+      setActiveTrackId(track.id);
+      setMonitorMode("audio");
+      await playTracks([track.id], "audio");
+      return;
+    }
     if (stemPlayer.current) {
       stemPlayer.current.pause();
       stemPlayer.current = null;
@@ -1201,128 +1309,155 @@ export function useWorkbench() {
     source = false,
     pulse?: TimingCandidate,
     eventOverride?: NoteEvent[],
-    position = 0,
+    position?: number,
+    guitarOverride = false,
   ) {
     stop();
-    const generation = playGeneration.current;
-    const ctx = new AudioContext();
-    audioRef.current = ctx;
-    await ctx.resume();
-    const from = loop ? loopStart : position,
-      to = loop ? Math.min(loopEnd, project.duration) : project.duration;
-    if (to <= from) {
-      notify("循环结束必须大于起点");
-      stop();
-      return;
-    }
-    try {
-      let origin = ctx.currentTime + 0.06;
-      const assetKey = audioAssetKey(project);
-      if (source && !sourceBuffer.current.has(assetKey)) {
-        const control = new AbortController();
-        referenceLoad.current = control;
-        const original = await get<File>(assetKey);
-        control.signal.throwIfAborted();
-        if (!original)
-          throw new Error(
-            "当前浏览器没有这份录音文件。请用“关联录音”重新选择；谱面和编辑会保留。",
+    const sourceStem =
+      project.audioReference?.kind === "reference" ||
+      (project.audioReference &&
+        project.audioReference.offsetSeconds !== project.sourceOffset)
+        ? undefined
+        : project.tracks?.find((t) => t.role === "original")?.asset;
+    if (position !== undefined) transport.seek(position);
+    transport.onError = (error) => notify(errorMessage(error));
+    await transport.play(async (from, to, speed, current, signal) => {
+      const generation = playGeneration.current;
+      const ctx = new AudioContext();
+      signal.addEventListener("abort", () => void ctx.close().catch(() => {}), {
+        once: true,
+      });
+      audioRef.current = ctx;
+      await ctx.resume();
+      try {
+        let origin = ctx.currentTime + 0.06;
+        const assetKey = sourceStem
+          ? `track:${sourceStem.id}`
+          : audioAssetKey(project);
+        if (source && sourceStem && !sourceBuffer.current.has(assetKey))
+          sourceBuffer.current.set(
+            assetKey,
+            await ctx.decodeAudioData(
+              await (
+                await savedAudioAsset(sourceStem.id, signal)
+              ).arrayBuffer(),
+            ),
           );
-        const decoded = await readAudioFile(
-          original,
-          local ? 200 : 50,
-          control.signal,
-        );
-        if (
-          project.audioReference &&
-          decoded.sha256 !== project.audioReference.sha256.toLowerCase()
-        )
-          throw new Error("缓存录音与项目摘要不同，请重新关联文件。");
-        sourceBuffer.current.set(assetKey, decoded.buffer);
-        if (referenceLoad.current === control) referenceLoad.current = null;
-      }
-      if (source) {
-        if (generation !== playGeneration.current || ctx.state === "closed")
-          return;
-        origin = ctx.currentTime + 0.06;
-        const s = ctx.createBufferSource();
-        s.buffer = sourceBuffer.current.get(assetKey)!;
-        s.playbackRate.value = speed;
-        s.connect(ctx.destination);
-        s.start(
-          origin,
-          (project.audioReference?.offsetSeconds ?? project.sourceOffset) +
-            from,
-          to - from,
-        );
-        if (pulse) {
-          const period = 60 / pulse.bpm;
-          for (
-            let beat =
-              pulse.phaseSeconds +
-              Math.max(0, Math.ceil((from - pulse.phaseSeconds) / period)) *
-                period;
-            beat < to;
-            beat += period
-          ) {
-            const oscillator = ctx.createOscillator(),
-              gain = ctx.createGain(),
-              when = origin + (beat - from) / speed;
-            oscillator.frequency.value = 1200;
-            gain.gain.setValueAtTime(0, when);
-            gain.gain.linearRampToValueAtTime(0.12, when + 0.002);
-            gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.045);
-            oscillator.connect(gain);
-            gain.connect(ctx.destination);
-            oscillator.start(when);
-            oscillator.stop(when + 0.05);
+        if (source && !sourceBuffer.current.has(assetKey)) {
+          const control = new AbortController();
+          referenceLoad.current = control;
+          const original = await get<File>(assetKey);
+          control.signal.throwIfAborted();
+          if (!original)
+            throw new Error(
+              "当前浏览器没有这份录音文件。请用“关联录音”重新选择；谱面和编辑会保留。",
+            );
+          const decoded = await readAudioFile(
+            original,
+            local ? 200 : 50,
+            control.signal,
+          );
+          if (
+            project.audioReference &&
+            decoded.sha256 !== project.audioReference.sha256.toLowerCase()
+          )
+            throw new Error("缓存录音与项目摘要不同，请重新关联文件。");
+          sourceBuffer.current.set(assetKey, decoded.buffer);
+          if (referenceLoad.current === control) referenceLoad.current = null;
+        }
+        if (source) {
+          if (
+            !current() ||
+            generation !== playGeneration.current ||
+            ctx.state === "closed"
+          )
+            throw new DOMException("已取消", "AbortError");
+          origin = ctx.currentTime + 0.06;
+          const s = ctx.createBufferSource();
+          s.buffer = sourceBuffer.current.get(assetKey)!;
+          s.playbackRate.value = speed;
+          s.connect(ctx.destination);
+          s.start(
+            origin,
+            (sourceStem?.offsetSeconds ??
+              project.audioReference?.offsetSeconds ??
+              project.sourceOffset) + from,
+            to - from,
+          );
+          if (pulse) {
+            const period = 60 / pulse.bpm;
+            for (
+              let beat =
+                pulse.phaseSeconds +
+                Math.max(0, Math.ceil((from - pulse.phaseSeconds) / period)) *
+                  period;
+              beat < to;
+              beat += period
+            ) {
+              const oscillator = ctx.createOscillator(),
+                gain = ctx.createGain(),
+                when = origin + (beat - from) / speed;
+              oscillator.frequency.value = 1200;
+              gain.gain.setValueAtTime(0, when);
+              gain.gain.linearRampToValueAtTime(0.12, when + 0.002);
+              gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.045);
+              oscillator.connect(gain);
+              gain.connect(ctx.destination);
+              oscillator.start(when);
+              oscillator.stop(when + 0.05);
+            }
+            notify(
+              `正在对照原曲试听 ${pulse.bpm.toFixed(1)} BPM 拍点；小节首拍仍需核对。`,
+            );
           }
-          notify(
-            `正在对照原曲试听 ${pulse.bpm.toFixed(1)} BPM 拍点；小节首拍仍需核对。`,
+        } else if (eventOverride && !guitarOverride) {
+          const renderer = await load("note-audio");
+          if (generation !== playGeneration.current)
+            throw new DOMException("已取消", "AbortError");
+          const result = renderer.scheduleNotes!(
+            ctx,
+            eventOverride,
+            from,
+            to,
+            speed,
           );
+          origin = result.origin;
+          neutralStop.current = result.stop;
+        } else {
+          const renderer = await load("guitar-samples");
+          const result = await renderer.scheduleAudio!(
+            ctx,
+            eventOverride ?? notes,
+            tone,
+            from,
+            to,
+            speed,
+          );
+          origin = result.origin;
+          if (result.fallback && tone !== "synth")
+            notify(
+              `${result.fallback} 个音符使用合成音回退，其余使用实录采样。`,
+            );
         }
-      } else if (eventOverride) {
-        const renderer = await load("note-audio");
-        if (generation !== playGeneration.current) return;
-        const result = renderer.scheduleNotes!(
-          ctx,
-          eventOverride,
-          from,
-          to,
-          speed,
-        );
-        origin = result.origin;
-        neutralStop.current = result.stop;
-      } else {
-        const renderer = await load("guitar-samples");
-        const result = await renderer.scheduleAudio!(
-          ctx,
-          source ? project.notes : notes,
-          tone,
-          from,
-          to,
-          speed,
-        );
-        origin = result.origin;
-        if (result.fallback && tone !== "synth")
-          notify(`${result.fallback} 个音符使用合成音回退，其余使用实录采样。`);
+        if (
+          !current() ||
+          generation !== playGeneration.current ||
+          ctx.state === "closed"
+        )
+          throw new DOMException("已取消", "AbortError");
+        return {
+          position: () => from + Math.max(0, ctx.currentTime - origin) * speed,
+          stop: () => {
+            neutralStop.current?.();
+            neutralStop.current = null;
+            void ctx.close().catch(() => {});
+          },
+        };
+      } catch (error) {
+        void ctx.close().catch(() => {});
+        throw error;
       }
-      if (generation !== playGeneration.current || ctx.state === "closed")
-        return;
-      setPlaying(true);
-      timerRef.current = setInterval(() => {
-        const t = from + Math.max(0, ctx.currentTime - origin) * speed;
-        setTime(Math.min(t, to));
-        if (t >= to) {
-          stop();
-          if (loop) void play(source, pulse, eventOverride, position);
-        }
-      }, 40);
-    } catch (e) {
-      if (generation === playGeneration.current) {
-        stop();
-        notify(errorMessage(e));
-      }
-    }
+    });
   }
   function updateNote(id: string, changes: Partial<GuitarNote>) {
     if (!project.arrangement) return;
@@ -1357,44 +1492,149 @@ export function useWorkbench() {
     });
   }
   async function playVoice(role: "melody" | "bass" | "harmony") {
-    const from = time,
-      to = Math.min(project.duration, from + 12),
-      voice = notes.filter((n) => n.role === role);
-    stop();
+    const voice = notes.filter((n) => n.role === role);
     if (!voice.length) {
       notify("本编配没有这个声部。");
       return;
     }
-    const generation = playGeneration.current,
-      ctx = new AudioContext();
-    audioRef.current = ctx;
+    await play(false, undefined, voice, undefined, true);
+  }
+  async function analyzeVocalTrack(signal?: AbortSignal) {
+    const initial = projectRef.current,
+      vocal = initial.tracks?.find((t) => t.role === "vocal"),
+      backing = initial.tracks?.find((t) => t.role === "instrumental");
+    if (!vocal?.asset) throw new Error("请先分离人声轨。");
+    const control = signal ? null : new AbortController();
+    if (control) {
+      if (busy) throw new Error("请等待当前任务完成。");
+      abortRef.current = control;
+      setBusy("正在分析独立人声轨");
+    }
     try {
-      await ctx.resume();
-      const renderer = await load("guitar-samples");
-      if (generation !== playGeneration.current) return;
-      const scheduled = await renderer.scheduleAudio!(
-        ctx,
-        voice,
-        tone,
-        from,
-        to,
-        speed,
+      const result = await analyzeSavedTrack(
+        vocal.asset.id,
+        "vocal-melody",
+        signal ?? control!.signal,
+        (j) => {
+          setBusy(j.message);
+          setProgress(j.progress);
+        },
+        backing?.asset?.id,
       );
-      if (generation !== playGeneration.current) return;
-      setPlaying(true);
-      notify("正在分声部试听，最长 12 秒；可随时停止。");
-      timerRef.current = setInterval(() => {
-        const t =
-          from + Math.max(0, ctx.currentTime - scheduled.origin) * speed;
-        setTime(Math.min(to, t));
-        if (t >= to) stop();
-      }, 40);
-    } catch (error) {
-      if (generation === playGeneration.current) {
-        stop();
-        notify(errorMessage(error));
+      (signal ?? control!.signal).throwIfAborted();
+      if (projectRef.current !== initial)
+        throw new Error("项目已改变，人声结果未覆盖当前项目。");
+      const next = {
+        ...initial,
+        tracks: initial.tracks!.map((t) =>
+          t.id === vocal.id
+            ? {
+                ...t,
+                notes: result.notes,
+                melodyEvidence: result.melodyEvidence,
+                analysisRevision: result.run?.cacheKey,
+              }
+            : t,
+        ),
+      };
+      validateProject(next);
+      updateEditorProject(next);
+      return projectRef.current;
+    } finally {
+      if (control && abortRef.current === control) {
+        abortRef.current = null;
+        setBusy("");
       }
     }
+  }
+  async function playTracks(ids?: string[], playbackMode = monitorMode) {
+    const selectedIds =
+      ids ??
+      (soloTrackId
+        ? [soloTrackId]
+        : monitorMode === "mix"
+          ? [...mixTrackIds]
+          : [selectedTrackId]);
+    audibleTrackIds.current = selectedIds;
+    const material = projectTracks(projectRef.current).filter(
+      (t) => selectedIds.includes(t.id) && !mutedTracks.has(t.id),
+    );
+    if (!material.length) {
+      stop();
+      notify("请先选择至少一条未静音的轨道。");
+      return;
+    }
+    if (
+      material.length === 1 &&
+      material[0].id === "legacy" &&
+      playbackMode === "audio" &&
+      project.audioReference
+    ) {
+      await play(true);
+      return;
+    }
+    stop();
+    transport.onError = (error) => notify(errorMessage(error));
+    await transport.play(
+      trackPlayback(
+        projectRef.current,
+        material.map((t) => t.id),
+        { mode: playbackMode, volumes: trackVolumes, tone },
+        sourceBuffer.current,
+      ),
+    );
+  }
+  function selectTrack(id: string) {
+    setActiveTrackId(id);
+  }
+  // Rebuild the shared driver after settings commit, preserving its audio-clock position.
+  useEffect(() => {
+    if (transport.snapshot().status !== "paused") void playTracks();
+  }, [
+    selectedTrackId,
+    monitorMode,
+    soloTrackId,
+    mutedTracks,
+    mixTrackIds,
+    trackVolumes,
+  ]);
+  useEffect(
+    () => () => {
+      previewRevision.current++;
+      void previewContext.current?.close().catch(() => {});
+    },
+    [],
+  );
+  async function audition(events: NoteEvent[], guitar = false) {
+    const revision = ++previewRevision.current;
+    void previewContext.current?.close().catch(() => {});
+    const ctx = new AudioContext();
+    previewContext.current = ctx;
+    await ctx.resume();
+    const end = Math.min(2, Math.max(...events.map((n) => n.duration), 0.1));
+    const material = events.map((n) => ({
+      ...n,
+      start: 0,
+      duration: Math.min(end, n.duration),
+    }));
+    try {
+      const renderer = await load(guitar ? "guitar-samples" : "note-audio");
+      if (revision !== previewRevision.current) {
+        void ctx.close().catch(() => {});
+        return;
+      }
+      if (guitar) await renderer.scheduleAudio!(ctx, material, tone, 0, end, 1);
+      else renderer.scheduleNotes!(ctx, material, 0, end, 1);
+      setTimeout(() => void ctx.close().catch(() => {}), (end + 0.3) * 1000);
+    } catch (error) {
+      void ctx.close();
+      notify(errorMessage(error));
+    }
+  }
+  function activateNotes(events: NoteEvent[], at: number, guitar = false) {
+    const wasPlaying = transport.snapshot().status !== "paused";
+    seek(at);
+    if (!wasPlaying && events.length) void audition(events, guitar);
   }
   async function exportAs(format: string) {
     try {
@@ -1499,6 +1739,7 @@ export function useWorkbench() {
       if (referenceLoad.current === control) referenceLoad.current = null;
       setPage("workbench");
       setSelected(null);
+      return true;
     } catch (e) {
       if (!control.signal.aborted) notify(errorMessage(e));
     } finally {
@@ -1518,7 +1759,67 @@ export function useWorkbench() {
         .then(setProjects)
         .catch((e) => notify(errorMessage(e)));
   };
+  async function importFile(file: File) {
+    try {
+      let imported: MusicProject | undefined;
+      if (/\.(zip|stringcraft)$/i.test(file.name)) {
+        if (!local) throw new Error("含音频工程请在本地版打开。");
+        imported = await importAudioProject(file);
+      } else if (/\.json$/i.test(file.name)) {
+        if (file.size > 50 * 1024 ** 2)
+          throw new Error("项目 JSON 上限为 50 MB");
+        imported = JSON.parse(await file.text());
+      } else {
+        await analyzeWhole(file);
+        return;
+      }
+      validateProject(imported);
+      if (await openProject(imported, true)) {
+        await saveProject(projectRef.current);
+        await pinAudioAssets(projectRef.current);
+        setSaved("已保存在此浏览器");
+        notify("项目已载入，音符与编辑记录已保留。");
+      }
+    } catch (error) {
+      notify(errorMessage(error));
+    }
+  }
+  async function exportBundle() {
+    if (busy) return;
+    try {
+      setBusy("正在打包工程音频");
+      const blob = await exportAudioProject(projectRef.current);
+      download(blob, "application/zip", project.name + ".stringcraft.zip");
+      notify("工程音频与项目已打包。");
+    } catch (error) {
+      notify(errorMessage(error));
+    } finally {
+      setBusy("");
+    }
+  }
   return {
+    importFile,
+    exportBundle,
+    inspectorOpen,
+    setInspectorOpen,
+    filtersOpen,
+    setFiltersOpen,
+    tracks,
+    activeTrackId: selectedTrackId,
+    selectTrack,
+    editorProject,
+    playTracks,
+    analyzeVocalTrack,
+    monitorMode,
+    setMonitorMode,
+    mutedTracks,
+    setMutedTracks,
+    soloTrackId,
+    setSoloTrackId,
+    trackVolumes,
+    setTrackVolumes,
+    mixTrackIds,
+    setMixTrackIds,
     generation,
     repairGeneration,
     advanced,
@@ -1530,7 +1831,7 @@ export function useWorkbench() {
     analyzeWhole,
     handoffToGuitar,
     updateEditorProject,
-    playNeutral: (events: NoteEvent[], position = 0) =>
+    playNeutral: (events: NoteEvent[], position?: number) =>
       play(false, undefined, events, position),
     bindRecording,
     updateReferenceOffset,
@@ -1591,9 +1892,20 @@ export function useWorkbench() {
     future,
     setFuture,
     playing,
-    setPlaying,
-    time,
-    setTime,
+    transport,
+    playbackStatus,
+    get time() {
+      return transport.snapshot().position;
+    },
+    setTime: seek,
+    seek,
+    pause: stop,
+    rewind: () => {
+      stop();
+      transport.stop();
+    },
+    audition,
+    activateNotes,
     speed,
     setSpeed,
     loop,

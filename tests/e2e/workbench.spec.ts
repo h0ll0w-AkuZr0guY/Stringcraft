@@ -1,6 +1,12 @@
-import { test, expect } from "@playwright/test";
-import { readFile, mkdir } from "node:fs/promises";
+import { expect, test } from "@playwright/test";
 import { createHash } from "node:crypto";
+import { mkdir, readFile } from "node:fs/promises";
+import {
+  closeSettings,
+  exportProject,
+  openSettings,
+  setting,
+} from "./workspace-helpers";
 test("real workbench: editing, undo, score, downloads and saved project", async ({
   page,
 }) => {
@@ -16,7 +22,8 @@ test("real workbench: editing, undo, score, downloads and saved project", async 
   await expect(
     page.getByTestId("tablature").locator(".tab-note").first(),
   ).toBeVisible();
-  await expect(page.getByLabel("编配目标")).toHaveValue("accompaniment");
+  await expect(await setting(page, "编配目标")).toHaveValue("accompaniment");
+  await closeSettings(page);
   await page.getByTestId("tablature").locator(".tab-note rect").first().click();
   await expect(page.getByText("音符编辑", { exact: true })).toBeVisible();
   await page.getByLabel("锁定音符", { exact: true }).click();
@@ -30,7 +37,7 @@ test("real workbench: editing, undo, score, downloads and saved project", async 
   await expect(page.locator(".inline-error")).toHaveCount(0);
   await page.getByRole("button", { name: "六线谱", exact: true }).click();
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  await exportProject(page);
   const saved = await download;
   const path = await saved.path();
   const project = JSON.parse(await readFile(path!, "utf-8"));
@@ -62,6 +69,7 @@ test("plugin lifecycle: disable, refuse execution, enable, uninstall, restore", 
     card.getByRole("button", { name: "启用插件", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "音乐工作台", exact: true }).click();
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("插件需要处理");
   await page.getByRole("button", { name: "插件中心", exact: false }).click();
@@ -84,18 +92,19 @@ test("real uploaded audio reaches the model and can be arranged", async ({
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
   await page
-    .getByTestId("audio-input")
+    .getByTestId("whole-audio-input")
     .setInputFiles("tests/fixtures/audio/clean-melody.wav");
-  await page.getByLabel("清理弱音候选", { exact: true }).check();
+  await (await setting(page, "清理弱音候选")).check();
   await page.getByRole("button", { name: "分析音乐片段", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("候选音", {
     timeout: 120000,
   });
-  await page.getByLabel("编配目标").selectOption("melody");
+  await (await setting(page, "编配目标")).selectOption("melody");
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
   const projectDownload = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  await exportProject(page);
   const result = JSON.parse(
     await readFile((await (await projectDownload).path())!, "utf8"),
   );
@@ -119,7 +128,7 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   expect(result.timingAnalysis.method).toBe("spectral-flux-acf-v1");
   expect(result.timingAnalysis.candidates.length).toBeGreaterThan(0);
   await page
-    .getByRole("button", { name: "高级校正：节拍、和弦与声部", exact: true })
+    .getByRole("button", { name: "编配与分析设置", exact: true })
     .click();
   await page.locator(".structure-panel > summary").click();
   await page
@@ -127,13 +136,16 @@ test("real uploaded audio reaches the model and can be arranged", async ({
     .first()
     .click();
   await expect(page.getByRole("status")).toContainText("试听");
-  await page.getByRole("button", { name: "停止播放", exact: true }).click();
+  await closeSettings(page);
+  await page.getByRole("button", { name: "暂停播放", exact: true }).click();
+  await openSettings(page);
+  await page.locator(".structure-panel > summary").click();
   await page
     .getByRole("button", { name: /使用 .* BPM 参考速度/ })
     .first()
     .click();
   const afterWait = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  await exportProject(page);
   const after = JSON.parse(
     await readFile((await (await afterWait).path())!, "utf8"),
   );

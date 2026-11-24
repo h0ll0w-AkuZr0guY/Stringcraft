@@ -1,8 +1,17 @@
+import type { AlphaTabApi, model } from "@coderline/alphatab";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type {
+  GuitarNote,
+  MusicProject,
+  ScoreHit,
+} from "../../packages/contracts";
+import { beatToSeconds, secondsToBeat } from "../../packages/contracts/score";
+import { noteName } from "../../packages/music/demo";
+import { projectScore } from "../../packages/music/score";
 import { alphaScore } from "../../plugins/guitar/alpha-score";
 import { tabMeasures } from "../../plugins/guitar/notation";
 import { chordName } from "../../plugins/guitar/voicings";
-import { secondsToBeat, beatToSeconds } from "../../packages/contracts/score";
-import { projectScore } from "../../packages/music/score";
+import { useScoreFollow } from "../hooks/useScoreFollow";
 let musicFont: Promise<void> | undefined;
 function prepareMusicFont(directory: URL) {
   return (musicFont ??= new FontFace(
@@ -18,25 +27,59 @@ function prepareMusicFont(directory: URL) {
       throw error;
     }));
 }
-import { useEffect, useRef, useState } from "react";
-import type { GuitarNote, MusicProject } from "../../packages/contracts";
-import { noteName } from "../../packages/music/demo";
 export function Tablature({
   project,
   selected,
   onSelect,
   time,
+  onSeek,
 }: {
   project: MusicProject;
   selected: string | null;
   onSelect: (n: GuitarNote) => void;
   time: number;
+  onSeek?: (at: number) => void;
 }) {
-  const measures = tabMeasures(project),
+  const root = useRef<HTMLDivElement>(null),
+    follow = useScoreFollow();
+  const measures = useMemo(() => tabMeasures(project), [project]),
     score = project.arrangement?.score ?? projectScore(project);
   const [fingering, setFingering] = useState(false);
+  useEffect(() => {
+    const c = root.current?.closest<HTMLElement>(".notation-body");
+    return c ? follow.observe(c) : undefined;
+  }, [follow.observe]);
+  useEffect(() => {
+    const el = root.current,
+      container = el?.closest<HTMLElement>(".notation-body");
+    if (!el || !container) return;
+    const active = el.querySelector<SVGElement>('[data-playing-row="true"]');
+    if (active) {
+      const a = active.getBoundingClientRect(),
+        b = container.getBoundingClientRect();
+      follow.reveal(container, {
+        left: a.left - b.left + container.scrollLeft,
+        top: a.top - b.top + container.scrollTop,
+        width: Math.min(a.width, container.clientWidth * 0.7),
+        height: Math.min(a.height, container.clientHeight * 0.7),
+      });
+    }
+  }, [time, follow.following]);
   return (
-    <div className="tab-pages" data-testid="tablature">
+    <div
+      ref={root}
+      className="tab-pages"
+      data-testid="tablature"
+      onWheel={follow.manual}
+      onTouchMove={follow.manual}
+    >
+      <button
+        className="text-button follow-toggle"
+        aria-pressed={follow.following}
+        onClick={follow.resume}
+      >
+        {follow.following ? "跟随播放" : "回到播放位置"}
+      </button>
       <label className="fingering-toggle">
         <input
           type="checkbox"
@@ -51,6 +94,9 @@ export function Tablature({
         let offset = 30;
         return (
           <svg
+            data-playing-row={
+              time >= bars[0].start && time < bars[bars.length - 1].end
+            }
             key={row}
             viewBox={`0 0 ${width} 250`}
             style={{ minWidth: width }}
@@ -78,7 +124,46 @@ export function Tablature({
                 );
               };
               return (
-                <g key={bar.index} transform={`translate(${left},0)`}>
+                <g
+                  key={bar.index}
+                  transform={`translate(${left},0)`}
+                  onClick={(e) => {
+                    const svg = e.currentTarget.ownerSVGElement!,
+                      bounds = svg.getBoundingClientRect(),
+                      x =
+                        ((e.clientX - bounds.left) * width) / bounds.width -
+                        left;
+                    const points = [
+                      { beat: bar.beat, x: 35 },
+                      ...bar.columns,
+                      { beat: bar.endBeat, x: bar.width - 5 },
+                    ].sort((a, b) => a.x - b.x);
+                    const next = points.find((p) => p.x >= x) ?? points.at(-1)!,
+                      prev =
+                        [...points].reverse().find((p) => p.x < x) ?? points[0];
+                    onSeek?.(
+                      beatToSeconds(
+                        score,
+                        prev.beat +
+                          (next.beat - prev.beat) *
+                            Math.max(
+                              0,
+                              Math.min(
+                                1,
+                                (x - prev.x) / Math.max(1, next.x - prev.x),
+                              ),
+                            ),
+                      ),
+                    );
+                  }}
+                >
+                  <rect
+                    x={35}
+                    y={60}
+                    width={bar.width - 40}
+                    height={145}
+                    fill="transparent"
+                  />
                   <text x={5} y={20} className="measure-label">
                     {bar.index + 1}
                   </text>
@@ -200,10 +285,14 @@ export function Tablature({
                             />
                             <g
                               className="tab-note"
-                              onClick={() => onSelect(n)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelect(n);
+                              }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" || e.key === " ") {
                                   e.preventDefault();
+                                  e.stopPropagation();
                                   onSelect(n);
                                 }
                               }}
@@ -360,12 +449,30 @@ export function Tablature({
     </div>
   );
 }
-export function RhythmScore({ project }: { project: MusicProject }) {
+export function RhythmScore({
+  project,
+  time = 0,
+  onActivate,
+}: {
+  project: MusicProject;
+  time?: number;
+  onActivate?: (notes: GuitarNote[], at: number) => void;
+}) {
+  const follow = useScoreFollow(),
+    cursor = useRef<HTMLDivElement>(null);
+  const projection = useRef<{
+    api: AlphaTabApi;
+    bindings: Map<model.Beat, ScoreHit>;
+  } | null>(null);
   const element = useRef<HTMLDivElement>(null),
     [error, setError] = useState(""),
     [fingering, setFingering] = useState(false),
     [rendered, setRendered] = useState(false);
   const printScore = useRef<() => void>(undefined);
+  useEffect(() => {
+    const c = element.current?.closest<HTMLElement>(".notation-body");
+    return c ? follow.observe(c) : undefined;
+  }, [follow.observe]);
   useEffect(() => {
     let disposed = false,
       api: { destroy: () => void } | undefined;
@@ -391,10 +498,42 @@ export function RhythmScore({ project }: { project: MusicProject }) {
             useWorkers: false,
             enableLazyLoading: false,
           },
-          player: { enablePlayer: false },
+          player: { enablePlayer: false, enableElementHighlighting: true },
           display: { scale: 0.85 },
         });
         api = a;
+        a.settings.core.includeNoteBounds = true;
+        const bindings = new Map<model.Beat, ScoreHit>();
+        projection.current = { api: a, bindings };
+        let noteHit = false;
+        a.beatMouseUp.on((beat) => {
+          noteHit = false;
+          const hit = beat ? bindings.get(beat) : undefined;
+          queueMicrotask(() => {
+            if (hit && !noteHit)
+              onActivate?.(
+                (project.arrangement?.notes ?? []).filter((n) =>
+                  hit.noteIds.includes(n.id),
+                ),
+                hit.startSeconds,
+              );
+          });
+        });
+        a.noteMouseUp.on((note) => {
+          if (!note) return;
+          const hit = bindings.get(note.beat);
+          if (!hit) return;
+          const selected = (project.arrangement?.notes ?? []).find(
+            (n) =>
+              hit.noteIds.includes(n.id) &&
+              n.string === 7 - note.string &&
+              n.fret === note.fret,
+          );
+          if (selected) {
+            noteHit = true;
+            onActivate?.([selected], hit.startSeconds);
+          }
+        });
         printScore.current = () =>
           // alphaTab print() forces workers on unless explicitly overridden.
           // Keep the same renderer mode: Vite dev prebundles have no worker URL.
@@ -406,17 +545,63 @@ export function RhythmScore({ project }: { project: MusicProject }) {
         a.renderFinished.on(() => {
           if (!disposed) setRendered(true);
         });
-        a.renderScore(alphaScore(alpha, project, fingering));
+        a.renderScore(
+          alphaScore(alpha, project, fingering, (beat, hit) =>
+            bindings.set(beat, hit),
+          ),
+        );
       })
       .catch((e) => setError(String(e)));
     return () => {
       disposed = true;
       printScore.current = undefined;
       api?.destroy();
+      projection.current = null;
     };
   }, [project, fingering]);
+  useEffect(() => {
+    const p = projection.current,
+      el = element.current,
+      indicator = cursor.current;
+    if (!p || !el || !indicator || !rendered) return;
+    const entry = [...p.bindings.entries()]
+      .filter(([, h]) => h.startSeconds <= time && h.endSeconds > time)
+      .sort((a, b) => b[1].startSeconds - a[1].startSeconds)[0];
+    const bounds = entry
+      ? p.api.boundsLookup?.findBeat(entry[0])?.realBounds
+      : null;
+    indicator.hidden = !bounds;
+    if (!bounds) return;
+    Object.assign(indicator.style, {
+      left: `${bounds.x}px`,
+      top: `${bounds.y}px`,
+      height: `${bounds.h}px`,
+    });
+    const container = el.closest<HTMLElement>(".notation-body");
+    if (container) {
+      const a = el.getBoundingClientRect(),
+        b = container.getBoundingClientRect();
+      follow.reveal(container, {
+        left: a.left - b.left + container.scrollLeft + bounds.x,
+        top: a.top - b.top + container.scrollTop + bounds.y,
+        width: bounds.w,
+        height: Math.min(bounds.h, container.clientHeight * 0.7),
+      });
+    }
+  }, [time, rendered, follow.following]);
   return (
-    <div className="rhythm-view">
+    <div
+      className="rhythm-view"
+      onWheel={follow.manual}
+      onTouchMove={follow.manual}
+    >
+      <button
+        className="text-button follow-toggle"
+        aria-pressed={follow.following}
+        onClick={follow.resume}
+      >
+        {follow.following ? "跟随播放" : "回到播放位置"}
+      </button>
       <div className="rhythm-controls">
         <label className="fingering-toggle">
           <input
@@ -442,7 +627,10 @@ export function RhythmScore({ project }: { project: MusicProject }) {
           谱面暂不可用：{error}
         </p>
       )}
-      <div ref={element} />
+      <div style={{ position: "relative" }}>
+        <div ref={element} />
+        <div ref={cursor} className="score-play-cursor" hidden />
+      </div>
     </div>
   );
 }

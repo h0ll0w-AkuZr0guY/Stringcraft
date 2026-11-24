@@ -10,6 +10,14 @@ export function arrangementRevision(project: MusicProject): string {
     project.bpm,
     project.beatOffset,
     project.melodyEvidence,
+    project.tracks?.map((t) => [
+      t.id,
+      t.notes,
+      t.noteEditor,
+      t.melodyEvidence,
+      t.harmonyAnalysis,
+      t.analysisRevision,
+    ]),
   ]);
   let a = 2166136261,
     b = 2246822507;

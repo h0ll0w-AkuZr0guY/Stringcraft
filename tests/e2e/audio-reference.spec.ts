@@ -1,8 +1,9 @@
-import { test, expect, type Page } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { demoProject } from "../../packages/music/demo";
 import { projectScore } from "../../packages/music/score";
+import { openSettings } from "./workspace-helpers";
 
 async function exercise() {
   const p = demoProject(),
@@ -79,11 +80,26 @@ async function open(page: Page, p: object) {
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(p)),
   });
-  await expect(page.locator(".score-heading h2")).toContainText("录音关联练习");
+  await expect(page.locator(".workspace-title strong")).toContainText(
+    "录音关联练习",
+  );
 }
 async function exported(page: Page) {
+  const reopen = await page
+    .getByRole("button", { name: "关闭设置", exact: true })
+    .isVisible();
+  if (reopen)
+    await page.getByRole("button", { name: "关闭设置", exact: true }).click();
+  await page.getByRole("button", { name: "导出", exact: true }).click();
   const wait = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  await page
+    .getByRole("button", { name: "导出项目 JSON", exact: true })
+    .click();
+  await page.getByRole("button", { name: "导出", exact: true }).click();
+  if (reopen)
+    await page
+      .getByRole("button", { name: "编配与分析设置", exact: true })
+      .click();
   return JSON.parse(await readFile((await (await wait).path())!, "utf8"));
 }
 
@@ -104,6 +120,9 @@ test("rebind original and alternative recordings while preserving the score and 
   });
   const p = await exercise();
   await open(page, p);
+  await page
+    .getByRole("button", { name: "编配与分析设置", exact: true })
+    .click();
   await page.getByRole("button", { name: "原曲对照", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("当前浏览器没有");
   await page
@@ -155,17 +174,19 @@ test("rebind original and alternative recordings while preserving the score and 
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(short)),
   });
+  await openSettings(page);
   await page.getByLabel("录音对照起点", { exact: true }).fill("0.5");
   await page.getByRole("button", { name: "参考录音对照", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "停止播放", exact: true }),
+    page.getByRole("button", { name: "暂停播放", exact: true }),
   ).toBeVisible();
   const starts = await page.evaluate(
     () => (window as unknown as { sourceStarts: number[][] }).sourceStarts,
   );
   expect(starts.at(-1)![1]).toBe(0.5);
   expect(starts.at(-1)![2]).toBe(3);
-  await page.getByRole("button", { name: "停止播放", exact: true }).click();
+  await page.getByRole("button", { name: "关闭设置", exact: true }).click();
+  await page.getByRole("button", { name: "暂停播放", exact: true }).click();
   const moved = await exported(page);
   expect(moved.sourceOffset).toBe(p.sourceOffset);
   expect(moved.notes).toEqual(short.notes);
@@ -177,6 +198,9 @@ test("invalid recordings and uncovered offsets leave the musical project unchang
 }) => {
   const p = await exercise();
   await open(page, p);
+  await page
+    .getByRole("button", { name: "编配与分析设置", exact: true })
+    .click();
   await page.getByTestId("reference-audio-input").setInputFiles({
     name: "invalid.wav",
     mimeType: "audio/wav",
@@ -220,6 +244,9 @@ test("saved references reopen and deleting a project clears only its own recordi
 }) => {
   const p = await exercise();
   await open(page, p);
+  await page
+    .getByRole("button", { name: "编配与分析设置", exact: true })
+    .click();
   for (const name of ["clean-melody", "ascending"]) {
     await page
       .getByTestId("reference-audio-input")
@@ -228,7 +255,9 @@ test("saved references reopen and deleting a project clears only its own recordi
       name === "clean-melody" ? "原文件摘要已核验" : "已关联参考录音",
     );
   }
-  await expect(page.locator(".save-state")).toContainText("已保存在此浏览器");
+  await expect(page.locator(".workspace-title")).toContainText(
+    "已保存在此浏览器",
+  );
   await page.reload();
   await page.getByRole("button", { name: "我的作品", exact: true }).click();
   await page
@@ -236,14 +265,18 @@ test("saved references reopen and deleting a project clears only its own recordi
     .filter({ has: page.getByRole("heading", { name: p.name, exact: true }) })
     .getByRole("button", { name: "继续创作" })
     .click();
+  await page
+    .getByRole("button", { name: "编配与分析设置", exact: true })
+    .click();
   await expect(
     page.getByRole("button", { name: "参考录音对照", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "参考录音对照", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "停止播放", exact: true }),
+    page.getByRole("button", { name: "暂停播放", exact: true }),
   ).toBeEnabled();
-  await page.getByRole("button", { name: "停止播放", exact: true }).click();
+  await page.getByRole("button", { name: "关闭设置", exact: true }).click();
+  await page.getByRole("button", { name: "暂停播放", exact: true }).click();
   const reopened = await exported(page);
   expect(reopened.arrangement).toEqual(p.arrangement);
   const before = await assetKeys(page);
@@ -295,14 +328,15 @@ test("upgrading a legacy project copies its recording without replacing the orig
   p.schemaVersion = 1;
   p.score = undefined;
   await open(page, p);
+  await openSettings(page);
   await page
     .getByTestId("reference-audio-input")
     .setInputFiles("tests/fixtures/audio/clean-melody.wav");
   await expect(page.getByRole("status")).toContainText("原文件摘要已核验");
-  await expect(page.locator(".save-state")).toContainText("已保存在此浏览器");
-  await page
-    .getByRole("button", { name: "高级校正：节拍、和弦与声部", exact: true })
-    .click();
+  await expect(page.locator(".workspace-title")).toContainText(
+    "已保存在此浏览器",
+  );
+
   await page
     .getByRole("button", { name: "升级为 v2 副本", exact: true })
     .click();

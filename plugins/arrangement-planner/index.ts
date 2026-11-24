@@ -1,15 +1,16 @@
 import {
-  eventRole,
   beatToSeconds,
+  eventRole,
   secondsToBeat,
   validateScore,
   type ArrangementDraft,
+  type ArrangementPhrase,
   type ArrangementPlanningContext,
   type ArrangementPlanningOptions,
-  type ArrangementPhrase,
   type ScoreEvent,
 } from "../../packages/contracts";
 import { measureGrid } from "../../packages/music/structure";
+import { assessMusic } from "../music-constraints";
 import { chordKinds, organizeHarmony } from "./harmony";
 
 function melodyScore(context: ArrangementPlanningContext) {
@@ -175,6 +176,13 @@ export function planArrangement(
   validateScore(context.score);
   const score = melodyScore(context),
     decisions: ArrangementDraft["decisions"] = [];
+  const assessment = assessMusic(score, options.goal);
+  const musicalProtection = new Set(assessment.protectedIds);
+  decisions.push(
+    ...assessment.findings
+      .filter((f) => f.ruleId === "non-chord-tones")
+      .map((f) => ({ sourceIds: f.sourceIds, reason: f.reason })),
+  );
   const bars = measureGrid(score),
     boundaries = new Set([0, score.durationBeats]);
   for (let i = 4; i < bars.length; i += 4) boundaries.add(bars[i].beat);
@@ -257,6 +265,7 @@ export function planArrangement(
         e.roleOrigin === "imported";
       if (
         protectedEvent ||
+        musicalProtection.has(e.id) ||
         e.durationBeats >= structuralLength ||
         (Math.abs(e.beat - Math.round(e.beat)) < 0.1 &&
           (e.activation ?? 1) >= 0.35)
@@ -404,7 +413,8 @@ export function planArrangement(
   validateScore(score);
   return {
     version: 1,
-    plannerVersion: "0.3.0",
+    plannerVersion: "0.4.0",
+    assessment,
     inputFingerprint: context.inputFingerprint,
     options: { ...options },
     score,

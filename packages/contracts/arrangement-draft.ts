@@ -1,9 +1,13 @@
+import type { Difficulty, NoteEvent } from "./index";
+import {
+  validateMusicAssessment,
+  type MusicAssessment,
+} from "./music-knowledge";
 import {
   validateScore,
-  type MusicalScore,
   type ArrangementGoal,
+  type MusicalScore,
 } from "./score";
-import type { Difficulty, NoteEvent } from "./index";
 
 export type AccompanimentPattern = "strum" | "arpeggio" | "auto";
 export interface ArrangementPlanningOptions {
@@ -26,6 +30,7 @@ export interface ArrangementPhrase {
   texture: "strum" | "arpeggio";
 }
 export interface ArrangementDraft {
+  assessment?: MusicAssessment;
   version: 1;
   plannerVersion: string;
   inputFingerprint: string;
@@ -59,6 +64,7 @@ export function validateArrangementDraft(draft: ArrangementDraft) {
   )
     throw new Error("音乐编配稿无效");
   validateScore(draft.score);
+  if (draft.assessment) validateMusicAssessment(draft.assessment);
   let end = 0;
   for (const p of draft.phrases) {
     if (

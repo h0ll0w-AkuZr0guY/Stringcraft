@@ -63,3 +63,9 @@ local.3 音乐规划改动先定位 `plugins/arrangement-planner`（中立乐句
 真实改编比较使用 `scripts/evaluate-musical-arrangement.mjs 私人输入清单.json 报告.json [冻结旧模块.mjs]`。清单每项有 id/path，可选 projectOutput；输出逐目标动作诊断及前后项目。没有和弦标注的独奏参考不评伴奏。首 8 小节混合参考请沿用 `evaluate-reference-suite` 的前奏/伴奏分段协议，整段 dropped 不能作为旋律丢失数。已知谱保真、录音识别和主观听感分别报告。音源 A/B 应固定同一动作，编配 A/B 固定同一音源，并统一响度。
 
 用完整模型 Python 运行 `tests/native_melody_check.py` 可验证原创正弦延音跨窗、独立同音重弹与静音/泄漏；不下载资源。采样更新通过 `scripts/prepare-guitar-bank.py` 获取固定 Meta Open Sound 提交与 SHA-256，完整成功后才替换清单。不要按力度混用尼龙手指/拨片奏法，也不要声称有尚未录制的 round-robin 或真连奏。
+
+## local.4 回归入口
+
+新增 `tests/transport.test.ts`、`tests/multitrack.test.ts`、`tests/assets_test.py`，以及浏览器 `multitrack.spec.ts`（长曲 seek/follow、独立校订、手势和节奏谱点击）。`multitrack-native.spec.ts` 仅在显式设置 STRINGCRAFT_TRACK_JOB、指向实际本地任务 JSON 且服务拥有对应资产时执行；报告目录由 STRINGCRAFT_TRACK_REPORT 指定，私人材料不进普通 CI。Windows 可设 PLAYWRIGHT_CHANNEL=msedge。不同 Playwright 进程需指定不同 --output 目录，避免互相清理产物。
+
+本地 worker 0.4.0 在伴奏分离之后转录，旧 0.3 缓存不复用。无在线训练；音乐知识与下一轮可执行评估见 [MUSIC_KNOWLEDGE](MUSIC_KNOWLEDGE.md)。

@@ -1,10 +1,8 @@
 import {
   ArrowUpRight,
   BookOpen,
-  Download,
   FolderHeart,
   Guitar,
-  Headphones,
   Info,
   Layers3,
   Music2,
@@ -14,16 +12,13 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { validateProject } from "../packages/contracts";
+import UnifiedWorkspace from "./components/UnifiedWorkspace";
 
 import { listProjects, removeProject } from "../packages/storage";
 import PluginCenter from "./components/PluginCenter";
 
 import APISettingsDialog from "./components/APISettingsDialog";
-import ScorePanel from "./components/ScorePanel";
-import SourceControls from "./components/SourceControls";
-import NoteEditor from "./components/NoteEditor";
-import { errorMessage, useWorkbench } from "./hooks/useWorkbench";
+import { useWorkbench } from "./hooks/useWorkbench";
 import { WorkbenchContext } from "./hooks/WorkbenchContext";
 export default function App() {
   const controller = useWorkbench();
@@ -57,14 +52,7 @@ function WorkbenchView({
     settings,
   } = controller;
   return (
-    <div
-      className={
-        "app-shell " +
-        (controller.mode === "editor" && page === "workbench"
-          ? "note-mode"
-          : "")
-      }
-    >
+    <div className="app-shell">
       <aside className="sidebar">
         <a
           className="brand"
@@ -261,63 +249,7 @@ function WorkbenchView({
               )}
             </>
           ) : (
-            <>
-              <div className="workspace-switch">
-                <button
-                  className={controller.mode === "editor" ? "active" : ""}
-                  onClick={() => {
-                    controller.stop();
-                    controller.setMode("editor");
-                  }}
-                >
-                  音符编辑器
-                </button>
-                <button
-                  className={controller.mode === "guitar" ? "active" : ""}
-                  disabled={!!busy}
-                  onClick={() => {
-                    if (controller.mode === "editor")
-                      void controller.handoffToGuitar();
-                    else controller.setMode("guitar");
-                  }}
-                >
-                  吉他编配
-                </button>
-              </div>
-              {controller.mode === "editor" ? (
-                <NoteEditor />
-              ) : (
-                <>
-                  <section className="workbench-heading">
-                    <div>
-                      <p className="eyebrow">FROM LISTENING TO PLAYING</p>
-                      <h1>
-                        让喜欢的旋律，<em>在指尖响起。</em>
-                      </h1>
-                      <p>从一首喜欢的歌开始，找到属于自己的弹奏方式。</p>
-                    </div>
-                    <button
-                      className="button secondary demo-button"
-                      disabled={!ready || !!busy}
-                      onClick={useDemo}
-                    >
-                      <Headphones size={17} />
-                      体验原创示例
-                    </button>
-                  </section>
-                  <div className="workspace">
-                    <SourceControls />
-                    <ScorePanel />
-                  </div>
-                  <footer className="page-footer">
-                    <span>弦作，为每一次练习而作。</span>
-                    <span>
-                      复杂混音可能错音或漏音，编配请结合试听与试弹核对。
-                    </span>
-                  </footer>
-                </>
-              )}
-            </>
+            <UnifiedWorkspace />
           )}
         </main>
       </div>
@@ -329,15 +261,7 @@ function WorkbenchView({
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
-          try {
-            if (f.size > 50 * 1024 * 1024)
-              throw new Error("项目文件上限为 50 MB");
-            const p = JSON.parse(await f.text());
-            validateProject(p);
-            await openProject(p);
-          } catch (err) {
-            notify(errorMessage(err));
-          }
+          await controller.importFile(f);
           e.target.value = "";
         }}
       />

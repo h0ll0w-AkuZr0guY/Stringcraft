@@ -1,10 +1,10 @@
 import { get, set } from "idb-keyval";
 import {
   SDK_VERSION,
-  type PluginManifest,
-  type MusicPlugin,
   type InstrumentPluginV2,
+  type MusicPlugin,
   type NoteRefinerPlugin,
+  type PluginManifest,
 } from "../contracts";
 type Installed = {
   manifest: PluginManifest;
@@ -187,6 +187,7 @@ export async function invoke<T>(
   method:
     | "extractMelody"
     | "planArrangement"
+    | "assessMusic"
     | "arrange"
     | "analyzeTiming"
     | "analyzeHarmony"

@@ -1,6 +1,13 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { demoProject } from "../../packages/music/demo";
+import {
+  closeSettings,
+  exportProject,
+  openSettings,
+  setting,
+  settingButton,
+} from "./workspace-helpers";
 test("early project import is not overwritten by asynchronous plugin bootstrap", async ({
   page,
 }) => {
@@ -20,11 +27,11 @@ test("early project import is not overwritten by asynchronous plugin bootstrap",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(p)),
   });
-  await expect(page.locator(".score-heading h2")).toHaveText(p.name);
+  await expect(page.locator(".workspace-title strong")).toHaveText(p.name);
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
-  await expect(page.locator(".score-heading h2")).toHaveText(p.name);
+  await expect(page.locator(".workspace-title strong")).toHaveText(p.name);
   expect(errors).toEqual([]);
 });
 test("written guitar octave, string positions and unpitched attacks survive arrangement and XML roundtrip", async ({
@@ -38,12 +45,12 @@ test("written guitar octave, string positions and unpitched attacks survive arra
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
   await page
-    .getByTestId("audio-input")
+    .getByTestId("whole-audio-input")
     .setInputFiles("tests/fixtures/phrases/guitar-written.musicxml");
   await expect(page.getByRole("status")).toContainText("乐谱已导入");
   const project = async () => {
     const wait = page.waitForEvent("download");
-    await page.getByRole("button", { name: "导出项目", exact: true }).click();
+    await exportProject(page);
     return JSON.parse(await readFile((await (await wait).path())!, "utf8"));
   };
   const imported = await project();
@@ -53,9 +60,11 @@ test("written guitar octave, string positions and unpitched attacks survive arra
   expect(
     imported.score.events.filter((e: { unpitched?: boolean }) => e.unpitched),
   ).toHaveLength(1);
-  await page.getByRole("button", { name: "进阶", exact: true }).click();
+  await (await settingButton(page, "进阶")).click();
+  await openSettings(page);
   await page.locator(".generation-advanced-controls > summary").click();
-  await page.getByLabel("变调夹", { exact: true }).selectOption("0");
+  await (await setting(page, "变调夹")).selectOption("0");
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
   const arranged = await project();
@@ -113,7 +122,7 @@ test("written guitar octave, string positions and unpitched attacks survive arra
   await popup.close();
   const wait = page.waitForEvent("download");
   await page.getByRole("button", { name: "MusicXML", exact: true }).click();
-  await page.getByTestId("audio-input").setInputFiles({
+  await page.getByTestId("whole-audio-input").setInputFiles({
     name: "restored.musicxml",
     mimeType: "application/xml",
     buffer: await readFile((await (await wait).path())!),
@@ -139,12 +148,12 @@ test("known score preserves independent voices, ties, slurs, rests, meter and te
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
   await page
-    .getByTestId("audio-input")
+    .getByTestId("whole-audio-input")
     .setInputFiles("tests/fixtures/phrases/voices-and-legato.musicxml");
   await expect(page.getByRole("status")).toContainText("乐谱已导入");
   async function exportedProject() {
     const wait = page.waitForEvent("download");
-    await page.getByRole("button", { name: "导出项目", exact: true }).click();
+    await exportProject(page);
     return JSON.parse(await readFile((await (await wait).path())!, "utf8"));
   }
   const p = await exportedProject();
@@ -171,9 +180,11 @@ test("known score preserves independent voices, ties, slurs, rests, meter and te
     p.notes.filter((n: { role: string }) => n.role === "melody"),
   ).toHaveLength(3);
   expect(p.notes[0].duration).toBeCloseTo(1.5);
-  await page.getByRole("button", { name: "进阶", exact: true }).click();
+  await (await settingButton(page, "进阶")).click();
+  await openSettings(page);
   await page.locator(".generation-advanced-controls > summary").click();
-  await page.getByLabel("变调夹", { exact: true }).selectOption("0");
+  await (await setting(page, "变调夹")).selectOption("0");
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("编配完成");
   const arranged = await exportedProject();
@@ -188,7 +199,7 @@ test("known score preserves independent voices, ties, slurs, rests, meter and te
   const wait = page.waitForEvent("download");
   await page.getByRole("button", { name: "MusicXML", exact: true }).click();
   const download = await wait;
-  await page.getByTestId("audio-input").setInputFiles({
+  await page.getByTestId("whole-audio-input").setInputFiles({
     name: "roundtrip.musicxml",
     mimeType: "application/xml",
     buffer: await readFile((await download.path())!),
@@ -209,7 +220,8 @@ test("daily style changes accompaniment pattern and melody mode remains independ
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
-  await page.getByLabel("伴奏手法", { exact: true }).selectOption("arpeggio");
+  await (await setting(page, "伴奏手法")).selectOption("arpeggio");
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("和弦伴奏");
   await page.getByLabel("显示左右手指法", { exact: false }).check();
@@ -218,7 +230,8 @@ test("daily style changes accompaniment pattern and melody mode remains independ
     path: "artifacts/v2-accompaniment.png",
     fullPage: true,
   });
-  await page.getByLabel("编配目标", { exact: true }).selectOption("melody");
+  await (await setting(page, "编配目标")).selectOption("melody");
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("单线练习");
 });
@@ -231,7 +244,7 @@ test("musical editor splits intra-bar harmony, pickup and expressive sections wi
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
   await page
-    .getByRole("button", { name: "高级校正：节拍、和弦与声部", exact: true })
+    .getByRole("button", { name: "编配与分析设置", exact: true })
     .click();
   await page.locator(".structure-panel > summary").click();
   await page
@@ -248,7 +261,7 @@ test("musical editor splits intra-bar harmony, pickup and expressive sections wi
   await expect(page.locator(".section-row")).toHaveCount(2);
   await page.locator(".section-row select").first().selectOption("gentle");
   const wait = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  await exportProject(page);
   const p = JSON.parse(await readFile((await (await wait).path())!, "utf8"));
   expect(
     p.score.chords.find((c: { beat: number }) => c.beat === 0).durationBeats,

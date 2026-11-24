@@ -46,6 +46,37 @@ class LocalHostTests(unittest.TestCase):
     def test_job_authentication_required(self):
         self.assertEqual(self.client.get("/api/v1/jobs/missing").status_code, 401)
 
+    def test_project_bundles_reject_invalid_zip_with_a_clear_client_error(self):
+        response = self.client.post(
+            "/api/v1/project-bundles/import",
+            headers=self.headers,
+            files={"file": ("project.zip", b"not a zip")},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            self.client.post(
+                "/api/v1/project-bundles/import",
+                files={"file": ("project.zip", b"not a zip")},
+            ).status_code,
+            401,
+        )
+
+    def test_asset_identity_and_operations_are_whitelisted(self):
+        self.assertEqual(
+            self.client.get(
+                "/api/v1/assets/" + "a" * 64, headers=self.headers
+            ).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/v1/jobs/from-asset",
+                headers=self.headers,
+                json={"operation": "arbitrary-command"},
+            ).status_code,
+            400,
+        )
+
     def test_unknown_job_is_not_redirected(self):
         self.assertEqual(
             self.client.get("/api/v1/jobs/missing", headers=self.headers).status_code,

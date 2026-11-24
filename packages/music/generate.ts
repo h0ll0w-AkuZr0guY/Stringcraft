@@ -1,23 +1,24 @@
-import { projectHarmony } from "./harmony";
-import { arrangementRevision } from "./arrangement-revision";
 import {
-  validateProject,
   soundingEvents,
-  type MusicProject,
-  type ArrangeOptions,
-  type NoteEvent,
-  type MusicalScore,
+  validateProject,
   type Arrangement,
-  type HarmonyAnalysis,
   type ArrangementDraft,
+  type ArrangeOptions,
+  type HarmonyAnalysis,
+  type MusicProject,
+  type NoteEvent,
 } from "../contracts";
-import { catalog, installed, invoke, load, install } from "../plugin-host";
+import { catalog, install, installed, invoke, load } from "../plugin-host";
+import type { AISettings } from "./advisor";
+import { arrangementRevision } from "./arrangement-revision";
+import { projectHarmony } from "./harmony";
 import { filteredNotes } from "./note-edits";
 import { projectScore } from "./score";
-import type { AISettings } from "./advisor";
+import { arrangementTracks } from "./tracks";
 
 export type GenerationPhase =
   | "检查输入与插件"
+  | "分析人声轨"
   | "提取旋律"
   | "分析和弦"
   | "整理音乐与乐句"
@@ -91,27 +92,37 @@ export async function runGeneration(
       "plugins",
       problems,
     );
-  if (!project.notes.length)
+  if (!project.notes.length && !project.tracks?.some((t) => t.notes.length))
     throw new GenerationError("请先导入或识别音乐，再生成编配。");
   if (project.schemaVersion === 1 && options.goal !== "melody")
     throw new GenerationError(
       "旧项目需要创建 v2 副本后使用和弦伴奏或指弹，原项目会保留。",
       "upgrade",
     );
-  const musicalInput = project.noteEditor
-    ? filteredNotes(project)
-    : (project.refinement?.notes ?? project.notes);
+  const routed = arrangementTracks(project, options.goal ?? "accompaniment");
+  const musicalInput = project.tracks?.length
+    ? routed.notes
+    : project.noteEditor
+      ? filteredNotes(project)
+      : (project.refinement?.notes ?? project.notes);
   mark("提取旋律");
-  const melody = project.score
-    ? soundingEvents(project.score).filter((n) => n.role === "melody")
-    : project.melody.length
-      ? project.melody
-      : await invoke<NoteEvent[]>(
-          "melody-tracker",
-          "extractMelody",
-          [musicalInput],
-          signal,
-        );
+  const melody = project.tracks?.length
+    ? await invoke<NoteEvent[]>(
+        "melody-tracker",
+        "extractMelody",
+        [musicalInput],
+        signal,
+      )
+    : project.score
+      ? soundingEvents(project.score).filter((n) => n.role === "melody")
+      : project.melody.length
+        ? project.melody
+        : await invoke<NoteEvent[]>(
+            "melody-tracker",
+            "extractMelody",
+            [musicalInput],
+            signal,
+          );
   const melodyCandidates =
     project.sourceKind === "audio"
       ? await invoke<NoteEvent[]>(
@@ -124,9 +135,9 @@ export async function runGeneration(
   const base = projectScore({ ...project, melody });
   mark("分析和弦");
   const harmonyAnalysis =
-    (project.harmonyAnalysis?.method.startsWith("note-seconds")
+    (routed.harmony?.method.startsWith("note-seconds")
       ? undefined
-      : project.harmonyAnalysis) ??
+      : routed.harmony) ??
     (project.sourceKind === "audio"
       ? await invoke<HarmonyAnalysis>(
           "harmony-analysis",
@@ -148,7 +159,7 @@ export async function runGeneration(
         {
           score: sourceScore,
           sourceKind: project.sourceKind,
-          melodyEvidence: project.melodyEvidence,
+          melodyEvidence: routed.melodyEvidence,
           melodyCandidates,
           inputFingerprint: arrangementRevision({
             ...project,
@@ -227,6 +238,7 @@ export async function runGeneration(
     ],
     signal,
   );
+  arrangement.sourceTrackIds = routed.ids;
   if (!arrangement.notes.length)
     throw new GenerationError(
       "这次没有生成可弹奏音符。请检查和弦、节奏与锁定设置；已有谱面已保留。",

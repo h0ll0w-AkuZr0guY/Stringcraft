@@ -1,6 +1,7 @@
-import { test, expect, type Page } from "@playwright/test";
-import { readFile, mkdir } from "node:fs/promises";
+import { expect, test, type Page } from "@playwright/test";
+import { mkdir, readFile } from "node:fs/promises";
 import { demoProject } from "../../packages/music/demo";
+import { closeSettings, exportProject, setting } from "./workspace-helpers";
 async function start(page: Page) {
   await page.goto("./?view=guitar");
   await expect(
@@ -65,7 +66,7 @@ test("whole-score WAV reuses decoded sample buffers instead of decoding each att
 });
 async function project(page: Page) {
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出项目", exact: true }).click();
+  await exportProject(page);
   return JSON.parse(await readFile((await (await download).path())!, "utf8"));
 }
 async function setPlugin(page: Page, change: "old" | "disabled") {
@@ -147,9 +148,10 @@ test("simple mode gives immediate visible feedback, prevents duplicate generatio
   await fakeWorker(page, "delay");
   await start(page);
   await expect(page.locator(".structure-panel")).toHaveCount(0);
-  await expect(page.getByLabel("变调夹", { exact: true })).not.toBeVisible();
+  await expect(await setting(page, "变调夹")).not.toBeVisible();
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
-  await expect(page.getByTestId("generation-feedback")).toHaveAttribute(
+  await expect(page.getByTestId("generation-result")).toHaveAttribute(
     "data-status",
     "running",
   );
@@ -158,7 +160,7 @@ test("simple mode gives immediate visible feedback, prevents duplicate generatio
   ).toBeDisabled();
   await expect(
     page
-      .getByTestId("generation-feedback")
+      .getByTestId("generation-result")
       .getByRole("button", { name: "取消生成" }),
   ).toBeVisible();
   await expect(page.getByTestId("generation-result")).toHaveAttribute(
@@ -185,6 +187,7 @@ for (const change of ["old", "disabled"] as const)
     await start(page);
     await setPlugin(page, change);
     const before = await project(page);
+    await closeSettings(page);
     await page
       .getByRole("button", { name: "生成吉他编配", exact: true })
       .click();
@@ -201,6 +204,7 @@ for (const change of ["old", "disabled"] as const)
       .getByRole("button", { name: "修复所需插件" })
       .click();
     await expect(page.getByRole("status")).toContainText("所需插件已修复");
+    await closeSettings(page);
     await page
       .getByRole("button", { name: "生成吉他编配", exact: true })
       .click();
@@ -216,6 +220,7 @@ for (const mode of ["empty", "invalid"] as const)
     await fakeWorker(page, mode);
     await start(page);
     const before = await project(page);
+    await closeSettings(page);
     await page
       .getByRole("button", { name: "生成吉他编配", exact: true })
       .click();
@@ -239,13 +244,14 @@ test("cancel and overall timeout retain the old score", async ({ page }) => {
   await start(page);
   const before = await project(page);
   await page.clock.install();
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
-  await expect(page.getByTestId("generation-feedback")).toHaveAttribute(
+  await expect(page.getByTestId("generation-result")).toHaveAttribute(
     "data-phase",
     "生成谱面",
   );
   await page
-    .getByTestId("generation-feedback")
+    .getByTestId("generation-result")
     .getByRole("button", { name: "取消生成" })
     .click();
   await expect(page.getByTestId("generation-result")).toHaveAttribute(
@@ -253,8 +259,9 @@ test("cancel and overall timeout retain the old score", async ({ page }) => {
     "cancelled",
   );
   expect((await project(page)).arrangement).toEqual(before.arrangement);
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
-  await expect(page.getByTestId("generation-feedback")).toHaveAttribute(
+  await expect(page.getByTestId("generation-result")).toHaveAttribute(
     "data-phase",
     "生成谱面",
   );
@@ -283,6 +290,7 @@ test("unknown harmony gives a correction action and keeps the input unchanged", 
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(p)),
   });
+  await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByTestId("generation-result")).toContainText(
     "没有找到可用和弦",

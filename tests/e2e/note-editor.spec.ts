@@ -1,7 +1,7 @@
-import { test, expect, type Page } from "@playwright/test";
-import { readFile, mkdir, writeFile } from "node:fs/promises";
-import { demoProject } from "../../packages/music/demo";
+import { expect, test, type Page } from "@playwright/test";
 import midiPackage from "@tonejs/midi";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { demoProject } from "../../packages/music/demo";
 const { Midi } = midiPackage;
 test("hidden legacy components have an explicit repair path before analysis", async ({
   page,
@@ -76,11 +76,9 @@ test("note editor: audition, gestures, nondestructive edits, exports and guitar 
   page.on("pageerror", (e) => errors.push(e.message));
   await ready(page);
   const original = await saved(page);
-  await page.getByRole("button", { name: "播放音符", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "暂停音符播放" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "暂停音符播放" }).click();
+  await page.getByRole("button", { name: "播放当前轨道", exact: true }).click();
+  await expect(page.getByRole("button", { name: "暂停播放" })).toBeVisible();
+  await page.getByRole("button", { name: "暂停播放" }).click();
   const roll = page.getByTestId("note-roll");
   const position = async (start: number, midi: number, offset = 10) => {
     const b = (await roll.boundingBox())!;
@@ -134,6 +132,7 @@ test("note editor: audition, gestures, nondestructive edits, exports and guitar 
   expect(edited.noteEditor.commands.length).toBeGreaterThanOrEqual(3);
   await page.getByRole("button", { name: "删除校订音符" }).click();
   await page.getByRole("button", { name: "撤销音符编辑" }).click();
+  await page.getByRole("button", { name: "筛选", exact: true }).click();
   await page.getByLabel("音符强度过滤").fill("1");
   expect((await saved(page)).notes).toEqual(original.notes);
   await page.getByLabel("音符强度过滤").fill("0");
@@ -288,11 +287,16 @@ test("cancel retains partial notes and corrections; replacing a task cannot over
   await upload();
   await expect
     .poll(async () =>
-      Number(await page.locator("progress").getAttribute("value")),
+      Number(
+        await page
+          .locator(".workspace-feedback progress")
+          .getAttribute("value"),
+      ),
     )
     .toBeGreaterThan(0);
+  await page.getByRole("button", { name: "属性", exact: true }).click();
   await page.getByRole("button", { name: "添加校订音符" }).click();
-  await page.getByRole("button", { name: "停止并保留结果" }).click();
+  await page.getByRole("button", { name: "取消", exact: true }).click();
   await expect(page.locator(".note-progress")).toHaveCount(0);
   const partial = await saved(page);
   expect(partial.transcription.status).toBe("stopped");
@@ -302,7 +306,11 @@ test("cancel retains partial notes and corrections; replacing a task cannot over
   await upload();
   await expect
     .poll(async () =>
-      Number(await page.locator("progress").getAttribute("value")),
+      Number(
+        await page
+          .locator(".workspace-feedback progress")
+          .getAttribute("value"),
+      ),
     )
     .toBeGreaterThan(0);
   await page

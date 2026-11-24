@@ -34,8 +34,9 @@ export function scheduleNotes(
   from: number,
   to: number,
   speed: number,
+  atTime?: number,
 ) {
-  const origin = ctx.currentTime + 0.06,
+  const origin = atTime ?? ctx.currentTime + 0.06,
     out = ctx.createDynamicsCompressor();
   out.connect(ctx.destination);
   const queue = notes

@@ -5,6 +5,7 @@ self.onmessage = async (
     method:
       | "extractMelody"
       | "planArrangement"
+      | "assessMusic"
       | "arrange"
       | "analyzeTiming"
       | "analyzeHarmony"

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 import { chordName } from "../../plugins/guitar/voicings";
+import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 
 export default function ArrangementDraftPanel() {
   const c = useWorkbenchContext(),
@@ -68,6 +68,24 @@ export default function ArrangementDraftPanel() {
           draft.decisions.slice(0, 12).map((d, i) => <p key={i}>{d.reason}</p>)
         ) : (
           <p>现有旋律与和声已经适合本次规划，保留原有结构。</p>
+        )}
+        {draft.assessment && (
+          <details>
+            <summary>音乐约束与来源 · {draft.assessment.profile}</summary>
+            {draft.assessment.rules.map((r) => (
+              <p key={r.id}>
+                <strong>{r.title}</strong> ·{" "}
+                {r.strength === "hard" ? "演奏约束" : "风格建议"}
+                <br />
+                {r.positive}
+                <br />
+                <small>{r.exceptions}</small>{" "}
+                <a href={r.source.url} target="_blank" rel="noreferrer">
+                  {r.source.title} · {r.source.location}
+                </a>
+              </p>
+            ))}
+          </details>
         )}
         <p>力度、织体与技法由吉他包实现；改编结果不计为原曲识别准确率。</p>
       </details>

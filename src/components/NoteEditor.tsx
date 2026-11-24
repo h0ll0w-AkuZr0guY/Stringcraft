@@ -1,28 +1,27 @@
-import AnalysisEngine from "./AnalysisEngine";
-import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Upload,
-  Play,
-  Pause,
-  Undo2,
-  Redo2,
-  Download,
-  Music2,
-  Guitar,
-  Plus,
-  Trash2,
   Copy,
+  Download,
+  Guitar,
+  Music2,
+  Plus,
+  Redo2,
+  Trash2,
+  Undo2,
+  Upload,
 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { NoteEvent } from "../../packages/contracts";
+import { noteName } from "../../packages/music/demo";
 import {
   correctedNotes,
   emptyNoteEditor,
 } from "../../packages/music/note-edits";
 import { load } from "../../packages/plugin-host";
-import { noteName } from "../../packages/music/demo";
-import { useWorkbenchContext } from "../hooks/WorkbenchContext";
-import PianoRollEditor from "./PianoRollEditor";
 import "../editor.css";
+import { useTransport } from "../hooks/useTransport";
+import { useWorkbenchContext } from "../hooks/WorkbenchContext";
+import AnalysisEngine from "./AnalysisEngine";
+import PianoRollEditor from "./PianoRollEditor";
 const download = (data: BlobPart, mime: string, name: string) => {
   const url = URL.createObjectURL(new Blob([data], { type: mime })),
     a = document.createElement("a");
@@ -33,7 +32,7 @@ const download = (data: BlobPart, mime: string, name: string) => {
 };
 export default function NoteEditor() {
   const c = useWorkbenchContext(),
-    p = c.project,
+    p = c.editorProject,
     input = useRef<HTMLInputElement>(null),
     referenceInput = useRef<HTMLInputElement>(null),
     [selected, setSelected] = useState(new Set<string>()),
@@ -46,6 +45,7 @@ export default function NoteEditor() {
     preview = useRef<AudioContext | null>(null),
     previewRequest = useRef(0),
     clipboard = useRef<NoteEvent[]>([]);
+  const playback = useTransport(c.transport, c.mode === "editor");
   const state = p.noteEditor ?? emptyNoteEditor(),
     corrected = useMemo(() => correctedNotes(p), [p.notes, p.noteEditor]),
     active =
@@ -63,7 +63,7 @@ export default function NoteEditor() {
       [active, f.strength, f.minimumDuration, f.low, f.high],
     ),
     chosen = active.find((n) => selected.has(n.id)),
-    editable = layer === "corrected",
+    editable = layer === "corrected" && c.activeTrackId !== "arrangement",
     partial = !!p.transcription && p.transcription.status !== "complete";
   useEffect(() => {
     setSelected(new Set());
@@ -72,10 +72,10 @@ export default function NoteEditor() {
     previewRequest.current++;
     void preview.current?.close().catch(() => {});
     preview.current = null;
-  }, [p.id]);
+  }, [p.id, c.activeTrackId]);
   useEffect(() => {
-    if (c.playing) setCursor(c.time);
-  }, [c.time, c.playing]);
+    setCursor(playback.position);
+  }, [playback.position]);
   useEffect(
     () => () => {
       previewRequest.current++;
@@ -177,7 +177,7 @@ export default function NoteEditor() {
     setSelected(new Set(ns.map((n) => n.id)));
   };
   const seek = (at: number) => {
-    c.stop();
+    c.seek(at);
     setCursor(at);
   };
   const play = () => {
@@ -206,7 +206,7 @@ export default function NoteEditor() {
       const events = allExport ? corrected : notes;
       if (format === "project") {
         download(
-          JSON.stringify(p, null, 2),
+          JSON.stringify(c.project, null, 2),
           "application/json",
           name + ".stringcraft.json",
         );
@@ -257,17 +257,8 @@ export default function NoteEditor() {
       setExporting(false);
     }
   };
-  const upload = async (file: File) => {
-    if (/\.json$/i.test(file.name)) {
-      try {
-        if (file.size > 50 * 1024 * 1024)
-          throw new Error("项目文件上限为 50 MB");
-        await c.openProject(JSON.parse(await file.text()), true);
-      } catch (e) {
-        c.notify(e instanceof Error ? e.message : "项目无效");
-      }
-    } else await c.analyzeWhole(file);
-  };
+  const upload = async (file: File) => c.importFile(file);
+
   return (
     <section
       className="note-workbench"
@@ -299,7 +290,7 @@ export default function NoteEditor() {
           ref={input}
           data-testid="whole-audio-input"
           type="file"
-          accept="audio/*,.flac,.mid,.midi,.xml,.musicxml,.json"
+          accept="audio/*,.flac,.mid,.midi,.xml,.musicxml,.json,.zip,.stringcraft"
           className="visually-hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -341,74 +332,23 @@ export default function NoteEditor() {
           </button>
         </div>
       )}
-      <div className="note-toolbar">
+      <div className="note-edit-actions">
         <button
-          className="note-play"
-          aria-label={c.playing ? "暂停音符播放" : "播放音符"}
-          onClick={play}
-          disabled={source === "notes" && !notes.length}
+          className="icon-button"
+          aria-label="撤销音符编辑"
+          disabled={!state.cursor || !editable}
+          onClick={undo}
         >
-          {c.playing ? <Pause size={18} /> : <Play size={18} />}
+          <Undo2 size={15} />
         </button>
-        <select
-          aria-label="试听来源"
-          value={source}
-          onChange={(e) => {
-            c.stop();
-            setSource(e.target.value as typeof source);
-          }}
+        <button
+          className="icon-button"
+          aria-label="重做音符编辑"
+          disabled={state.cursor >= state.commands.length || !editable}
+          onClick={redo}
         >
-          <option value="notes">当前图层 · 合成键盘</option>
-          <option value="audio">原始 / 参考录音</option>
-        </select>
-        <span className="note-clock">
-          {cursor.toFixed(1)} / {p.duration.toFixed(1)} s
-        </span>
-        <select
-          aria-label="音符播放速度"
-          value={c.speed}
-          onChange={(e) => {
-            c.stop();
-            c.setSpeed(Number(e.target.value));
-          }}
-        >
-          <option value={0.5}>0.5×</option>
-          <option value={0.75}>0.75×</option>
-          <option value={1}>1.0×</option>
-        </select>
-        <label className="inline-check">
-          <input
-            type="checkbox"
-            checked={c.loop}
-            onChange={(e) => {
-              c.stop();
-              c.setLoop(e.target.checked);
-            }}
-          />
-          循环
-        </label>
-        {c.loop && (
-          <>
-            <input
-              aria-label="音符循环起点"
-              type="number"
-              min={0}
-              max={p.duration}
-              step={0.1}
-              value={c.loopStart}
-              onChange={(e) => c.setLoopStart(Number(e.target.value))}
-            />
-            <input
-              aria-label="音符循环终点"
-              type="number"
-              min={0}
-              max={p.duration}
-              step={0.1}
-              value={c.loopEnd}
-              onChange={(e) => c.setLoopEnd(Number(e.target.value))}
-            />
-          </>
-        )}
+          <Redo2 size={15} />
+        </button>
         <button
           className="text-button"
           onClick={() => referenceInput.current?.click()}
@@ -422,31 +362,16 @@ export default function NoteEditor() {
           accept="audio/*,.flac"
           className="visually-hidden"
           onChange={(e) => {
-            const file = e.target.files?.[0];
+            const f = e.target.files?.[0];
             e.target.value = "";
-            if (file)
+            if (f)
               void c.bindRecording(
-                file,
-                p.audioReference?.offsetSeconds ?? p.sourceOffset,
+                f,
+                c.project.audioReference?.offsetSeconds ??
+                  c.project.sourceOffset,
               );
           }}
         />
-        <button
-          className="icon-button"
-          aria-label="撤销音符编辑"
-          disabled={!state.cursor}
-          onClick={undo}
-        >
-          <Undo2 size={16} />
-        </button>
-        <button
-          className="icon-button"
-          aria-label="重做音符编辑"
-          disabled={state.cursor >= state.commands.length}
-          onClick={redo}
-        >
-          <Redo2 size={16} />
-        </button>
       </div>
       <div className="note-filter">
         <select
@@ -529,7 +454,7 @@ export default function NoteEditor() {
             key={p.id + "-" + p.bpm}
             onBlur={(e) => {
               const bpm = Number(e.target.value);
-              if (bpm >= 20 && bpm <= 300) c.edit({ ...p, bpm });
+              if (bpm >= 20 && bpm <= 300) c.edit({ ...c.project, bpm });
             }}
           />
         </label>
@@ -537,13 +462,20 @@ export default function NoteEditor() {
       <div className="note-body">
         {c.ready ? (
           <PianoRollEditor
-            key={p.id}
+            key={p.id + "-" + c.activeTrackId}
             notes={notes}
             selected={selected}
-            onSelect={setSelected}
+            onSelect={(ids) => {
+              setSelected(ids);
+              if (ids.size) c.setInspectorOpen(true);
+            }}
             onChange={change}
             onAdd={add}
             onPreview={(n) => void previewNote(n)}
+            onActivate={(n) => {
+              setCursor(n.start);
+              c.activateNotes([n], n.start, c.activeTrackId === "arrangement");
+            }}
             onSeek={seek}
             duration={p.duration}
             time={cursor}
@@ -556,7 +488,8 @@ export default function NoteEditor() {
               const command = e.ctrlKey || e.metaKey;
               if (e.key === " ") {
                 e.preventDefault();
-                play();
+                if (c.transport.snapshot().status !== "paused") c.pause();
+                else void c.playTracks();
               } else if (command && e.key.toLowerCase() === "a") {
                 e.preventDefault();
                 setSelected(new Set(notes.map((n) => n.id)));
@@ -601,7 +534,7 @@ export default function NoteEditor() {
         ) : (
           <p className="muted">正在准备音符插件…</p>
         )}
-        <aside className="note-inspector">
+        <aside className="note-inspector" hidden={!c.inspectorOpen}>
           <p className="eyebrow">NOTE DETAILS</p>
           <h3>
             {selected.size > 1

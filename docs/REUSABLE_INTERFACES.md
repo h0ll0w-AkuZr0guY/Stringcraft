@@ -110,3 +110,15 @@ MusicProject 可选 arrangementDraft、melodyEvidence；旧项目省略即可，
 本地 accompaniment 结果可选 melodyEvidence，pipeline 0.3.1 缓存键独立于 local.2。执行记录分别报告 HTDemucs/BTC GPU 或 CPU、Basic Pitch CPU、pYIN CPU，没有新增训练接口。
 
 `packages/music/maintenance` 提供 `workbenchComponentProblems/repairWorkbenchComponents`，按工作台必需的内部模块集合比较安装、启用状态和代码摘要。修复只能由用户明确点击触发，沿用宿主的验证与事务安装；不修改作品，不安装钢琴示例或其他可选算法。分析前检查旧组件并给出修复入口，避免旧插件缺少新方法时在推理结束后才报错。
+
+## local.4 接口增量
+
+`MusicProject.tracks?: ProjectTrack[]` 是兼容扩展：id/name/role/notes，及可选 asset、noteEditor、score、melodyEvidence、harmonyAnalysis、analysisRevision。`AudioAssetRef` 包含 id=sha256、duration/sampleRate/channels/offsetSeconds。`Arrangement.sourceTrackIds` 记录实际来源。没有 tracks 的 v1/v2 项目投影成 legacy，不伪造分离。`projectTracks/editorTrackProject/commitTrackNotes/changeTrackEditor/arrangementTracks` 隔离轨道选择、编辑与编配路由。
+
+`Transport` 提供 subscribe/snapshot、play(driver)、pause、stop、seek、setSpeed、setLoop、dispose。driver(from,to,speed,current,signal) 返回 position()/stop()；current() 判断异步加载是否过期。秒为项目时间；pause 续播，stop 归零；loop 外 seek 清除循环。`scheduleNotes/scheduleAudio` 新增可选 atTime；`prepareAudio` 先加载采样再统一起音。旧参数调用保持兼容。
+
+`ScoreHit` 返回稳定 noteIds 和 startSeconds/endSeconds；`ScoreViewAdapter` 定义 hitTest 与 locate。卷帘采用空间索引、TAB 按小节列几何反算、alphaTab 使用 beat/note bounds，均送交共享 transport。鼠标编辑手势超过阈值不触发试听。
+
+本地 API：GET assets/{sha256}；POST assets/references（projectId/assetIds）；DELETE assets/references/{projectId}；POST jobs/from-asset（assetId/operation=vocal-melody|transcribe/可选 backingAssetId）；POST project-bundles（project）；POST project-bundles/import（file）。全部需要会话认证。ZIP 最多 2 GB 展开、64 条音频，拒绝重复条目、任意路径和摘要不符。asset 不是服务器路径。
+
+`ArrangementDraft.assessment?: MusicAssessment` 记录风格、保护 ID、发现和六张来源规则卡。`music-constraints.assessMusic` 为纯函数；规划器实际保护上下文支持的短经过音及句尾。原始材料、人工校订及持音链继续优先。规则卡的阈值是工程启发式，不能当作教材原文或正确率。

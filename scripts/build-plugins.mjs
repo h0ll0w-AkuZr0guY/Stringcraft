@@ -62,7 +62,7 @@ catalog.push({
   audience: "user",
   maturity: "experimental",
   bundle: "local",
-  version: "0.3.1",
+  version: "0.4.0",
   sdk: 1,
   description:
     "完整环境：HTDemucs GPU 分离、Basic Pitch ONNX、音频和弦分析；以实际探测为准",

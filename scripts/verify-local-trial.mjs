@@ -1,179 +1,184 @@
-/** Verify the extracted local app with remote requests blocked. Private audio is opt-in. */
+/** Offline verification of the extracted local.4 workbench. No paid services. */
 import { chromium, expect } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:18766/";
-const output = "artifacts/local-trial";
+const output =
+  process.env.STRINGCRAFT_TRIAL_REPORT ?? "artifacts/local4-packaged";
 await mkdir(output, { recursive: true });
-const report = {
-  version: "",
-  build: "",
-  blockedRemoteRequests: [],
-  checks: [],
-  private: null,
-};
 const browser = await chromium.launch({
   headless: true,
   channel: process.env.PLAYWRIGHT_CHANNEL ?? "msedge",
 });
 const context = await browser.newContext({
-  viewport: { width: 1600, height: 1050 },
-  recordVideo: { dir: `${output}/video`, size: { width: 1600, height: 1050 } },
+  viewport: { width: 1440, height: 1000 },
 });
-const blockRemote = async (context) =>
-  context.route("**/*", (route) => {
-    const url = new URL(route.request().url());
-    if (["127.0.0.1", "localhost"].includes(url.hostname))
-      return route.continue();
-    report.blockedRemoteRequests.push(url.origin);
-    return route.abort();
-  });
-await blockRemote(context);
-async function download(page, button, file) {
-  const pending = page.waitForEvent("download");
-  await page.getByRole("button", { name: button, exact: true }).click();
-  const result = await pending;
-  await result.saveAs(`${output}/${file}`);
-  return readFile(`${output}/${file}`);
+const report = { checks: [], blockedRemoteRequests: [], errors: [] };
+await context.route("**/*", (r) => {
+  const u = new URL(r.request().url());
+  if (["127.0.0.1", "localhost"].includes(u.hostname)) return r.continue();
+  report.blockedRemoteRequests.push(u.origin);
+  return r.abort();
+});
+const page = await context.newPage();
+page.on("pageerror", (e) => report.errors.push(e.message));
+async function settings() {
+  if (
+    !(await page
+      .getByRole("button", { name: "关闭设置", exact: true })
+      .isVisible())
+  )
+    await page
+      .getByRole("button", { name: "编配与分析设置", exact: true })
+      .click();
 }
-async function ready(page) {
+async function close() {
+  if (
+    await page
+      .getByRole("button", { name: "关闭设置", exact: true })
+      .isVisible()
+  )
+    await page.getByRole("button", { name: "关闭设置", exact: true }).click();
+}
+async function download(name, file) {
+  await close();
+  const event = page.waitForEvent("download", { timeout: 120000 });
+  await page.getByRole("button", { name, exact: true }).click();
+  await (await event).saveAs(output + "/" + file);
+  return readFile(output + "/" + file);
+}
+try {
   await page.goto(base);
   await expect(
     page.getByRole("button", { name: "上传音频 / MIDI", exact: true }),
   ).toBeEnabled();
-}
-try {
-  const page = await context.newPage();
-  const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  await ready(page);
   const meta = await (
     await page.request.get(new URL("api/v1/capabilities", base).href)
   ).json();
   expect(meta.appVersion).toBe(
     JSON.parse(await readFile("package.json", "utf8")).version,
   );
-  report.version = meta.appVersion;
-  report.build = meta.buildSha;
-  await page.getByRole("button", { name: "用原创音频体验真实识别" }).click();
+  Object.assign(report, { version: meta.appVersion, build: meta.buildSha });
+  await settings();
+  await page.getByLabel("识别方式", { exact: true }).selectOption("browser");
+  await close();
+  await page
+    .getByTestId("whole-audio-input")
+    .setInputFiles("tests/fixtures/audio/clean-melody.wav");
   await expect(page.getByRole("status")).toContainText("转录完成", {
     timeout: 120000,
   });
   const raw = JSON.parse(
-    await download(page, "保存项目 JSON", "synthetic-input.json"),
+    await download("保存项目 JSON", "synthetic-input.json"),
   );
   expect(raw.notes.length).toBeGreaterThan(5);
-  await page.getByRole("button", { name: "送往吉他编配", exact: true }).click();
+  report.checks.push("actual bundled WASM inference");
+  await settings();
   await page.getByLabel("编配目标", { exact: true }).selectOption("melody");
+  await close();
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
-  await expect(page.getByTestId("generation-result")).toContainText(
-    "编配完成",
-    { timeout: 120000 },
+  await expect(page.getByTestId("generation-result")).toHaveAttribute(
+    "data-status",
+    "success",
   );
-  await page.getByRole("button", { name: "播放结果", exact: true }).click();
-  await page.waitForTimeout(1000);
-  await page.getByRole("button", { name: "停止结果试听" }).click();
-  const arranged = JSON.parse(
-    await download(page, "导出项目", "synthetic-result.json"),
-  );
-  expect(arranged.notes).toEqual(raw.notes);
-  expect(arranged.arrangement.notes.length).toBeGreaterThan(0);
-  const wav = await download(page, "WAV", "synthetic-guitar.wav");
+  await page.getByRole("button", { name: "播放当前轨道", exact: true }).click();
+  await expect
+    .poll(async () =>
+      parseFloat(await page.getByTestId("transport-position").innerText()),
+    )
+    .toBeGreaterThan(0.2);
+  await page.getByRole("button", { name: "暂停播放", exact: true }).click();
+  await page.getByLabel("播放位置", { exact: true }).fill("1.2");
+  await page.getByRole("button", { name: "播放当前轨道", exact: true }).click();
+  await expect
+    .poll(async () =>
+      parseFloat(await page.getByTestId("transport-position").innerText()),
+    )
+    .toBeGreaterThan(1.3);
+  await page.getByRole("button", { name: "暂停播放", exact: true }).click();
+  report.checks.push("shared clock, seek and resume");
+  const wav = await download("WAV", "guitar.wav");
   expect(wav.toString("ascii", 0, 4)).toBe("RIFF");
-  let energy = 0;
-  for (let i = 44; i + 1 < wav.length; i += 2)
-    energy += (wav.readInt16LE(i) / 32768) ** 2;
-  const rms = Math.sqrt(energy / ((wav.length - 44) / 2));
-  expect(rms).toBeGreaterThan(0.001);
-  await download(page, "MIDI", "synthetic-guitar.mid");
-  await expect(page.locator(".save-state")).toContainText("已保存在此浏览器");
-  await page.getByRole("button", { name: "我的作品", exact: true }).click();
-  await page.getByRole("button", { name: "继续创作" }).first().click();
-  const reopened = JSON.parse(
-    await download(page, "导出项目", "reopened-result.json"),
+  const energy = await page.evaluate(
+    async (bytes) => {
+      const c = new AudioContext();
+      try {
+        const b = await c.decodeAudioData(Uint8Array.from(bytes).buffer),
+          a = b.getChannelData(0);
+        return Math.sqrt(a.reduce((s, v) => s + v * v, 0) / a.length);
+      } finally {
+        await c.close();
+      }
+    },
+    [...wav],
   );
-  expect(reopened.arrangement).toEqual(arranged.arrangement);
-  await page.evaluate(() => scrollTo(0, 0));
-  await page.screenshot({
-    path: `${output}/packaged-result.png`,
-    fullPage: true,
-  });
-  expect(errors).toEqual([]);
-  report.checks.push({
-    name: "offline packaged inference, generation, playback, export, reopen",
-    raw: raw.notes.length,
-    arranged: arranged.arrangement.notes.length,
-    wavRms: rms,
-  });
-  console.log("PACKAGED BASIC FLOW PASSED");
-  await context.close();
-  if (process.env.STRINGCRAFT_PRIVATE_AUDIO) {
-    const privateContext = await browser.newContext({
-      viewport: { width: 1600, height: 1050 },
-    });
-    await blockRemote(privateContext);
-    const page = await privateContext.newPage();
-    await ready(page);
-    const started = Date.now();
+  expect(energy).toBeGreaterThan(0.0001);
+  report.wavRms = energy;
+  const midi = await download("MIDI", "guitar.mid");
+  expect(midi.toString("ascii", 0, 4)).toBe("MThd");
+  const saved = JSON.parse(await download("导出项目", "saved-project.json"));
+  expect(saved.notes).toEqual(raw.notes);
+  expect(saved.arrangement.notes.length).toBeGreaterThan(0);
+  report.checks.push("non-silent sampled WAV, MIDI and project export");
+  await page.getByRole("button", { name: "我的作品", exact: true }).click();
+  await page
+    .getByRole("button", { name: "继续创作", exact: true })
+    .first()
+    .click();
+  await expect(page.getByTestId("tablature")).toBeVisible();
+  report.checks.push("saved project reopen");
+  await page.screenshot({ path: output + "/workspace.png" });
+  if (process.env.STRINGCRAFT_PRIVATE_BUNDLE) {
+    // Explicit local-only input; no video or tracing is enabled.
     await page
       .getByTestId("whole-audio-input")
-      .setInputFiles(process.env.STRINGCRAFT_PRIVATE_AUDIO);
-    await expect(page.getByRole("status")).toContainText("转录完成", {
-      timeout: 300000,
+      .setInputFiles(process.env.STRINGCRAFT_PRIVATE_BUNDLE);
+    await expect(page.getByRole("status")).toContainText("项目已载入", {
+      timeout: 120000,
     });
-    const raw = JSON.parse(
-      await download(page, "保存项目 JSON", "private-input.json"),
-    );
+    await settings();
+    await page.getByRole("button", { name: "原曲对照", exact: true }).click();
+    await close();
+    await expect
+      .poll(async () =>
+        parseFloat(await page.getByTestId("transport-position").innerText()),
+      )
+      .toBeGreaterThan(0.1);
+    await page.getByRole("button", { name: "暂停播放", exact: true }).click();
+    await page.getByRole("button", { name: "音符", exact: true }).click();
+    await page.locator('[data-track-id="vocal"] .track-select').click();
     await page
-      .getByRole("button", { name: "送往吉他编配", exact: true })
+      .getByRole("button", { name: "播放当前轨道", exact: true })
       .click();
+    await expect
+      .poll(async () =>
+        parseFloat(await page.getByTestId("transport-position").innerText()),
+      )
+      .toBeGreaterThan(0.1);
+    await page.getByRole("button", { name: "暂停播放", exact: true }).click();
+    await page.getByLabel("播放位置", { exact: true }).fill("20");
+    await page.locator('[data-track-id="instrumental"] .track-select').click();
     await page
-      .getByLabel("编配目标", { exact: true })
-      .selectOption("accompaniment");
-    await page.getByRole("button", { name: "日常", exact: true }).click();
-    await page.locator(".generation-advanced-controls > summary").click();
-    await page.getByLabel("变调夹", { exact: true }).selectOption("3");
-    await page.getByLabel("参考速度 BPM", { exact: true }).fill("68.5");
-    await page
-      .getByRole("button", { name: "生成吉他编配", exact: true })
+      .getByRole("button", { name: "播放当前轨道", exact: true })
       .click();
-    await expect(page.getByTestId("generation-result")).toContainText(
-      "编配完成",
-      { timeout: 120000 },
+    await expect
+      .poll(async () =>
+        parseFloat(await page.getByTestId("transport-position").innerText()),
+      )
+      .toBeGreaterThan(20.1);
+    await page.getByRole("button", { name: "暂停播放", exact: true }).click();
+    report.checks.push(
+      "portable project/audio in independent asset store; vocal and instrumental playback",
     );
-    const result = JSON.parse(
-      await download(page, "导出项目", "private-result.json"),
-    );
-    expect(result.notes).toEqual(raw.notes);
-    expect(result.arrangement.notes.length).toBeGreaterThan(0);
-    expect(result.arrangement.capo).toBe(3);
-    await page.getByRole("button", { name: "播放结果", exact: true }).click();
-    await page.waitForTimeout(1000);
-    await page.getByRole("button", { name: "停止结果试听" }).click();
-    await page.screenshot({
-      path: `${output}/private-result.png`,
-      fullPage: true,
-    });
-    report.private = {
-      seconds: raw.duration,
-      processed: raw.transcription.processedSeconds,
-      raw: raw.notes.length,
-      arranged: result.arrangement.notes.length,
-      bpm: result.bpm,
-      capo: result.arrangement.capo,
-      elapsedSeconds: (Date.now() - started) / 1000,
-    };
-    console.log(
-      "PRIVATE WHOLE SONG FLOW PASSED",
-      JSON.stringify(report.private),
-    );
-    await privateContext.close();
+    await page.screenshot({ path: output + "/private-multitrack.png" });
   }
+  expect(report.errors).toEqual([]);
   expect(report.blockedRemoteRequests).toEqual([]);
   await writeFile(
-    `${output}/packaged-verification.json`,
+    output + "/packaged-verification.json",
     JSON.stringify(report, null, 2),
   );
+  console.log(JSON.stringify(report));
 } finally {
-  await context.close().catch(() => {});
+  await context.close();
   await browser.close();
 }

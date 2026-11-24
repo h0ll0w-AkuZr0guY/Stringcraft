@@ -1,5 +1,3 @@
-import AnalysisEngine from "./AnalysisEngine";
-import GenerationFeedback from "./GenerationFeedback";
 import {
   ArrowUpRight,
   AudioLines,
@@ -12,6 +10,10 @@ import {
   Upload,
 } from "lucide-react";
 import { type Difficulty } from "../../packages/contracts";
+import AnalysisEngine from "./AnalysisEngine";
+import ChordDiagrams from "./ChordDiagrams";
+import MusicalStructure from "./MusicalStructure";
+import ReferenceSettings from "./ReferenceSettings";
 
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 import { labels } from "../hooks/useWorkbench";
@@ -66,6 +68,7 @@ export default function SourceControls() {
   } = useWorkbenchContext();
   return (
     <aside className="controls-column">
+      <ReferenceSettings />
       <section className="panel source-panel">
         <div className="panel-heading">
           <span className="panel-symbol">
@@ -389,7 +392,7 @@ export default function SourceControls() {
             ? "正在生成，请稍候…"
             : "生成吉他编配"}
         </button>
-        <GenerationFeedback />
+
         <p className="center-caption">先生成谱面，再试听和校正</p>
         {advice && <p className="advice">{advice}</p>}
       </section>
@@ -403,6 +406,8 @@ export default function SourceControls() {
           了解在线与本地的区别 <ArrowUpRight size={13} />
         </a>
       </div>
+      <MusicalStructure />
+      <ChordDiagrams />
     </aside>
   );
 }

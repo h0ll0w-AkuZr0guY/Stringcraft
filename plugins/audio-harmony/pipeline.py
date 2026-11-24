@@ -9,7 +9,7 @@ import time
 import threading
 import numpy as np
 
-VERSION = "0.3.1"
+VERSION = "0.4.0"
 DEMUCS_SHA256 = "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4"
 
 
@@ -218,10 +218,6 @@ def run(source, output, emit, offset=0.0, seconds=1800.0):
     from demucs.pretrained import get_model
     from demucs.apply import apply_model
 
-    sys.modules["tensorflow"] = None
-    from basic_pitch import FilenameSuffix, build_icassp_2022_model_path
-    from basic_pitch.inference import Model, predict
-
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     emit({"type": "progress", "progress": 0.04, "message": "本地解码 · FFmpeg"})
@@ -252,35 +248,6 @@ def run(source, output, emit, offset=0.0, seconds=1800.0):
     )
     audio, rate = sf.read(decoded, dtype="float32", always_2d=True)
     duration = len(audio) / rate
-    notes = []
-    emit(
-        {
-            "type": "progress",
-            "progress": 0.12,
-            "message": "原始音符 · Basic Pitch / ONNX Runtime CPU",
-        }
-    )
-    model_path = Path(build_icassp_2022_model_path(FilenameSuffix.onnx))
-    with contextlib.redirect_stdout(sys.stderr):
-        _, _, events = predict(str(decoded), Model(str(model_path)))
-    # einops tests module presence to select a backend; a None sentinel fools it.
-    sys.modules.pop("tensorflow", None)
-    for i, (start, end, midi, amplitude, _) in enumerate(events):
-        start = max(0.0, float(start))
-        end = min(duration, float(end))
-        if end > start:
-            notes.append(
-                {
-                    "id": f"local-{i}",
-                    "start": start,
-                    "duration": end - start,
-                    "pitch": {"midi": int(midi)},
-                    "score": float(np.clip(amplitude, 0, 1)),
-                    "velocity": float(np.clip(amplitude, 0.15, 1)),
-                    "source": "detected",
-                }
-            )
-    emit({"type": "partial", "notes": notes, "duration": duration})
     device, warnings = execution_device(torch)
     stop = threading.Event()
 
@@ -356,32 +323,60 @@ def run(source, output, emit, offset=0.0, seconds=1800.0):
         stop.set()
         thread.join(timeout=4)
     mapping = {name: stems[i].numpy().T for i, name in enumerate(model.sources)}
+    # Separation precedes all symbolic analysis. Each stored stem shares this clock.
+    accompaniment = mapping["other"] + mapping["bass"] + mapping["drums"]
+    stems = {
+        "original": audio,
+        "vocal": mapping["vocals"],
+        "instrumental": accompaniment,
+        "bass": mapping["bass"],
+        "drums": mapping["drums"],
+        "other": mapping["other"],
+    }
+    filenames = {
+        "original": "original.wav",
+        "vocal": "vocals.wav",
+        "instrumental": "accompaniment.wav",
+        "bass": "bass.wav",
+        "drums": "drums.wav",
+        "other": "other.wav",
+    }
+    for role, value in stems.items():
+        sf.write(output / filenames[role], value, rate, subtype="PCM_16")
     emit(
         {
             "type": "progress",
             "progress": 0.74,
-            "message": "提取人声旋律证据 · pYIN / CPU",
+            "message": "分离伴奏转录 · Basic Pitch / ONNX CPU（不含人声）",
         }
     )
-    from melody import vocal_melody
+    from transcription import transcribe_track
 
-    melody_evidence = vocal_melody(
-        mapping["vocals"].mean(1),
-        (mapping["other"] + mapping["bass"]).mean(1),
-        rate,
-        notes,
-        emit,
-    )
-    if not melody_evidence:
-        warnings.append(
-            "本片段未提取到可靠人声旋律；编配沿用器乐候选，仍需核对旋律骨干。"
+    notes, bp_execution = transcribe_track(output / "accompaniment.wav", "instrumental")
+    notes = [
+        {**n, "duration": min(n["duration"], duration - n["start"])}
+        for n in notes
+        if n["start"] < duration
+    ]
+    emit({"type": "partial", "notes": notes, "duration": duration})
+    melody_evidence = []  # Human voice is analyzed lazily from its own registered asset.
+    tracks = [
+        dict(
+            id=role,
+            name={
+                "original": "原曲",
+                "vocal": "人声",
+                "instrumental": "伴奏",
+                "bass": "低音",
+                "drums": "鼓",
+                "other": "其他器乐",
+            }[role],
+            role=role,
+            notes=notes if role == "instrumental" else [],
+            assetFile=filename,
         )
-    (output / "vocal-melody.json").write_text(
-        json.dumps(melody_evidence), encoding="utf-8"
-    )
-    sf.write(output / "bass.wav", mapping["bass"], rate, subtype="PCM_16")
-    accompaniment = mapping["other"] + mapping["bass"] + mapping["drums"]
-    sf.write(output / "accompaniment.wav", accompaniment, rate, subtype="PCM_16")
+        for role, filename in filenames.items()
+    ]
     emit(
         {
             "type": "progress",
@@ -410,20 +405,8 @@ def run(source, output, emit, offset=0.0, seconds=1800.0):
             "provider": "PyTorch",
             "weightsSha256": hashlib.sha256(weights.read_bytes()).hexdigest(),
         },
-        {
-            "name": "Basic Pitch",
-            "version": "0.4.0",
-            "device": "cpu",
-            "provider": "ONNX Runtime CPU",
-            "weightsSha256": hashlib.sha256(model_path.read_bytes()).hexdigest(),
-        },
+        bp_execution,
         *harmony["executions"],
-        {
-            "name": "pYIN vocal melody",
-            "version": "librosa-0.11.0",
-            "device": "cpu",
-            "provider": "librosa F0",
-        },
     ]
     harmony["executions"] = executions
     harmony["sourceAudioSha256"] = hashlib.sha256(Path(source).read_bytes()).hexdigest()
@@ -438,6 +421,7 @@ def run(source, output, emit, offset=0.0, seconds=1800.0):
         "bpm": 120.0,
         "notes": notes,
         "melodyEvidence": melody_evidence,
+        "tracks": tracks,
         "harmonyAnalysis": harmony,
         "executions": executions,
         "warnings": warnings,

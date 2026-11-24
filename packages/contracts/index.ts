@@ -1,39 +1,44 @@
-/** SDK v2 plus the v1 workbench compatibility projection. Seconds remain source time. */
-export const SDK_VERSION = 2;
+export * from "./arrangement-draft";
+export * from "./audio-reference";
+export * from "./harmony";
+export * from "./music-knowledge";
+export * from "./note-editor";
+export * from "./score";
+export * from "./score-view";
+export * from "./timing";
+export * from "./tracks";
 import {
   validateArrangementDraft,
+  type AccompanimentPattern,
   type ArrangementDraft,
   type ArrangementPlanningContext,
   type ArrangementPlanningOptions,
-  type AccompanimentPattern,
 } from "./arrangement-draft";
-export * from "./arrangement-draft";
+import { validateAudioReference, type AudioReference } from "./audio-reference";
 import {
   validateHarmony,
   validateLocalAnalysis,
   type HarmonyAnalysis,
   type LocalAnalysisRun,
 } from "./harmony";
-export * from "./harmony";
+import type { MusicAssessment } from "./music-knowledge";
 import type {
   NoteEditorState,
-  TranscriptionState,
-  TranscriptionChunk,
   NoteViewPlugin,
+  TranscriptionChunk,
+  TranscriptionState,
 } from "./note-editor";
 import { validateNoteEditor } from "./note-editor";
-export * from "./note-editor";
 import {
   validateScore,
-  type MusicalScore,
   type ArrangementGoal,
+  type MusicalScore,
   type PerformancePlan,
 } from "./score";
-export * from "./score";
 import { validateTiming, type TimingAnalysis } from "./timing";
-export * from "./timing";
-import { validateAudioReference, type AudioReference } from "./audio-reference";
-export * from "./audio-reference";
+import type { ProjectTrack } from "./tracks";
+/** SDK v2 plus the v1 workbench compatibility projection. Seconds remain source time. */
+export const SDK_VERSION = 2;
 export type Difficulty = "easy" | "normal" | "hard" | "expert";
 export interface Pitch {
   midi: number;
@@ -81,6 +86,7 @@ export interface InstrumentDefinition {
   techniques: string[];
 }
 export interface Arrangement<N extends NoteEvent = GuitarNote> {
+  sourceTrackIds?: string[];
   id: string;
   instrumentId: string;
   difficulty: Difficulty;
@@ -94,6 +100,7 @@ export interface Arrangement<N extends NoteEvent = GuitarNote> {
   performance?: PerformancePlan<unknown>;
 }
 export interface MusicProject<N extends NoteEvent = GuitarNote> {
+  tracks?: ProjectTrack[];
   schemaVersion: 1 | 2;
   score?: MusicalScore;
   migratedFrom?: string;
@@ -172,6 +179,7 @@ export interface ArrangeOptions {
   phrases?: import("./arrangement-draft").ArrangementPhrase[];
 }
 export interface MusicPlugin {
+  assessMusic?: (score: MusicalScore, goal: ArrangementGoal) => MusicAssessment;
   planArrangement?: (
     context: ArrangementPlanningContext,
     options: ArrangementPlanningOptions,
@@ -183,6 +191,7 @@ export interface MusicPlugin {
     from: number,
     to: number,
     speed: number,
+    atTime?: number,
   ) => { origin: number; stop: () => void };
   renderNotes?: (notes: NoteEvent[], duration: number) => Promise<ArrayBuffer>;
   exportNotes?: (notes: NoteEvent[], bpm: number) => Uint8Array;
@@ -219,7 +228,13 @@ export interface MusicPlugin {
     from?: number,
     to?: number,
     speed?: number,
+    atTime?: number,
   ) => Promise<{ origin: number; fallback: number }>;
+  prepareAudio?: (
+    ctx: AudioContext | OfflineAudioContext,
+    notes: NoteEvent[],
+    tone: string,
+  ) => Promise<void>;
   renderAudio?: (
     notes: NoteEvent[],
     duration: number,
@@ -306,6 +321,66 @@ export function validateProject(value: unknown): asserts value is MusicProject {
   )
     throw new Error("项目版本或元数据无效");
   validateNotes(p.notes);
+  if (p.tracks) {
+    if (!Array.isArray(p.tracks) || p.tracks.length > 64)
+      throw new Error("轨道列表无效");
+    const trackIds = new Set<string>();
+    for (const track of p.tracks) {
+      if (
+        !track ||
+        !track.id ||
+        typeof track.id !== "string" ||
+        track.id.length > 128 ||
+        trackIds.has(track.id) ||
+        typeof track.name !== "string" ||
+        ![
+          "original",
+          "vocal",
+          "instrumental",
+          "bass",
+          "drums",
+          "other",
+          "arrangement",
+        ].includes(track.role)
+      )
+        throw new Error("轨道身份无效");
+      trackIds.add(track.id);
+      validateNotes(track.notes);
+      if (track.notes.some((n) => n.start + n.duration > p.duration + 0.01))
+        throw new Error("轨道音符超出项目");
+      if (track.score) validateScore(track.score);
+      if (track.harmonyAnalysis)
+        validateHarmony(track.harmonyAnalysis, p.duration);
+      for (const events of [track.melody, track.melodyEvidence])
+        if (events) {
+          validateNotes(events);
+          if (events.some((n) => n.start + n.duration > p.duration + 0.01))
+            throw new Error("轨道旋律证据超出项目");
+        }
+      if (track.noteEditor)
+        validateNoteEditor({
+          ...p,
+          notes: track.notes,
+          noteEditor: track.noteEditor,
+          tracks: undefined,
+        });
+      const a = track.asset;
+      if (
+        a &&
+        (!/^[a-f0-9]{64}$/.test(a.id) ||
+          a.id !== a.sha256 ||
+          ![a.duration, a.sampleRate, a.channels, a.offsetSeconds].every(
+            Number.isFinite,
+          ) ||
+          a.duration <= 0 ||
+          a.sampleRate < 8000 ||
+          a.channels < 1 ||
+          a.channels > 8 ||
+          a.offsetSeconds < 0)
+      )
+        throw new Error("轨道音频引用无效");
+    }
+  }
   if (p.harmonyAnalysis) validateHarmony(p.harmonyAnalysis, p.duration);
   if (p.arrangementDraft) validateArrangementDraft(p.arrangementDraft);
   if (p.melodyEvidence) {
