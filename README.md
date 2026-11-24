@@ -6,7 +6,7 @@
 
 整曲音符编辑与吉他编配工作台。上传音乐，逐音试听与校订，再生成弹唱伴奏、独奏指弹或单线练习。
 
-[在线工作台](https://h0ll0w-akuzr0guy.github.io/Stringcraft/) · [下载本地增强版](https://github.com/h0ll0w-AkuZr0guY/Stringcraft/releases) · [开发文档](docs/DEVELOPMENT.md)
+[在线工作台](https://h0ll0w-akuzr0guy.github.io/Stringcraft/) · [下载 Windows 桌面版](https://github.com/h0ll0w-AkuZr0guY/Stringcraft/releases/latest) · [下载音乐运行扩展](https://github.com/h0ll0w-AkuZr0guY/Stringcraft/releases/tag/music-runtime) · [开发文档](docs/DEVELOPMENT.md)
 
 ![CI](https://github.com/h0ll0w-AkuZr0guY/Stringcraft/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-Apache--2.0-315f56)

@@ -1,7 +1,9 @@
-param([string]$Destination,[switch]$WithModels,[string]$UvPath)
+param([string]$Destination,[switch]$WithModels,[string]$UvPath,[string]$TorchWheel)
 $ErrorActionPreference = 'Stop'
 $info = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'runtime.json') -Raw | ConvertFrom-Json
 if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64' -or $info.device -notin 'cpu','cu124') { throw 'Requires Windows x64.' }
+if (-not $env:UV_HTTP_TIMEOUT) { $env:UV_HTTP_TIMEOUT = '180' }
+if (-not $env:UV_HTTP_RETRIES) { $env:UV_HTTP_RETRIES = '5' }
 if (-not $Destination) {
   Add-Type -AssemblyName System.Windows.Forms
   $picker = New-Object Windows.Forms.FolderBrowserDialog
@@ -55,8 +57,18 @@ $wheelSuffix = "2.5.1%2B$($info.device)-cp311-cp311-win_amd64.whl"
 $wheelHashes = $torchDigests[$info.device]
 $torch = "$wheelBase/torch-$wheelSuffix#sha256=$($wheelHashes[0])"
 $torchaudio = "$wheelBase/torchaudio-$wheelSuffix#sha256=$($wheelHashes[1])"
+if ($TorchWheel) {
+  $localWheel = Get-Item -LiteralPath $TorchWheel -ErrorAction Stop
+  $expectedName = 'torch-' + [Uri]::UnescapeDataString($wheelSuffix)
+  if ($localWheel.PSIsContainer -or $localWheel.Name -ne $expectedName -or
+      (Get-FileHash -LiteralPath $localWheel.FullName -Algorithm SHA256).Hash -ne $wheelHashes[0]) {
+    throw 'The supplied PyTorch wheel filename or SHA-256 does not match this release.'
+  }
+  $torch = $localWheel.FullName
+  Write-Host 'Using the verified local PyTorch wheel.'
+}
 & $UvPath pip install --link-mode=copy --break-system-packages --python $python --index-url https://pypi.org/simple $torch $torchaudio -r (Join-Path $PSScriptRoot 'requirements.txt') 'imageio-ffmpeg==0.6.0'
-if ($LASTEXITCODE -ne 0) { throw 'Music runtime installation failed.' }
+if ($LASTEXITCODE -ne 0) { throw 'Music runtime installation failed. For interrupted PyTorch downloads, see MUSIC_RUNTIME in the included instructions.' }
 & $UvPath pip install --link-mode=copy --break-system-packages --python $python --index-url https://pypi.org/simple --no-deps 'basic-pitch==0.4.0'
 if ($LASTEXITCODE -ne 0) { throw 'Basic Pitch installation failed.' }
 $tools = Join-Path $PSScriptRoot 'runtime-tools.py'

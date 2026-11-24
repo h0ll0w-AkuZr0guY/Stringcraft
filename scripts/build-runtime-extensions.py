@@ -1,4 +1,4 @@
-"""Build the signed-version release inputs for CPU and CUDA provisioning."""
+"""Build versioned CPU and CUDA installer archives and SHA-256 files."""
 import argparse
 import hashlib
 import json
@@ -8,6 +8,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 parser = argparse.ArgumentParser()
 parser.add_argument("--output-root", type=Path, required=True)
 args = parser.parse_args()
+version = "1.0.1"
 root = Path(__file__).resolve().parents[1]
 out = args.output_root.resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -22,12 +23,23 @@ files = {
     "安装说明.md": root / "docs/MUSIC_RUNTIME.md",
 }
 for device in ("cpu", "cu124"):
-    name = f"Stringcraft-Music-Runtime-1.0.0-{device}-windows-x64.zip"
+    name = f"Stringcraft-Music-Runtime-{version}-{device}-windows-x64.zip"
     target = out / name
     with ZipFile(target, "x", compression=ZIP_DEFLATED) as archive:
         for key, source in files.items():
             archive.write(source, key)
-        archive.writestr("runtime.json", json.dumps({"id":"local-separation","version":"1.0.0","sdk":1,"minimumCore":"0.2.0","device":device}))
+        archive.writestr(
+            "runtime.json",
+            json.dumps(
+                {
+                    "id": "local-separation",
+                    "version": version,
+                    "sdk": 1,
+                    "minimumCore": "0.2.0",
+                    "device": device,
+                }
+            ),
+        )
     with ZipFile(target) as archive:
         assert archive.testzip() is None
     with target.open("rb") as source:
