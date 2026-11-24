@@ -64,18 +64,20 @@ def analyze_saved_track(source, output, vocal, emit, backing=None):
         if n["start"] < duration
     ]
     evidence = []
+    phrases = []
     if vocal:
         support = np.zeros_like(audio)
         if backing:
             support, support_rate = sf.read(backing, dtype="float32", always_2d=True)
             if support_rate != rate or len(support) != len(audio):
                 raise ValueError("Stem clocks differ")
-        evidence = vocal_melody(audio.mean(1), support.mean(1), rate, notes, emit)
+        evidence = vocal_melody(audio.mean(1), support.mean(1), rate, notes, emit, phrases)
     return dict(
         duration=duration,
         bpm=120.0,
         notes=notes,
         melodyEvidence=evidence,
+        **({"phraseEvidence": phrases} if vocal else {}),
         executions=[execution]
         + (
             [

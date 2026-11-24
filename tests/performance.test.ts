@@ -61,6 +61,23 @@ const options = {
   pattern: "strum" as const,
 };
 describe("musical score and evidence", () => {
+  it("the phrasing waltz keeps three downstrokes with a light, contiguous brush", () => {
+    const s = score();
+    s.durationBeats = 3;
+    s.meter = [{ beat: 0, numerator: 3, denominator: 4 }];
+    s.chords = [{ ...s.chords[0], durationBeats: 3 }];
+    const plan = arrangeScore(s, { ...options, profile: "phrasing" });
+    const groups = [...new Set(plan.actions.map((a) => a.strokeId))].map((id) =>
+      plan.actions.filter((a) => a.strokeId === id),
+    );
+    expect(groups.map((actions) => actions[0].beat)).toEqual([0, 1, 2]);
+    expect(
+      groups.every((actions) => actions.every((a) => a.stroke === "down")),
+    ).toBe(true);
+    expect(groups[2].length).toBeLessThanOrEqual(2);
+    expect(groups[2][0].velocity).toBeLessThan(groups[0][0].velocity);
+    expect(plan.issues).toEqual([]);
+  });
   it("intra-bar chord changes keep the measure's strum pattern instead of restarting it", () => {
     const s = score();
     s.durationBeats = 8;

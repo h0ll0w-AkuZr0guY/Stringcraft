@@ -1,8 +1,10 @@
 import {
+  beatToSeconds,
   eventRole,
   type ChordSymbol,
   type MusicalScore,
   type ArrangementDraft,
+  type NoteEvent,
 } from "../../packages/contracts";
 
 const intervals: Record<ChordSymbol["quality"], number[]> = {
@@ -81,6 +83,7 @@ export const chordKinds = (chords: ChordSymbol[]) =>
 export function organizeHarmony(
   score: MusicalScore,
   decisions: ArrangementDraft["decisions"],
+  experiment?: { bass: NoteEvent[] },
 ): ChordSymbol[] {
   const source = [...score.chords].sort((a, b) => a.beat - b.beat);
   if (!source.length) return [];
@@ -94,6 +97,36 @@ export function organizeHarmony(
     const original = source[i],
       short = original.durationBeats < 0.75;
     const keyPenalty = localKeyFit(source, original.beat);
+    const [left, right] = [source[i - 1], source[i + 1]];
+    const framed =
+      left &&
+      right &&
+      key(left) === key(right) &&
+      Math.abs(left.beat + left.durationBeats - original.beat) < 0.03 &&
+      Math.abs(original.beat + original.durationBeats - right.beat) < 0.03;
+    const bassWeights = new Map<number, number>();
+    let bassWindow = 0;
+    if (experiment) {
+      const begin = beatToSeconds(score, original.beat);
+      const end = beatToSeconds(score, original.beat + original.durationBeats);
+      bassWindow = end - begin;
+      for (const note of experiment.bass) {
+        if (note.score < 0.45 || note.pitch.midi > 55) continue;
+        const overlap =
+          Math.min(end, note.start + note.duration) -
+          Math.max(begin, note.start);
+        if (overlap < Math.min(0.12, (end - begin) * 0.35)) continue;
+        const pitch = note.pitch.midi % 12;
+        const weight = overlap * note.score;
+        bassWeights.set(pitch, (bassWeights.get(pitch) ?? 0) + weight);
+      }
+    }
+    const bassTotal = [...bassWeights.values()].reduce(
+      (sum, weight) => sum + weight,
+      0,
+    );
+    const bassPenalty =
+      bassWindow > 0 ? 1.1 * Math.min(1, bassTotal / bassWindow) : 0;
     const melodic = score.events.filter(
       (e) =>
         e.midi !== null &&
@@ -173,6 +206,26 @@ export function organizeHarmony(
           if (!pcs.includes(e.midi! % 12))
             clash += weight * (structural ? 1 : 0.25);
         }
+        const bassFit = bassTotal
+          ? [...bassWeights].reduce(
+              (fit, [pitch, weight]) =>
+                fit +
+                weight *
+                  (pitch === (candidate.bass ?? candidate.root)
+                    ? 1
+                    : pcs.includes(pitch)
+                      ? 0.52
+                      : 0),
+              0,
+            ) / bassTotal
+          : 0;
+        const continuity =
+          experiment &&
+          framed &&
+          key(candidate) === key(left) &&
+          (bassTotal === 0 || bassFit >= 0.52)
+            ? 0.21
+            : 0;
         const simplified =
           ((original.quality === "maj7" && candidate.quality === "major") ||
             (original.quality === "m7" && candidate.quality === "minor")) &&
@@ -207,6 +260,8 @@ export function organizeHarmony(
             keyPenalty(candidate) +
             prior +
             (clash / (total || 1)) * 0.35 +
+            (1 - bassFit) * bassPenalty -
+            continuity +
             change -
             (previous && resolves(previous, candidate) ? 0.08 : 0),
           path: [...state.path, candidate],
@@ -236,8 +291,9 @@ export function organizeHarmony(
     if (changed)
       decisions.push({
         sourceIds: [raw.id],
-        reason:
-          "结合持续时间、旋律与前后和声整理弱证据和弦；保留原始识别供对照。",
+        reason: experiment
+          ? "结合低音持续、旋律与相邻和声整理弱证据和弦；原始识别保留。"
+          : "结合持续时间、旋律与前后和声整理弱证据和弦；保留原始识别供对照。",
       });
     const previous = result.at(-1);
     if (

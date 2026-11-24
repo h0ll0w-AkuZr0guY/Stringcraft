@@ -32,6 +32,7 @@ export interface ProjectTrack {
   score?: MusicalScore;
   melody?: NoteEvent[];
   melodyEvidence?: NoteEvent[];
+  phraseEvidence?: NoteEvent[];
   harmonyAnalysis?: HarmonyAnalysis;
   analysisRevision?: string;
 }

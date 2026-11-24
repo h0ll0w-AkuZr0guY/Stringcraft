@@ -33,11 +33,15 @@ export function Tablature({
   onSelect,
   time,
   onSeek,
+  zoom = 1,
+  professional = false,
 }: {
   project: MusicProject;
   selected: string | null;
   onSelect: (n: GuitarNote) => void;
   time: number;
+  zoom?: number;
+  professional?: boolean;
   onSeek?: (at: number) => void;
 }) {
   const root = useRef<HTMLDivElement>(null),
@@ -45,26 +49,53 @@ export function Tablature({
   const measures = useMemo(() => tabMeasures(project), [project]),
     score = project.arrangement?.score ?? projectScore(project);
   const [fingering, setFingering] = useState(false);
+  const [viewport, setViewport] = useState(0);
   useEffect(() => {
-    const c = root.current?.closest<HTMLElement>(".notation-body");
-    return c ? follow.observe(c) : undefined;
+    const container = root.current?.closest<HTMLElement>(".notation-body");
+    if (!container) return;
+    const resize = () => setViewport(container.clientWidth);
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
+    resize();
+    const disconnectFollow = follow.observe(container);
+    return () => {
+      observer.disconnect();
+      disconnectFollow();
+    };
   }, [follow.observe]);
-  useEffect(() => {
-    const el = root.current,
-      container = el?.closest<HTMLElement>(".notation-body");
-    if (!el || !container) return;
-    const active = el.querySelector<SVGElement>('[data-playing-row="true"]');
-    if (active) {
-      const a = active.getBoundingClientRect(),
-        b = container.getBoundingClientRect();
-      follow.reveal(container, {
-        left: a.left - b.left + container.scrollLeft,
-        top: a.top - b.top + container.scrollTop,
-        width: Math.min(a.width, container.clientWidth * 0.7),
-        height: Math.min(a.height, container.clientHeight * 0.7),
-      });
+  const rows = useMemo(() => {
+    const result: (typeof measures)[] = [];
+    let row: typeof measures = [],
+      used = 16;
+    for (const measure of measures) {
+      if (row.length && (used + measure.width) * zoom > viewport - 8) {
+        result.push(row);
+        row = [];
+        used = 16;
+      }
+      row.push(measure);
+      used += measure.width;
     }
-  }, [time, follow.following]);
+    if (row.length) result.push(row);
+    return result;
+  }, [measures, viewport, zoom]);
+  const playAt = Math.max(0, Math.min(time, project.duration - 0.00001));
+  useEffect(() => {
+    const el = root.current;
+    const container = el?.closest<HTMLElement>(".notation-body");
+    const active = el?.querySelector<SVGElement>("[data-score-playhead]");
+    const row = active?.ownerSVGElement;
+    if (!container || !active || !row) return;
+    const a = active.getBoundingClientRect(),
+      b = container.getBoundingClientRect(),
+      r = row.getBoundingClientRect();
+    follow.reveal(container, {
+      left: a.left - b.left + container.scrollLeft,
+      top: r.top - b.top + container.scrollTop,
+      width: 2,
+      height: Math.min(r.height, container.clientHeight - 28),
+    });
+  }, [playAt, rows, follow.reveal]);
   return (
     <div
       ref={root}
@@ -73,35 +104,40 @@ export function Tablature({
       onWheel={follow.manual}
       onTouchMove={follow.manual}
     >
-      <button
-        className="text-button follow-toggle"
-        aria-pressed={follow.following}
-        onClick={follow.resume}
-      >
-        {follow.following ? "跟随播放" : "回到播放位置"}
-      </button>
-      <label className="fingering-toggle">
-        <input
-          type="checkbox"
-          checked={fingering}
-          onChange={(e) => setFingering(e.target.checked)}
-        />{" "}
-        显示左右手指法（1–4 / p i m a）
-      </label>
-      {Array.from({ length: Math.ceil(measures.length / 2) }, (_, row) => {
-        const bars = measures.slice(row * 2, row * 2 + 2),
-          width = Math.max(750, bars.reduce((sum, b) => sum + b.width, 0) + 30);
-        let offset = 30;
+      <div className="score-follow-controls">
+        <button
+          className="text-button"
+          aria-pressed={follow.following}
+          onClick={follow.resume}
+        >
+          {follow.following ? "跟随播放" : "回到播放位置"}
+        </button>
+        {!follow.following && <span>跟随已暂停</span>}
+        {professional && (
+          <label>
+            <input
+              type="checkbox"
+              checked={fingering}
+              onChange={(e) => setFingering(e.target.checked)}
+            />{" "}
+            显示左右手指法（1–4 / p i m a）
+          </label>
+        )}
+      </div>
+      {rows.map((bars) => {
+        const width = bars.reduce((sum, b) => sum + b.width, 16);
+        let offset = 8;
         return (
           <svg
             data-playing-row={
-              time >= bars[0].start && time < bars[bars.length - 1].end
+              playAt >= bars[0].start && playAt < bars[bars.length - 1].end
             }
-            key={row}
+            key={bars[0].index}
+            className="score-row"
             viewBox={`0 0 ${width} 250`}
-            style={{ minWidth: width }}
+            style={{ width: width * zoom, height: 250 * zoom }}
             role="group"
-            aria-label={`小节 ${row * 2 + 1} 至 ${row * 2 + bars.length} 六线谱`}
+            aria-label={`小节 ${bars[0].index + 1} 至 ${bars.at(-1)!.index + 1} 六线谱`}
           >
             {bars.map((bar) => {
               const left = offset;
@@ -126,6 +162,11 @@ export function Tablature({
               return (
                 <g
                   key={bar.index}
+                  data-current-measure={
+                    playAt >= bar.start && playAt < bar.end
+                      ? bar.index + 1
+                      : undefined
+                  }
                   transform={`translate(${left},0)`}
                   onClick={(e) => {
                     const svg = e.currentTarget.ownerSVGElement!,
@@ -374,20 +415,11 @@ export function Tablature({
                       </text>
                     </g>
                   ))}
-                  {time >= bar.start && time < bar.end && (
+                  {playAt >= bar.start && playAt < bar.end && (
                     <line
-                      x1={Math.max(
-                        40,
-                        bar.columns
-                          .filter((c) => beatToSeconds(score, c.beat) <= time)
-                          .at(-1)?.x ?? 40,
-                      )}
-                      x2={Math.max(
-                        40,
-                        bar.columns
-                          .filter((c) => beatToSeconds(score, c.beat) <= time)
-                          .at(-1)?.x ?? 40,
-                      )}
+                      data-score-playhead
+                      x1={beatX(secondsToBeat(score, playAt))}
+                      x2={beatX(secondsToBeat(score, playAt))}
                       y1={58}
                       y2={224}
                       stroke="#b47040"
@@ -452,22 +484,26 @@ export function Tablature({
 export function RhythmScore({
   project,
   time = 0,
+  zoom = 1,
+  professional = false,
   onActivate,
 }: {
   project: MusicProject;
   time?: number;
+  zoom?: number;
+  professional?: boolean;
   onActivate?: (notes: GuitarNote[], at: number) => void;
 }) {
   const follow = useScoreFollow(),
     cursor = useRef<HTMLDivElement>(null);
   const projection = useRef<{
     api: AlphaTabApi;
-    bindings: Map<model.Beat, ScoreHit>;
+    hits: [model.Beat, ScoreHit][];
   } | null>(null);
   const element = useRef<HTMLDivElement>(null),
     [error, setError] = useState(""),
     [fingering, setFingering] = useState(false),
-    [rendered, setRendered] = useState(false);
+    [rendered, setRendered] = useState(0);
   const printScore = useRef<() => void>(undefined);
   useEffect(() => {
     const c = element.current?.closest<HTMLElement>(".notation-body");
@@ -477,7 +513,7 @@ export function RhythmScore({
     let disposed = false,
       api: { destroy: () => void } | undefined;
     setError("");
-    setRendered(false);
+    setRendered(0);
     import("@coderline/alphatab")
       .then(async (alpha) => {
         if (disposed || !element.current) return;
@@ -499,12 +535,11 @@ export function RhythmScore({
             enableLazyLoading: false,
           },
           player: { enablePlayer: false, enableElementHighlighting: true },
-          display: { scale: 0.85 },
+          display: { scale: 0.85 * zoom },
         });
         api = a;
         a.settings.core.includeNoteBounds = true;
         const bindings = new Map<model.Beat, ScoreHit>();
-        projection.current = { api: a, bindings };
         let noteHit = false;
         a.beatMouseUp.on((beat) => {
           noteHit = false;
@@ -543,13 +578,18 @@ export function RhythmScore({
           });
         a.error.on((e) => setError(String(e)));
         a.renderFinished.on(() => {
-          if (!disposed) setRendered(true);
+          if (!disposed) setRendered((version) => version + 1);
         });
-        a.renderScore(
-          alphaScore(alpha, project, fingering, (beat, hit) =>
-            bindings.set(beat, hit),
-          ),
+        const score = alphaScore(alpha, project, fingering, (beat, hit) =>
+          bindings.set(beat, hit),
         );
+        projection.current = {
+          api: a,
+          hits: [...bindings].sort(
+            (a, b) => b[1].startSeconds - a[1].startSeconds,
+          ),
+        };
+        a.renderScore(score);
       })
       .catch((e) => setError(String(e)));
     return () => {
@@ -558,18 +598,23 @@ export function RhythmScore({
       api?.destroy();
       projection.current = null;
     };
-  }, [project, fingering]);
+  }, [project, fingering, zoom]);
   useEffect(() => {
     const p = projection.current,
       el = element.current,
       indicator = cursor.current;
     if (!p || !el || !indicator || !rendered) return;
-    const entry = [...p.bindings.entries()]
-      .filter(([, h]) => h.startSeconds <= time && h.endSeconds > time)
-      .sort((a, b) => b[1].startSeconds - a[1].startSeconds)[0];
-    const bounds = entry
-      ? p.api.boundsLookup?.findBeat(entry[0])?.realBounds
-      : null;
+    const at = Math.max(0, Math.min(time, project.duration - 0.00001));
+    const entry =
+      p.hits.find(([, hit]) => hit.startSeconds <= at && hit.endSeconds > at) ??
+      p.hits.find(([, hit]) => hit.startSeconds <= at) ??
+      p.hits.at(-1);
+    const beatBounds = entry ? p.api.boundsLookup?.findBeat(entry[0]) : null;
+    const bounds = beatBounds?.realBounds;
+    const measure = beatBounds?.barBounds.masterBarBounds.visualBounds;
+    indicator.dataset.currentMeasure = entry
+      ? String(entry[0].voice.bar.index + 1)
+      : "";
     indicator.hidden = !bounds;
     if (!bounds) return;
     Object.assign(indicator.style, {
@@ -578,39 +623,42 @@ export function RhythmScore({
       height: `${bounds.h}px`,
     });
     const container = el.closest<HTMLElement>(".notation-body");
-    if (container) {
+    if (container && measure) {
       const a = el.getBoundingClientRect(),
         b = container.getBoundingClientRect();
       follow.reveal(container, {
         left: a.left - b.left + container.scrollLeft + bounds.x,
-        top: a.top - b.top + container.scrollTop + bounds.y,
-        width: bounds.w,
-        height: Math.min(bounds.h, container.clientHeight * 0.7),
+        top: a.top - b.top + container.scrollTop + measure.y,
+        width: 2,
+        height: Math.min(measure.h, container.clientHeight - 28),
       });
     }
-  }, [time, rendered, follow.following]);
+  }, [time, rendered, follow.reveal, project.duration]);
   return (
     <div
       className="rhythm-view"
       onWheel={follow.manual}
       onTouchMove={follow.manual}
     >
-      <button
-        className="text-button follow-toggle"
-        aria-pressed={follow.following}
-        onClick={follow.resume}
-      >
-        {follow.following ? "跟随播放" : "回到播放位置"}
-      </button>
-      <div className="rhythm-controls">
-        <label className="fingering-toggle">
-          <input
-            type="checkbox"
-            checked={fingering}
-            onChange={(e) => setFingering(e.target.checked)}
-          />{" "}
-          显示节奏谱指法
-        </label>
+      <div className="score-follow-controls">
+        <button
+          className="text-button"
+          aria-pressed={follow.following}
+          onClick={follow.resume}
+        >
+          {follow.following ? "跟随播放" : "回到播放位置"}
+        </button>
+        {!follow.following && <span>跟随已暂停</span>}
+        {professional && (
+          <label>
+            <input
+              type="checkbox"
+              checked={fingering}
+              onChange={(e) => setFingering(e.target.checked)}
+            />{" "}
+            显示节奏谱指法
+          </label>
+        )}
         <button
           className="text-button"
           disabled={!rendered}
@@ -619,9 +667,6 @@ export function RhythmScore({
           打印节奏谱 PDF
         </button>
       </div>
-      <p className="muted">
-        节奏谱按十六分网格近似量化，旋律、低音与和弦独立分声部；延音线保持发声，试听保留原始时间。
-      </p>
       {error && (
         <p role="alert" className="inline-error">
           谱面暂不可用：{error}

@@ -14,9 +14,9 @@ Settings → Pages 的 source 选择 GitHub Actions。pages.yml 仅允许 workfl
 
 ## Windows 基础包
 
-Windows、Python 3.11+：先 npm run build，再 python scripts/build-local.py。脚本创建独立 .venv-build 构建环境，PyInstaller 生成目录版 Stringcraft.exe，将工作台与本地 worker 包入，ZIP 输出到 artifacts。基础包不包含 Torch/Demucs。完整解压后双击 exe；本机无需预装 Python/Node。
+在 Windows 安装 .NET 8 SDK、Node.js 22+、Python 3.11+。先运行 npm run build，再运行 python scripts/build-local.py。脚本用 PyInstaller 冻结私有计算服务，并将 WinForms 宿主按 win-x64 自包含发布。基础包无需预装 .NET、Python 或 Node。宿主使用系统 WebView2 Evergreen Runtime，缺失时按微软文档安装 x64 离线安装程序。[WebView2 分发说明](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)
 
-不要删掉 exe 同目录的 _internal。代码与前端固定版本随基础包发布；音乐环境放在 exe 同目录 runtime_plugins。数据位于系统用户应用目录 Stringcraft/jobs，可用 STRINGCRAFT_DATA 覆盖。
+请完整解压并双击 Stringcraft.exe。service 子目录与主程序一起交付，模型环境放入 runtime_plugins 或从全局设置选择已有目录。数据默认在 %LOCALAPPDATA%/Stringcraft/Desktop，STRINGCRAFT_DATA 可覆盖。WebView2 SDK 与 .NET 分发文件随包提供许可说明。
 
 ## 独立音乐环境
 
@@ -24,7 +24,7 @@ Windows、Python 3.11+：先 npm run build，再 python scripts/build-local.py�
 
 脚本获取可重定位的 Python 3.11 独立发行版，安装固定 Torch/torchaudio 2.5.1、Basic Pitch、HTDemucs、librosa 与 imageio-ffmpeg，保留安装依赖和许可证元数据。默认 CPU，`-TorchDevice cu124` 安装同时支持 CPU 的 CUDA 12.4 运行库。WithModels 预下载 HTDemucs 和固定提交的 BTC 权重，BTC 加载前强制 SHA-256 校验；Basic Pitch ONNX 资源随 Python 包。得到 runtime_plugins/local-separation/python、bin、models 与清单。权重公开分发前需另行复核 LICENSING，实验包不构成分发许可判断。
 
-用户把环境 ZIP 解压到基础包同级后即可发现，无需覆盖 _internal。如未指定 WithModels，HTDemucs 首次使用需要联网；不要称为完整离线包。普通 venv 不可作为可移植运行环境直接分发。环境可能数百 MB 或更大，首次构建时间取决于网络；模型环境与基础包分别发版。
+用户把环境 ZIP 解压到基础包同级后即可发现，保留完整 service 子目录。如未指定 WithModels，HTDemucs 首次使用需要联网；不要称为完整离线包。普通 venv 不可作为可移植运行环境直接分发。环境可能数百 MB 或更大，首次构建时间取决于网络；模型环境与基础包分别发版。
 
 在未安装依赖的测试环境解压并检查：基础包启动、能力查询、整曲识别、分离、取消进程、网络断开后的模型加载，以及重启后用户项目保留。只有经过实际验证的路径可写入发布说明。
 
@@ -38,8 +38,10 @@ ci.yml 检查每个 PR。pages.yml 手动发布网页；release.yml 对明确 v 
 
 ## 本地试用包
 
-本轮版本为 0.2.0-local.4，不创建公开标签或 Release。先完成源码提交与 npm run build，再执行 python scripts/build-local.py，输出基础目录包、ZIP 与 .zip.sha256。完整模型包追加 `--environment artifacts/<环境目录>/runtime_plugins/local-separation`，脚本只接受本仓库 artifacts 内的准备环境。空间不足时用 `--output-root <其他磁盘目录>` 指定独立构建和 ZIP 位置；不会删除或覆盖旧包。使用说明随包提供；网页和服务从同一 build-info 识别版本。基础模型/WASM/采样已包含，不携带用户音频或 Key。
+先运行 npm run check 和 npm run build，再运行 python scripts/build-local.py。输出目录、ZIP 和 SHA-256 可用 --output-root 指到其他磁盘。可选 --environment 指向仓库 artifacts 内准备好的 local-separation 环境，单独生成含模型的包。
 
-先独立解压，再限制 PATH 只含 Windows 系统路径启动 EXE。以 TEST_BASE_URL 指向该进程，执行 scripts/verify-local-trial.mjs；它阻止外网请求，验证真实识别、生成、播放、WAV 非静音、MIDI、保存和重开。STRINGCRAFT_PRIVATE_AUDIO 可显式指定本机授权材料；私人阶段不录视频，结果只写 artifacts。端口相同版本复用、旧版本占用拒绝还需用实际 EXE 验证。
+使用实际解压包验证应用窗口、托盘隐藏与恢复、单实例、保存后退出、模型进程和服务回收。冻结服务可独立作诊断，不能替代桌面端验证。浏览器交互回归通过 npm run test:e2e 运行；真实音频和截图放在本机 QA 目录。测试不需要付费 API。
 
-完整包另外执行 scripts/verify-native-trial.mjs。STRINGCRAFT_NATIVE_AUDIO 指定本地授权的短音频，验证实际模型任务、分离试听、缓存、和声对照、68.5/135.7 BPM 的材料不变与导出；默认不调用付费 API。该流程验证可用性，不能替代带真值的质量评估。
+自动化桌面检查可用测试数据目录启动 EXE。仅为该次启动设置 WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS 为 --remote-debugging-port=19229。再设置 TEST_DESKTOP_CDP 和 STRINGCRAFT_DESKTOP_REPORT，用 node scripts/verify-desktop.mjs 检查窗口上真实的分轨、编配和 WAV。可选 STRINGCRAFT_TRACK_BUNDLE 指定已授权的旧版工程 ZIP，同时检查迁移与整曲谱面定位。
+
+本地候选完成试用后再按明确授权发布。版本和构建摘要从包内 build-info.json 统一提供。

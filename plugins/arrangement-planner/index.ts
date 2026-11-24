@@ -325,7 +325,12 @@ export function planArrangement(
       };
     return next;
   });
-  score.chords = organizeHarmony(score, decisions);
+  const phrasing = options.profile === "phrasing";
+  score.chords = organizeHarmony(
+    score,
+    decisions,
+    phrasing ? { bass: context.bassEvidence ?? [] } : undefined,
+  );
   if (context.sourceKind === "audio") {
     const lead = score.events
       .filter((e) => eventRole(e) === "melody" && e.midi !== null)
@@ -353,10 +358,23 @@ export function planArrangement(
           e.beat < b.beat &&
           e.beat + e.durationBeats > a.beat + a.durationBeats,
       );
-      if (!rest && gap >= 0 && gap <= 0.18) a.durationBeats = b.beat - a.beat;
+      const gapSeconds =
+        beatToSeconds(score, b.beat) -
+        beatToSeconds(score, a.beat + a.durationBeats);
+      if (
+        !rest &&
+        gap >= 0 &&
+        gap <= 0.18 &&
+        (!phrasing || (gapSeconds <= 0.065 && a.midi !== b.midi))
+      )
+        a.durationBeats = b.beat - a.beat;
       if (
         !rest &&
         Math.abs(a.beat + a.durationBeats - b.beat) < 0.01 &&
+        (!phrasing ||
+          (gapSeconds >= -0.025 &&
+            gapSeconds <= 0.065 &&
+            b.extensions?.arranger?.anchor !== true)) &&
         Math.abs(a.midi! - b.midi!) <= 2 &&
         a.midi !== b.midi &&
         b.durationBeats <= 0.5 &&

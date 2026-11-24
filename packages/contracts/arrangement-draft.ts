@@ -10,7 +10,9 @@ import {
 } from "./score";
 
 export type AccompanimentPattern = "strum" | "arpeggio" | "auto";
+export type ArrangementProfile = "classic" | "phrasing";
 export interface ArrangementPlanningOptions {
+  profile?: ArrangementProfile;
   difficulty: Difficulty;
   goal: ArrangementGoal;
   pattern: AccompanimentPattern;
@@ -20,6 +22,7 @@ export interface ArrangementPlanningContext {
   sourceKind: "audio" | "demo" | "midi" | "musicxml";
   inputFingerprint: string;
   melodyEvidence?: NoteEvent[];
+  bassEvidence?: NoteEvent[];
   melodyCandidates?: NoteEvent[];
 }
 export interface ArrangementPhrase {
@@ -56,6 +59,8 @@ export function validateArrangementDraft(draft: ArrangementDraft) {
     !draft.options ||
     !["easy", "normal", "hard", "expert"].includes(draft.options.difficulty) ||
     !["accompaniment", "fingerstyle", "melody"].includes(draft.options.goal) ||
+    (draft.options.profile !== undefined &&
+      !["classic", "phrasing"].includes(draft.options.profile)) ||
     !["strum", "arpeggio", "auto"].includes(draft.options.pattern) ||
     !Array.isArray(draft.phrases) ||
     draft.phrases.length > 10000 ||

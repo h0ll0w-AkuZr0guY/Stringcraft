@@ -122,3 +122,16 @@ MusicProject 可选 arrangementDraft、melodyEvidence；旧项目省略即可，
 本地 API：GET assets/{sha256}；POST assets/references（projectId/assetIds）；DELETE assets/references/{projectId}；POST jobs/from-asset（assetId/operation=vocal-melody|transcribe/可选 backingAssetId）；POST project-bundles（project）；POST project-bundles/import（file）。全部需要会话认证。ZIP 最多 2 GB 展开、64 条音频，拒绝重复条目、任意路径和摘要不符。asset 不是服务器路径。
 
 `ArrangementDraft.assessment?: MusicAssessment` 记录风格、保护 ID、发现和六张来源规则卡。`music-constraints.assessMusic` 为纯函数；规划器实际保护上下文支持的短经过音及句尾。原始材料、人工校订及持音链继续优先。规则卡的阈值是工程启发式，不能当作教材原文或正确率。
+
+## local.5 接口增量
+
+| 接口 | 增量与兼容 |
+| --- | --- |
+| Transport.snapshot().seekRevision | 每次显式 seek 或 reset 变更。播放帧与自动读秒不会递增，谱面用它恢复跟随。 |
+| ArrangeOptions / ArrangementPlanningOptions | 可选 profile 取 classic 或 phrasing。缺省按 classic；同一配置用于寻找变调夹、规划和生成。 |
+| Arrangement / ArrangementDraft.options | 导出时可记录生成配置，旧项目缺少该字段时仍有效。 |
+| ProjectTrack / 本地轨道分析结果 | 仅人声可带 phraseEvidence，与 melodyEvidence 和原 notes 独立。旧缓存继续保留，人声新候选使用专用缓存修订。 |
+| ArrangementPlanningContext | 可选 bassEvidence，秒时间下的低音证据，只由实验规划作为低权重提示读取。 |
+| Windows 宿主桥 | 工作台发 ready、settings、print-tab、saved 或 save-failed。宿主发 pause、restore、save-and-exit。消息局限在桌面窗口与私有环回来源。 |
+
+后续乐器共用 Transport、ScoreHit 与 ScoreRegion。谱面适配器负责把当前秒时间映射至可见区域，并将单音或和弦击中交给工作台的试听与 seek。

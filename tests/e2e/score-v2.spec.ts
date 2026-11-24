@@ -22,7 +22,7 @@ test("early project import is not overwritten by asynchronous plugin bootstrap",
   p.name = "启动时导入的无和弦乐谱";
   p.sourceKind = "musicxml";
   p.score!.chords = [];
-  await page.locator('input[accept=".json"]').setInputFiles({
+  await page.getByTestId("project-import").setInputFiles({
     name: "early.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(p)),
@@ -61,6 +61,7 @@ test("written guitar octave, string positions and unpitched attacks survive arra
     imported.score.events.filter((e: { unpitched?: boolean }) => e.unpitched),
   ).toHaveLength(1);
   await (await settingButton(page, "进阶")).click();
+  await (await setting(page, "编配目标")).selectOption("fingerstyle");
   await openSettings(page);
   await page.locator(".generation-advanced-controls > summary").click();
   await (await setting(page, "变调夹")).selectOption("0");
@@ -181,6 +182,7 @@ test("known score preserves independent voices, ties, slurs, rests, meter and te
   ).toHaveLength(3);
   expect(p.notes[0].duration).toBeCloseTo(1.5);
   await (await settingButton(page, "进阶")).click();
+  await (await setting(page, "编配目标")).selectOption("fingerstyle");
   await openSettings(page);
   await page.locator(".generation-advanced-controls > summary").click();
   await (await setting(page, "变调夹")).selectOption("0");
@@ -243,9 +245,7 @@ test("musical editor splits intra-bar harmony, pickup and expressive sections wi
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
-  await page
-    .getByRole("button", { name: "编配与分析设置", exact: true })
-    .click();
+  await openSettings(page, "节拍与和弦");
   await page.locator(".structure-panel > summary").click();
   await page
     .getByRole("button", { name: "小节 1 添加换和弦", exact: true })

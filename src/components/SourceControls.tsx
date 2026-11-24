@@ -9,15 +9,18 @@ import {
   SlidersHorizontal,
   Upload,
 } from "lucide-react";
-import { type Difficulty } from "../../packages/contracts";
+import ArrangementChoices from "./ArrangementChoices";
 import AnalysisEngine from "./AnalysisEngine";
 import ChordDiagrams from "./ChordDiagrams";
 import MusicalStructure from "./MusicalStructure";
 import ReferenceSettings from "./ReferenceSettings";
 
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
-import { labels } from "../hooks/useWorkbench";
-export default function SourceControls() {
+export default function SourceControls({
+  tab,
+}: {
+  tab: "arrange" | "analysis" | "harmony" | "notes";
+}) {
   const {
     section,
     inputRef,
@@ -39,12 +42,6 @@ export default function SourceControls() {
     project,
     refineGuitar,
     setRefineGuitar,
-    difficulty,
-    setDifficulty,
-    goal,
-    setGoal,
-    pattern,
-    setPattern,
     autoCapo,
     capo,
     setAutoCapo,
@@ -63,13 +60,13 @@ export default function SourceControls() {
     generate,
     advice,
     generation,
-    advanced,
-    setAdvanced,
+    profile,
+    setProfile,
   } = useWorkbenchContext();
   return (
     <aside className="controls-column">
-      <ReferenceSettings />
-      <section className="panel source-panel">
+      {tab === "analysis" && <ReferenceSettings />}
+      <section className="panel source-panel" hidden={tab !== "analysis"}>
         <div className="panel-heading">
           <span className="panel-symbol">
             <AudioLines size={18} />
@@ -212,7 +209,7 @@ export default function SourceControls() {
           </span>
         </div>
       </section>
-      <section className="panel settings-panel">
+      <section className="panel settings-panel" hidden={tab !== "arrange"}>
         <div className="panel-heading">
           <span className="panel-symbol">
             <SlidersHorizontal size={18} />
@@ -220,78 +217,21 @@ export default function SourceControls() {
           <h2>我的弹奏方式</h2>
           <span className="step-label">ARRANGE</span>
         </div>
-        <fieldset className="basic-arrange-settings" disabled={!!busy}>
-          <div className="field-header">
-            <label>弹奏难度</label>
-            <span>循序渐进，找到手感</span>
-          </div>
-          <label>
-            编配目标
-            <select
-              aria-label="编配目标"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value as typeof goal)}
-            >
-              <option value="accompaniment">和弦伴奏 · 为弹唱留出空间</option>
-              <option value="fingerstyle">独奏指弹 · 旋律与低音</option>
-              <option value="melody">单线旋律练习</option>
-            </select>
-          </label>
-          {goal === "accompaniment" && (
-            <label>
-              伴奏手法
-              <select
-                aria-label="伴奏手法"
-                value={pattern}
-                onChange={(e) => setPattern(e.target.value as typeof pattern)}
-              >
-                <option value="auto">按段落安排</option>
-                <option value="strum">扫弦</option>
-                <option value="arpeggio">分解和弦</option>
-              </select>
-            </label>
-          )}
-          <div className="difficulty-grid">
-            {Object.entries(labels).map(([d, label], i) => (
-              <button
-                key={d}
-                className={difficulty === d ? "selected" : ""}
-                onClick={() => {
-                  setDifficulty(d as Difficulty);
-                  setGoal(
-                    d === "easy" || d === "normal"
-                      ? "accompaniment"
-                      : "fingerstyle",
-                  );
-                }}
-              >
-                <span className="difficulty-dots">
-                  {Array.from({ length: 4 }, (_, j) => (
-                    <i key={j} className={j <= i ? "filled" : ""} />
-                  ))}
-                </span>
-                <strong>{label}</strong>
-              </button>
-            ))}
-          </div>
-          <p className="difficulty-description">
-            {difficulty === "easy"
-              ? "简化和弦伴奏，稳定节奏，留出换和弦的准备时间。"
-              : difficulty === "normal"
-                ? "常用和弦与扫弦或分解节奏，为弹唱留出空间。"
-                : difficulty === "hard"
-                  ? "以旋律和独立低音构成指弹，优先保持乐句。"
-                  : "保留独奏结构，处理连奏和指法；不通过堆叠音符增加难度。"}
-          </p>
-        </fieldset>
-        <details
-          className="generation-advanced-controls"
-          open={advanced}
-          onToggle={(e) => {
-            if (e.currentTarget.open !== advanced)
-              setAdvanced(e.currentTarget.open);
-          }}
-        >
+        <ArrangementChoices />
+        <label className="algorithm-setting">
+          编配算法
+          <select
+            value={profile}
+            onChange={(e) =>
+              setProfile(e.target.value === "phrasing" ? "phrasing" : "classic")
+            }
+            disabled={!!busy}
+          >
+            <option value="classic">稳定版 · 沿用 local.4</option>
+            <option value="phrasing">乐句实验 · 低音证据与演奏动作</option>
+          </select>
+        </label>
+        <details className="generation-advanced-controls">
           <summary>高级设置：变调、速度与 AI</summary>
           <fieldset disabled={!!busy}>
             <div className="field-row">
@@ -406,8 +346,12 @@ export default function SourceControls() {
           了解在线与本地的区别 <ArrowUpRight size={13} />
         </a>
       </div>
-      <MusicalStructure />
-      <ChordDiagrams />
+      {tab === "harmony" && (
+        <>
+          <MusicalStructure />
+          <ChordDiagrams />
+        </>
+      )}
     </aside>
   );
 }

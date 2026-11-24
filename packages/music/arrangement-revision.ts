@@ -16,6 +16,7 @@ export function arrangementRevision(project: MusicProject): string {
       t.noteEditor,
       t.melodyEvidence,
       t.harmonyAnalysis,
+      ...(t.phraseEvidence ? [t.phraseEvidence] : []),
       t.analysisRevision,
     ]),
   ]);

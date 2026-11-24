@@ -1,6 +1,7 @@
 """Run with python -m unittest discover -s tests -p '*_test.py'."""
 
 import os
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -35,6 +36,18 @@ class LocalHostTests(unittest.TestCase):
             ).status_code,
             403,
         )
+
+    def test_desktop_service_only_answers_the_owning_window(self):
+        with patch.object(server, "DESKTOP_KEY", "native-test"):
+            self.assertEqual(self.client.get("/api/v1/capabilities").status_code, 403)
+            response = self.client.get(
+                "/api/v1/capabilities", headers={"X-Stringcraft-Desktop": "native-test"}
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(
+                response.headers["X-Stringcraft-Desktop-Ready"],
+                hashlib.sha256(b"native-test").hexdigest(),
+            )
 
     def test_capability_is_truthful(self):
         data = self.client.get("/api/v1/capabilities").json()

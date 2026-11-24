@@ -16,14 +16,16 @@ test("generated draft stays separate, voice audition works, and source edits mar
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
   const p = demoProject();
-  await page.locator('input[accept=".json"]').setInputFiles({
+  await page.getByTestId("project-import").setInputFiles({
     name: "draft.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(p)),
   });
+  await openSettings(page);
   await closeSettings(page);
   await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
   await expect(page.getByTestId("generation-result")).toContainText("编配完成");
+  await page.getByText("编配依据与声部试听", { exact: true }).click();
   await expect(page.getByTestId("musical-draft")).toContainText("种和弦");
   const pending = page.waitForEvent("download");
   await exportProject(page);
@@ -40,6 +42,7 @@ test("generated draft stays separate, voice audition works, and source edits mar
   await openSettings(page);
   await page.getByText("高级设置：变调、速度与 AI", { exact: true }).click();
   await (await setting(page, "参考速度 BPM")).fill("90");
+  await closeSettings(page);
   await expect(
     page.getByText("设置已改变，谱面仍为上次结果。重新生成后应用新设置。"),
   ).toBeVisible();
@@ -79,7 +82,9 @@ test("chunked WAV preserves the decaying sustain at a render boundary", async ({
       },
     ];
     const { data } = await renderWav(notes, 19, "steel");
-    const decoded = await new AudioContext().decodeAudioData(data);
+    const decoder = new AudioContext({ sampleRate: 44100 });
+    const decoded = await decoder.decodeAudioData(data);
+    await decoder.close();
     const ctx = new OfflineAudioContext(1, Math.ceil(19.3 * 44100), 44100);
     await schedule(ctx, notes, "steel");
     const reference = (await ctx.startRendering()).getChannelData(0),

@@ -99,7 +99,11 @@ export async function runGeneration(
       "旧项目需要创建 v2 副本后使用和弦伴奏或指弹，原项目会保留。",
       "upgrade",
     );
-  const routed = arrangementTracks(project, options.goal ?? "accompaniment");
+  const routed = arrangementTracks(
+    project,
+    options.goal ?? "accompaniment",
+    options.profile === "phrasing",
+  );
   const musicalInput = project.tracks?.length
     ? routed.notes
     : project.noteEditor
@@ -165,6 +169,8 @@ export async function runGeneration(
           score: sourceScore,
           sourceKind: project.sourceKind,
           melodyEvidence: routed.melodyEvidence,
+          bassEvidence:
+            options.profile === "phrasing" ? routed.bassEvidence : undefined,
           melodyCandidates,
           inputFingerprint: arrangementRevision({
             ...project,
@@ -175,6 +181,7 @@ export async function runGeneration(
           goal: options.goal ?? "accompaniment",
           difficulty: options.difficulty,
           pattern: options.pattern ?? "auto",
+          profile: options.profile,
         },
       ],
       signal,
@@ -244,6 +251,7 @@ export async function runGeneration(
     signal,
   );
   arrangement.sourceTrackIds = routed.ids;
+  arrangement.profile = options.profile;
   if (!arrangement.notes.length)
     throw new GenerationError(
       "这次没有生成可弹奏音符。请检查和弦、节奏与锁定设置；已有谱面已保留。",

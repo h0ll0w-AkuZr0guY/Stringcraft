@@ -29,7 +29,11 @@ const download = (data: BlobPart, mime: string, name: string) => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
-export default function NoteEditor() {
+export default function NoteEditor({
+  professional,
+}: {
+  professional: boolean;
+}) {
   const c = useWorkbenchContext(),
     p = c.editorProject,
     input = useRef<HTMLInputElement>(null),
@@ -465,7 +469,7 @@ export default function NoteEditor() {
             selected={selected}
             onSelect={(ids) => {
               setSelected(ids);
-              if (ids.size) c.setInspectorOpen(true);
+              if (professional && ids.size) c.setInspectorOpen(true);
             }}
             onChange={change}
             onAdd={add}

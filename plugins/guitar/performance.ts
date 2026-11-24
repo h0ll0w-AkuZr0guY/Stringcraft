@@ -231,6 +231,7 @@ export function arrangeMusicalScore(
     goal: options.goal ?? "accompaniment",
     pattern: options.pattern ?? "strum",
     phrases: options.phrases,
+    profile: options.profile,
   });
   let notes = soundEvents(plan, score);
   const locked = (options.previous ?? []).filter((n) => n.locked);

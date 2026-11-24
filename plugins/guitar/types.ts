@@ -37,6 +37,7 @@ export interface GuitarPerformance extends PerformancePlan<GuitarAction> {
   capo: number;
 }
 export interface GuitarOptions {
+  profile?: ArrangeOptions["profile"];
   difficulty: ArrangeOptions["difficulty"];
   capo: number;
   transpose: number;

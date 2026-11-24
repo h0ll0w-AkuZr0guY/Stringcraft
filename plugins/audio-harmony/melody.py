@@ -3,7 +3,69 @@
 import numpy as np
 
 
-def vocal_melody(vocals, other, rate, original_notes, emit=None):
+def phrases_from_frames(midi, voiced, probability, energy, backing, notes, offset, duration):
+    """Decode ten-millisecond frames with separate evidence for holds and attacks."""
+    audible = (energy > max(1e-4, float(energy.max()) * 0.06)) & (energy > backing * 0.15)
+    strong = voiced & audible & (probability >= 0.8)
+    labels = np.where(voiced & audible & (probability >= 0.56), midi, -1)
+    attacks = sorted(
+        (n["start"], n["pitch"]["midi"])
+        for n in notes
+        if n["score"] >= 0.5 and offset - 0.08 <= n["start"] <= offset + len(labels) / 100
+    )
+    start = 0
+    original = labels.copy()
+    for end in range(1, len(labels) + 1):
+        if end < len(labels) and original[end] == original[start]:
+            continue
+        left = original[start - 1] if start else -1
+        right = original[end] if end < len(labels) else -1
+        if (
+            end - start <= 6 and left == right and left >= 0
+            and (original[start] < 0 or abs(original[start] - left) == 12)
+            and audible[start:end].all()
+            and not any(offset + start / 100 - 0.025 <= t <= offset + end / 100 + 0.025 for t, _ in attacks)
+        ):
+            labels[start:end] = left
+        start = end
+
+    result = []
+    start = 0
+    for end in range(1, len(labels) + 1):
+        if end < len(labels) and labels[end] == labels[start]:
+            continue
+        pitch = int(labels[start])
+        a, b = offset + start / 100, min(duration, offset + end / 100)
+        support = strong[start:end] & (midi[start:end] == pitch)
+        if pitch >= 0 and b - a >= 0.09 and support.sum() >= 3:
+            edges = [a]
+            for time, attack_pitch in attacks:
+                if attack_pitch != pitch or time - edges[-1] < 0.10 or b - time < 0.09:
+                    continue
+                j = round((time - offset) * 100)
+                # A detector onset splits an existing note only when a new attack
+                # follows a local energy valley. A sustained vowel can retrigger BP.
+                valley = energy[max(start, j - 5):j + 1]
+                arrival = energy[j:min(end, j + 6)]
+                if len(valley) and len(arrival) and float(valley.min()) <= float(arrival.max()) * 0.70:
+                    edges.append(time)
+            confidence = float(np.mean(probability[start:end][support]))
+            for lo, hi in zip(edges, edges[1:] + [b]):
+                result.append(dict(
+                    id=f"vocal-phrase-{round(lo * 1000)}-{pitch}",
+                    start=lo,
+                    duration=hi - lo,
+                    pitch=dict(midi=pitch),
+                    score=confidence,
+                    velocity=float(np.clip(np.mean(energy[start:end]) * 5, 0.35, 0.8)),
+                    source="detected",
+                    role="melody",
+                ))
+        start = end
+    return result
+
+
+def vocal_melody(vocals, other, rate, original_notes, emit=None, phrase_evidence=None):
     import librosa
     from scipy.ndimage import median_filter
 
@@ -50,6 +112,11 @@ def vocal_melody(vocals, other, rate, original_notes, emit=None):
             & (energy[:count] > backing_energy[:count] * 0.12)
         )
         labels = np.where(valid, midi, -1)
+        if phrase_evidence is not None:
+            phrase_evidence.extend(phrases_from_frames(
+                midi, voiced[:count], probability[:count], energy[:count],
+                backing_energy[:count], original_notes, offset / sr, len(y) / sr,
+            ))
         start = 0
         for end in range(1, count + 1):
             if end < count and labels[end] == labels[start]:
@@ -95,6 +162,12 @@ def vocal_melody(vocals, other, rate, original_notes, emit=None):
                     )
             start = end
     # Window edges are an implementation detail, never a new musical attack.
+    if phrase_evidence is not None:
+        phrase_evidence[:] = merge_windows(phrase_evidence, original_notes)
+    return merge_windows(result, original_notes)
+
+
+def merge_windows(result, original_notes):
     merged = []
     for note in result:
         previous = merged[-1] if merged else None

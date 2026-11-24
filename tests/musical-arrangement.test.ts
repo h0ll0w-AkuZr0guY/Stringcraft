@@ -90,6 +90,36 @@ it("manual and imported harmonic changes are never simplified automatically", ()
   );
 });
 
+it("strong soft-bass evidence can keep a brief alternative without rewriting the original", () => {
+  const s = score();
+  s.chords = [
+    chord("before", 0, 4, 0),
+    { ...chord("bass-backed", 4, 0.62, 2), evidence: 0.15 },
+    chord("after", 4.62, 11.38, 0),
+  ];
+  const result = planArrangement(
+    {
+      score: s,
+      sourceKind: "audio",
+      inputFingerprint: "independent-bass-label",
+      bassEvidence: [
+        {
+          id: "d",
+          start: (4 * 60) / 90,
+          duration: 0.41,
+          pitch: { midi: 38 },
+          score: 0.95,
+          velocity: 0.6,
+          source: "detected",
+        },
+      ],
+    },
+    { ...options, profile: "phrasing" },
+  );
+  expect(result.score.chords.some((c) => c.root === 2)).toBe(true);
+  expect(s.chords[1].durationBeats).toBe(0.62);
+});
+
 it("long structural chords survive non-chord melody tones and an unconfirmed grid is not snapped", () => {
   const s = score();
   s.timing = "unconfirmed";

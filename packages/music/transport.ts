@@ -13,6 +13,7 @@ export type PlaybackDriver = (
 ) => Promise<PlaybackHandle>;
 export interface TransportSnapshot {
   position: number;
+  seekRevision: number;
   status: TransportStatus;
   speed: number;
   duration: number;
@@ -21,6 +22,7 @@ export interface TransportSnapshot {
 export class Transport {
   private value: TransportSnapshot = {
     position: 0,
+    seekRevision: 0,
     status: "paused",
     speed: 1,
     duration: 0,
@@ -71,7 +73,7 @@ export class Transport {
   }
   stop() {
     this.pause();
-    this.update({ position: 0 });
+    this.update({ position: 0, seekRevision: this.value.seekRevision + 1 });
   }
   async play(driver?: PlaybackDriver) {
     if (driver) this.driver = driver;
@@ -133,6 +135,7 @@ export class Transport {
     const loop = this.value.loop;
     this.update({
       position: at,
+      seekRevision: this.value.seekRevision + 1,
       status: "paused",
       loop: loop && (at < loop.start || at >= loop.end) ? null : loop,
     });

@@ -99,7 +99,9 @@ export function fingerstyle(
         event.extensions?.arranger?.legatoCandidate === true &&
         !!previous &&
         previous.string === pos.string &&
-        (pos.fret > previous.fret || pos.fret === 0);
+        (pos.fret > previous.fret ||
+          pos.fret === 0 ||
+          options.profile === "phrasing");
       const legato =
         options.difficulty !== "easy" &&
         (inferredConnection ||

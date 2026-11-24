@@ -44,6 +44,7 @@ PLUGIN_ROOT = Path(
 )
 RUNTIME = USER_ROOT / "jobs"
 TOKEN = secrets.token_urlsafe(32)
+DESKTOP_KEY = os.environ.pop("STRINGCRAFT_DESKTOP_KEY", "")
 MAX_BYTES = 200 * 1024 * 1024
 JOBS: dict[str, dict] = {}
 PROCESSES: dict[str, asyncio.subprocess.Process] = {}
@@ -60,7 +61,7 @@ def engine_probe():
             "ready": False,
             "message": "完整本地模型环境未安装",
         }
-    env = os.environ.copy()
+    env = model_environment()
     env.update(
         PYTHONNOUSERSITE="1",
         PYTHONIOENCODING="utf-8",
@@ -76,21 +77,30 @@ def engine_probe():
                 str(PLUGIN_ROOT / "local-separation/models"),
             ],
             env=env,
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
             encoding="utf-8",
+            errors="replace",
             timeout=120,
+            **({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}),
         )
+        if process.returncode:
+            raise RuntimeError(f"probe exit {process.returncode}: {process.stderr[-2000:]}")
         data = json.loads(process.stdout.strip().splitlines()[-1])
-        if process.returncode or not data.get("ready"):
-            raise ValueError()
+        if not data.get("ready"):
+            raise ValueError("probe did not report ready")
         digest = hashlib.sha256()
         for path in sorted((ROOT / "plugins/audio-harmony").rglob("*.py")):
             digest.update(path.relative_to(ROOT).as_posix().encode())
             digest.update(path.read_bytes())
         data["pluginSha256"] = digest.hexdigest()
         return {**data, "status": "ready", "message": "本地模型与执行设备已检查"}
-    except Exception:
+    except Exception as error:
+        try:
+            (USER_ROOT / "model-probe.log").write_text(str(error), encoding="utf-8")
+        except OSError:
+            pass
         return {
             "status": "error",
             "ready": False,
@@ -130,6 +140,13 @@ def ffmpeg() -> str | None:
     return str(bundled) if bundled.is_file() else shutil.which("ffmpeg")
 
 
+def model_environment():
+    env = os.environ.copy()
+    for key in ("PYTHONPATH", "PYTHONHOME"):
+        env.pop(key, None)
+    return env
+
+
 async def kill(process):
     if process.returncode is not None:
         return
@@ -140,6 +157,7 @@ async def kill(process):
             str(process.pid),
             "/T",
             "/F",
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW,
@@ -209,10 +227,12 @@ app = FastAPI(title="Stringcraft local compute", version="1.0.0", lifespan=lifes
 
 @app.middleware("http")
 async def guard(request: Request, call_next):
-    from urllib.parse import urlparse
-
     if request.url.hostname not in ("localhost", "127.0.0.1", "testserver"):
         return JSONResponse({"detail": "Loopback host required"}, status_code=403)
+    if DESKTOP_KEY and not secrets.compare_digest(
+        request.headers.get("x-stringcraft-desktop", ""), DESKTOP_KEY
+    ):
+        return JSONResponse({"detail": "Desktop window required"}, status_code=403)
     origin = request.headers.get("origin")
     if origin and origin != f"{request.url.scheme}://{request.headers.get('host')}":
         return JSONResponse({"detail": "Same-origin request required"}, status_code=403)
@@ -227,6 +247,10 @@ async def guard(request: Request, call_next):
     response = await call_next(request)
     if request.url.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
+    if DESKTOP_KEY and request.url.path == "/api/v1/capabilities":
+        response.headers["X-Stringcraft-Desktop-Ready"] = hashlib.sha256(
+            DESKTOP_KEY.encode()
+        ).hexdigest()
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
 
@@ -259,9 +283,7 @@ async def run_job(identifier: str, source: Path, mode: str, settings=None):
         source.unlink(missing_ok=True)
         return
     job.update(status="running", message="正在启动独立识别环境", progress=0.05)
-    env = os.environ.copy()
-    for key in ("PYTHONPATH", "PYTHONHOME"):
-        env.pop(key, None)
+    env = model_environment()
     env.update(PYTHONNOUSERSITE="1", PYTHONIOENCODING="utf-8")
     env["PATH"] = str(Path(ffmpeg()).parent) + os.pathsep + env.get("PATH", "")
     env["TORCH_HOME"] = str(PLUGIN_ROOT / "local-separation" / "models" / "torch")
@@ -274,6 +296,7 @@ async def run_job(identifier: str, source: Path, mode: str, settings=None):
             mode,
             str(source.parent),
             json.dumps(settings or {}),
+            stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
             env=env,
@@ -544,6 +567,7 @@ async def analyze_asset(body: dict = Body(...)):
             + str(body.get("backingAssetId", ""))
             + mode
             + PIPELINE_VERSION
+            + ("phrasing-1" if mode == "track-vocal" else "")
         ).encode()
     ).hexdigest()
     for old in JOBS.values():
@@ -619,13 +643,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=18765)
     parser.add_argument("--no-open", action="store_true")
+    parser.add_argument("--desktop", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.desktop and not DESKTOP_KEY:
+        parser.error("Desktop service must be started by Stringcraft")
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         listener.bind(("127.0.0.1", args.port))
         listener.listen(128)
     except OSError:
         listener.close()
+        if args.desktop:
+            raise SystemExit(1)
         # Never silently send the user to a different build occupying this port.
         try:
             import urllib.request
@@ -671,8 +700,19 @@ def main():
                     time.sleep(0.1)
 
         threading.Thread(target=open_when_ready, daemon=True).start()
+    server = uvicorn.Server(uvicorn.Config(app, log_level="warning"))
+    if args.desktop:
+        import threading
+
+        def stop_with_host():
+            try:
+                sys.stdin.read()
+            finally:
+                server.should_exit = True
+
+        threading.Thread(target=stop_with_host, daemon=True).start()
     try:
-        uvicorn.Server(uvicorn.Config(app, log_level="warning")).run(sockets=[listener])
+        server.run(sockets=[listener])
     finally:
         listener.close()
 

@@ -87,6 +87,7 @@ export interface InstrumentDefinition {
 }
 export interface Arrangement<N extends NoteEvent = GuitarNote> {
   sourceTrackIds?: string[];
+  profile?: import("./arrangement-draft").ArrangementProfile;
   id: string;
   instrumentId: string;
   difficulty: Difficulty;
@@ -168,6 +169,7 @@ export interface PluginContext {
   progress?: (value: number, message: string) => void;
 }
 export interface ArrangeOptions {
+  profile?: import("./arrangement-draft").ArrangementProfile;
   difficulty: Difficulty;
   capo: number;
   transpose: number;
@@ -351,7 +353,11 @@ export function validateProject(value: unknown): asserts value is MusicProject {
       if (track.score) validateScore(track.score);
       if (track.harmonyAnalysis)
         validateHarmony(track.harmonyAnalysis, p.duration);
-      for (const events of [track.melody, track.melodyEvidence])
+      for (const events of [
+        track.melody,
+        track.melodyEvidence,
+        track.phraseEvidence,
+      ])
         if (events) {
           validateNotes(events);
           if (events.some((n) => n.start + n.duration > p.duration + 0.01))

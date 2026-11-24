@@ -270,6 +270,7 @@ export default {
           goal: options.goal ?? "accompaniment",
           pattern: options.pattern ?? "strum",
           phrases: options.phrases,
+          profile: options.profile,
         })
       : recommend(notes, options.difficulty),
 } satisfies MusicPlugin;

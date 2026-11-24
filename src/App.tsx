@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   ArrowUpRight,
   BookOpen,
@@ -14,14 +15,57 @@ import {
 } from "lucide-react";
 import UnifiedWorkspace from "./components/UnifiedWorkspace";
 
-import { listProjects, removeProject } from "../packages/storage";
+import { listProjects, removeProject, saveProject } from "../packages/storage";
 import PluginCenter from "./components/PluginCenter";
 
 import APISettingsDialog from "./components/APISettingsDialog";
 import { useWorkbench } from "./hooks/useWorkbench";
 import { WorkbenchContext } from "./hooks/WorkbenchContext";
+type NativeHost = { postMessage(value: string): void } & EventTarget;
+function nativeHost() {
+  return (window as Window & { chrome?: { webview?: NativeHost } }).chrome
+    ?.webview;
+}
+
 export default function App() {
   const controller = useWorkbench();
+  const latest = useRef(controller);
+  latest.current = controller;
+  const host = nativeHost();
+  useEffect(() => {
+    if (!host) return;
+    const receive = (event: Event) => {
+      const controller = latest.current;
+      switch ((event as MessageEvent).data) {
+        case "pause":
+          controller.stop();
+          break;
+        case "restore":
+          controller.transport.seek(controller.transport.snapshot().position);
+          break;
+        case "save-and-exit":
+          controller.stop();
+          void (
+            controller.project.sourceKind !== "demo" ||
+            controller.saved !== "原创示例 · 尚未修改"
+              ? saveProject(controller.project)
+              : Promise.resolve()
+          ).then(
+            () => {
+              controller.abortRef.current?.abort();
+              host.postMessage("saved");
+            },
+            () => host.postMessage("save-failed"),
+          );
+          break;
+      }
+    };
+    host.addEventListener("message", receive);
+    return () => host.removeEventListener("message", receive);
+  }, [host]);
+  useEffect(() => {
+    if (controller.ready) host?.postMessage("ready");
+  }, [host, controller.ready]);
   return (
     <WorkbenchContext.Provider value={controller}>
       <WorkbenchView controller={controller} />
@@ -33,10 +77,10 @@ function WorkbenchView({
 }: {
   controller: ReturnType<typeof useWorkbench>;
 }) {
+  const desktop = !!nativeHost();
   const {
     section,
     page,
-    setSettings,
     message,
     setMessage,
     notify,
@@ -50,9 +94,10 @@ function WorkbenchView({
     busy,
     useDemo,
     settings,
+    setSettings,
   } = controller;
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-page={page}>
       <aside className="sidebar">
         <a
           className="brand"
@@ -150,14 +195,16 @@ function WorkbenchView({
               <i />
               本机处理
             </span>
-            <button
-              className="icon-button"
-              title="API 设置"
-              aria-label="API 设置"
-              onClick={() => setSettings(true)}
-            >
-              <Settings2 size={19} />
-            </button>
+            {nativeHost() && (
+              <button
+                className="icon-button"
+                title="全局设置"
+                aria-label="全局设置"
+                onClick={() => nativeHost()?.postMessage("settings")}
+              >
+                <Settings2 size={19} />
+              </button>
+            )}
             <a
               className="download-app"
               href={`${import.meta.env.BASE_URL}docs/LOCAL_TRIAL.html`}
@@ -169,7 +216,7 @@ function WorkbenchView({
             </a>
           </div>
         </header>
-        <main className="main-content">
+        <main className="main-content" data-page={page}>
           {message && (
             <div className="toast" role="status">
               <Info size={17} />
@@ -192,7 +239,9 @@ function WorkbenchView({
                   <p className="eyebrow">YOUR MUSICAL JOURNEY</p>
                   <h1>每一段旋律，都值得留下。</h1>
                   <p className="muted">
-                    项目保存在当前浏览器。导出项目文件，可以备份并带到另一台设备。
+                    {desktop
+                      ? "作品保存在本机。导出含音频工程可以备份或迁移。"
+                      : "作品保存在当前浏览器。导出项目文件可以备份或迁移。"}
                   </p>
                 </div>
                 <button
@@ -232,7 +281,9 @@ function WorkbenchView({
                           controller.clearProjectAudio(p.id);
                           setProjects(await listProjects());
                           controller.notify(
-                            "作品及其关联录音已从此浏览器删除。",
+                            desktop
+                              ? "作品及其关联录音已从本机删除。"
+                              : "作品及其关联录音已从此浏览器删除。",
                           );
                         }}
                       >
@@ -256,7 +307,8 @@ function WorkbenchView({
       <input
         ref={projectInput}
         type="file"
-        accept=".json"
+        accept={controller.local ? ".json,.zip,.stringcraft" : ".json"}
+        data-testid="project-import"
         className="visually-hidden"
         onChange={async (e) => {
           const f = e.target.files?.[0];

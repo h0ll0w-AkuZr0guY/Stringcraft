@@ -75,7 +75,7 @@ async function open(page: Page, p: object) {
   await expect(
     page.getByRole("button", { name: "生成吉他编配", exact: true }),
   ).toBeEnabled();
-  await page.locator('input[accept=".json"]').setInputFiles({
+  await page.getByTestId("project-import").setInputFiles({
     name: "reference.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(p)),
@@ -96,10 +96,7 @@ async function exported(page: Page) {
     .getByRole("button", { name: "导出项目 JSON", exact: true })
     .click();
   await page.getByRole("button", { name: "导出", exact: true }).click();
-  if (reopen)
-    await page
-      .getByRole("button", { name: "编配与分析设置", exact: true })
-      .click();
+  if (reopen) await openSettings(page, "识别与分轨");
   return JSON.parse(await readFile((await (await wait).path())!, "utf8"));
 }
 
@@ -120,9 +117,7 @@ test("rebind original and alternative recordings while preserving the score and 
   });
   const p = await exercise();
   await open(page, p);
-  await page
-    .getByRole("button", { name: "编配与分析设置", exact: true })
-    .click();
+  await openSettings(page, "识别与分轨");
   await page.getByRole("button", { name: "原曲对照", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("当前浏览器没有");
   await page
@@ -169,12 +164,12 @@ test("rebind original and alternative recordings while preserving the score and 
     chords: [],
     sections: [],
   };
-  await page.locator('input[accept=".json"]').setInputFiles({
+  await page.getByTestId("project-import").setInputFiles({
     name: "short.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(short)),
   });
-  await openSettings(page);
+  await openSettings(page, "识别与分轨");
   await page.getByLabel("录音对照起点", { exact: true }).fill("0.5");
   await page.getByRole("button", { name: "参考录音对照", exact: true }).click();
   await expect(
@@ -198,9 +193,7 @@ test("invalid recordings and uncovered offsets leave the musical project unchang
 }) => {
   const p = await exercise();
   await open(page, p);
-  await page
-    .getByRole("button", { name: "编配与分析设置", exact: true })
-    .click();
+  await openSettings(page, "识别与分轨");
   await page.getByTestId("reference-audio-input").setInputFiles({
     name: "invalid.wav",
     mimeType: "audio/wav",
@@ -244,9 +237,7 @@ test("saved references reopen and deleting a project clears only its own recordi
 }) => {
   const p = await exercise();
   await open(page, p);
-  await page
-    .getByRole("button", { name: "编配与分析设置", exact: true })
-    .click();
+  await openSettings(page, "识别与分轨");
   for (const name of ["clean-melody", "ascending"]) {
     await page
       .getByTestId("reference-audio-input")
@@ -265,9 +256,7 @@ test("saved references reopen and deleting a project clears only its own recordi
     .filter({ has: page.getByRole("heading", { name: p.name, exact: true }) })
     .getByRole("button", { name: "继续创作" })
     .click();
-  await page
-    .getByRole("button", { name: "编配与分析设置", exact: true })
-    .click();
+  await openSettings(page, "识别与分轨");
   await expect(
     page.getByRole("button", { name: "参考录音对照", exact: true }),
   ).toBeVisible();
@@ -328,7 +317,7 @@ test("upgrading a legacy project copies its recording without replacing the orig
   p.schemaVersion = 1;
   p.score = undefined;
   await open(page, p);
-  await openSettings(page);
+  await openSettings(page, "识别与分轨");
   await page
     .getByTestId("reference-audio-input")
     .setInputFiles("tests/fixtures/audio/clean-melody.wav");
@@ -337,6 +326,7 @@ test("upgrading a legacy project copies its recording without replacing the orig
     "已保存在此浏览器",
   );
 
+  await openSettings(page, "节拍与和弦");
   await page
     .getByRole("button", { name: "升级为 v2 副本", exact: true })
     .click();

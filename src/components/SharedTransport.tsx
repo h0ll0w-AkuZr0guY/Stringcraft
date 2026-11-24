@@ -1,7 +1,11 @@
 import { Pause, Play, SkipBack } from "lucide-react";
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 import { useTransport } from "../hooks/useTransport";
-export default function SharedTransport() {
+export default function SharedTransport({
+  professional,
+}: {
+  professional: boolean;
+}) {
   const c = useWorkbenchContext(),
     p = useTransport(c.transport),
     active = c.tracks.find((t) => t.id === c.activeTrackId);
@@ -54,7 +58,9 @@ export default function SharedTransport() {
       >
         <option value="audio">轨道音频</option>
         <option value="notes">当前轨音符</option>
-        <option value="mix">多轨混合</option>
+        {(professional || c.monitorMode === "mix") && (
+          <option value="mix">多轨混合</option>
+        )}
       </select>
       <label className="inline-check">
         <input
@@ -64,7 +70,7 @@ export default function SharedTransport() {
         />
         循环
       </label>
-      {c.loop && (
+      {professional && c.loop && (
         <>
           <input
             aria-label="循环 A 秒"

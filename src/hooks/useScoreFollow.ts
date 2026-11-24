@@ -1,7 +1,18 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useWorkbenchContext } from "./WorkbenchContext";
 /** Manual navigation suspends following until the user explicitly resumes it. */
 export function useScoreFollow() {
   const [following, setFollowing] = useState(true);
+  const { transport } = useWorkbenchContext();
+  useEffect(() => {
+    let revision = transport.snapshot().seekRevision;
+    return transport.subscribe(() => {
+      const next = transport.snapshot().seekRevision;
+      if (next === revision) return;
+      revision = next;
+      setFollowing(true);
+    });
+  }, [transport]);
   const manual = useCallback(() => {
     setFollowing(false);
   }, []);
@@ -11,7 +22,12 @@ export function useScoreFollow() {
       target: { left: number; top: number; width: number; height: number },
       force = false,
     ) => {
-      if (!following && !force) return;
+      if (
+        (!following && !force) ||
+        !container.clientHeight ||
+        !container.clientWidth
+      )
+        return;
       const x = target.left - container.scrollLeft,
         y = target.top - container.scrollTop;
       if (x < 0 || x + target.width > container.clientWidth * 0.8)
@@ -19,11 +35,8 @@ export function useScoreFollow() {
           0,
           target.left - container.clientWidth * 0.25,
         );
-      if (y < 0 || y + target.height > container.clientHeight * 0.85)
-        container.scrollTop = Math.max(
-          0,
-          target.top - container.clientHeight * 0.15,
-        );
+      if (y < 0 || y + target.height > container.clientHeight - 2)
+        container.scrollTop = Math.max(0, target.top - 28);
     },
     [following],
   );

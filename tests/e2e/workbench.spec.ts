@@ -127,9 +127,7 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   ).toBeGreaterThan(0);
   expect(result.timingAnalysis.method).toBe("spectral-flux-acf-v1");
   expect(result.timingAnalysis.candidates.length).toBeGreaterThan(0);
-  await page
-    .getByRole("button", { name: "编配与分析设置", exact: true })
-    .click();
+  await openSettings(page, "节拍与和弦");
   await page.locator(".structure-panel > summary").click();
   await page
     .getByRole("button", { name: /试听 .* BPM 拍点/ })
@@ -138,7 +136,7 @@ test("real uploaded audio reaches the model and can be arranged", async ({
   await expect(page.getByRole("status")).toContainText("试听");
   await closeSettings(page);
   await page.getByRole("button", { name: "暂停播放", exact: true }).click();
-  await openSettings(page);
+  await openSettings(page, "节拍与和弦");
   await page.locator(".structure-panel > summary").click();
   await page
     .getByRole("button", { name: /使用 .* BPM 参考速度/ })

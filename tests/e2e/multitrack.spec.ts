@@ -1,3 +1,4 @@
+import { openSettings, closeSettings } from "./workspace-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, readFile } from "node:fs/promises";
 import { demoProject } from "../../packages/music/demo";
@@ -84,13 +85,14 @@ test("shared clock resumes, seeks while playing, follows and yields to manual br
     page.getByRole("button", { name: "回到播放位置", exact: true }),
   ).toBeVisible();
   const browsed = Number(await roll.getAttribute("data-from"));
-  await seek(page, 220);
   await page.waitForTimeout(150);
   expect(Number(await roll.getAttribute("data-from"))).toBeCloseTo(browsed, 1);
-  await page.getByRole("button", { name: "回到播放位置", exact: true }).click();
+  await seek(page, 220);
   await expect
     .poll(async () => Number(await roll.getAttribute("data-from")))
     .toBeGreaterThan(200);
+  await openSettings(page);
+  await closeSettings(page);
   await page.getByRole("button", { name: "静音导入音乐", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "播放当前轨道", exact: true }),
@@ -124,6 +126,8 @@ test("track edits are independent, click auditions and drag does not seek", asyn
     },
   ];
   await load(page, p);
+  await openSettings(page);
+  await closeSettings(page);
   const roll = page.getByTestId("note-roll");
   const point = async (start: number, midi: number) => {
     const b = (await roll.boundingBox())!;
@@ -214,4 +218,120 @@ test("guitar and rhythm score hits use the shared position and stay audible", as
   expect(
     p.arrangement.notes.some((n: { duration: number }) => n.duration > 0),
   ).toBe(true);
+});
+
+test("normal controls and long scores stay usable through seeking, playback and resize", async ({
+  page,
+}) => {
+  await ready(page);
+  const modes = page.getByRole("group", { name: "界面模式" });
+  await expect(modes.getByRole("button", { name: "常规模式" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const choices = page.getByRole("group", { name: "弹奏难度" });
+  await expect(choices.getByRole("button")).toHaveCount(4);
+  await expect(choices.getByRole("button", { name: "日常" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const goal = page.getByLabel("编配目标");
+  await goal.selectOption("fingerstyle");
+  await choices.getByRole("button", { name: "初学" }).click();
+  await expect(goal).toHaveValue("fingerstyle");
+  await openSettings(page, "编配");
+  await expect(page.getByLabel("编配算法")).toHaveValue("classic");
+  await modes.getByRole("button", { name: "常规模式" }).click();
+  await expect(goal).toHaveValue("fingerstyle");
+  await expect(choices.getByRole("button", { name: "初学" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  const p = demoProject();
+  p.bpm = 120;
+  p.duration = 144;
+  p.score = {
+    ...p.score!,
+    durationBeats: 288,
+    tempo: [{ beat: 0, bpm: 120 }],
+    events: [],
+    sections: [],
+    timing: "manual",
+    beatOffsetSeconds: 0,
+    chords: Array.from({ length: 72 }, (_, i) => ({
+      id: `bar-${i}`,
+      beat: i * 4,
+      durationBeats: 4,
+      root: i % 2 ? 7 : 0,
+      quality: "major" as const,
+      origin: "manual" as const,
+    })),
+  };
+  p.arrangement = {
+    id: "long-guitar",
+    instrumentId: "guitar-standard",
+    capo: 0,
+    transpose: 0,
+    difficulty: "normal",
+    warnings: [],
+    dropped: [],
+    goal: "accompaniment",
+    score: p.score,
+    performance: undefined,
+    notes: Array.from({ length: 72 }, (_, i) => ({
+      id: `sounding-${i}`,
+      start: i * 2,
+      duration: 0.5,
+      role: "melody",
+      source: "manual",
+      pitch: { midi: 64 },
+      score: 1,
+      velocity: 0.65,
+      string: 1,
+      fret: 0,
+    })),
+  };
+  await load(page, p);
+  await page.locator('[data-track-id="arrangement"] .track-select').click();
+  const scrollport = page.locator(".notation-body");
+  const measure = (n: number) =>
+    scrollport.locator(`[data-current-measure="${n}"]`);
+  const visibleMeasure = async (n: number) => {
+    await expect(measure(n)).toHaveCount(1);
+    await expect(measure(n)).toBeInViewport({ ratio: 0.45 });
+    await expect
+      .poll(() => scrollport.evaluate((el) => el.scrollTop))
+      .toBeGreaterThan(250);
+  };
+  await seek(page, 78.7);
+  await visibleMeasure(40);
+  await scrollport.hover();
+  await page.mouse.wheel(0, -450);
+  await expect(
+    page.getByRole("button", { name: "回到播放位置", exact: true }),
+  ).toBeInViewport();
+  await seek(page, 101.8);
+  await visibleMeasure(51);
+  await page.getByRole("button", { name: "播放当前轨道", exact: true }).click();
+  await visibleMeasure(52);
+  await page.getByRole("button", { name: "节奏谱", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "暂停播放", exact: true }),
+  ).toBeVisible();
+  await seek(page, 90.3);
+  await visibleMeasure(46);
+  await page.getByRole("button", { name: "暂停播放", exact: true }).click();
+  await page.setViewportSize({ width: 1050, height: 700 });
+  await visibleMeasure(46);
+  await page.getByRole("button", { name: "六线谱", exact: true }).click();
+  await page.getByLabel("谱面缩放").selectOption("0.8");
+  await visibleMeasure(46);
+  const shellGeometry = async () =>
+    page.locator(".sidebar").evaluate((el) => el.getBoundingClientRect().width);
+  const width = await shellGeometry();
+  await page.getByRole("button", { name: "我的作品", exact: true }).click();
+  expect(await shellGeometry()).toBeCloseTo(width, 1);
+  await page.getByRole("button", { name: /插件中心/ }).click();
+  expect(await shellGeometry()).toBeCloseTo(width, 1);
 });

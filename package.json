@@ -1,6 +1,6 @@
 {
   "name": "stringcraft",
-  "version": "0.2.0-local.4",
+  "version": "0.2.0-local.5",
   "private": true,
   "type": "module",
   "description": "A local-first, extensible polyphonic note editor and instrument workbench",

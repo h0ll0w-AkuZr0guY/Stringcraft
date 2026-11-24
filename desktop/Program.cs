@@ -1,0 +1,357 @@
+using System.Diagnostics;
+using System.Net;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using System.Text.Json;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
+
+namespace Stringcraft.Desktop;
+
+internal static class Program
+{
+    [STAThread]
+    private static void Main()
+    {
+        ApplicationConfiguration.Initialize();
+        string identity = WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName;
+        string name = @"Local\Stringcraft.Desktop." + identity;
+        using var activate = new EventWaitHandle(false, EventResetMode.AutoReset, name + ".Activate");
+        using var instance = new Mutex(true, name, out bool created);
+        if (!created)
+        {
+            activate.Set();
+            return;
+        }
+
+        string data = Environment.GetEnvironmentVariable("STRINGCRAFT_DATA")
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Stringcraft", "Desktop");
+        try
+        {
+            Directory.CreateDirectory(data);
+            using var window = new WorkbenchWindow(data, activate);
+            Application.Run(window);
+        }
+        catch (Exception error)
+        {
+            MessageBox.Show(error.Message, "弦作启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+}
+
+internal sealed class WorkbenchWindow : Form
+{
+    private const string Address = "http://127.0.0.1:18770/";
+    private readonly string data;
+    private readonly WebView2 view = new() { Dock = DockStyle.Fill };
+    private readonly NotifyIcon tray;
+    private readonly RegisteredWaitHandle activation;
+    private readonly string desktopKey = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+    private Process? service;
+    private ProcessTree? tree;
+    private bool exiting;
+    private bool exitPending;
+    private bool workbenchReady;
+    private TaskCompletionSource<bool>? saved;
+
+    public WorkbenchWindow(string data, EventWaitHandle activate)
+    {
+        this.data = data;
+        Text = "弦作 Stringcraft";
+        MinimumSize = new Size(800, 540);
+        Size = new Size(1390, 900);
+        StartPosition = FormStartPosition.CenterScreen;
+        Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? SystemIcons.Application;
+        Controls.Add(view);
+        var menu = new ContextMenuStrip();
+        menu.Items.Add("显示工作台", null, (_, _) => RestoreWorkbench());
+        menu.Items.Add("全局设置", null, (_, _) => ShowSettings());
+        menu.Items.Add("打开数据目录", null, (_, _) => OpenPath(data));
+        menu.Items.Add("退出弦作", null, async (_, _) => await ExitAsync());
+        tray = new NotifyIcon { Icon = Icon, Text = "弦作 Stringcraft", Visible = true, ContextMenuStrip = menu };
+        tray.DoubleClick += (_, _) => RestoreWorkbench();
+        _ = Handle;
+        activation = ThreadPool.RegisterWaitForSingleObject(activate, (_, _) =>
+        {
+            if (!IsDisposed && IsHandleCreated) BeginInvoke(RestoreWorkbench);
+        }, null, Timeout.Infinite, false);
+        Shown += async (_, _) => await StartAsync();
+    }
+
+    private async Task StartAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(CoreWebView2Environment.GetAvailableBrowserVersionString()))
+                throw new InvalidOperationException("缺少 Microsoft Edge WebView2 Runtime。请按随包说明安装 Windows x64 离线运行时后重试。");
+            var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: Path.Combine(data, "webview"));
+            await view.EnsureCoreWebView2Async(environment);
+            var core = view.CoreWebView2;
+            ConfigureView(core);
+            core.WebMessageReceived += ReceiveMessage;
+            core.AddWebResourceRequestedFilter(Address + "*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+            core.WebResourceRequested += (_, e) =>
+            {
+                if (IsLocal(e.Request.Uri)) e.Request.Headers.SetHeader("X-Stringcraft-Desktop", desktopKey);
+            };
+            await StartServiceAsync();
+            core.Navigate(Address);
+        }
+        catch (Exception error)
+        {
+            await StopServiceAsync();
+            MessageBox.Show(this, error.Message, "弦作启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            await ExitAsync();
+        }
+    }
+
+    private async Task StartServiceAsync()
+    {
+        string executable = Path.Combine(AppContext.BaseDirectory, "service", "StringcraftService.exe");
+        var info = new ProcessStartInfo(executable, "--desktop --port 18770 --no-open")
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            WorkingDirectory = AppContext.BaseDirectory,
+        };
+        info.Environment["STRINGCRAFT_DATA"] = data;
+        info.Environment["STRINGCRAFT_DESKTOP_KEY"] = desktopKey;
+        info.Environment["STRINGCRAFT_PLUGIN_DIR"] = ModelDirectory();
+        tree = new ProcessTree();
+        service = Process.Start(info) ?? throw new InvalidOperationException("无法启动本地计算服务。");
+        try { tree.Add(service); }
+        catch { service.Kill(entireProcessTree: true); throw; }
+
+        using var client = new HttpClient(new HttpClientHandler { UseProxy = false })
+        { Timeout = TimeSpan.FromMilliseconds(700) };
+        client.DefaultRequestHeaders.Add("X-Stringcraft-Desktop", desktopKey);
+        for (int attempt = 0; attempt < 40; attempt++)
+        {
+            if (service.HasExited) break;
+            try
+            {
+                using var response = await client.GetAsync(Address + "api/v1/capabilities");
+                var proof = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(desktopKey)));
+                if (response.StatusCode == HttpStatusCode.OK &&
+                    response.Headers.TryGetValues("X-Stringcraft-Desktop-Ready", out var values) &&
+                    values.Any(value => string.Equals(value, proof, StringComparison.OrdinalIgnoreCase))) return;
+            }
+            catch (HttpRequestException) { }
+            catch (TaskCanceledException) { }
+            await Task.Delay(125);
+        }
+        throw new InvalidOperationException("无法连接本地服务。检查便携包是否完整解压，或 18770 端口是否已被其他程序占用。");
+    }
+
+    private static bool IsLocal(string value) => Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)
+        && uri.Scheme == "http" && uri.Host == "127.0.0.1" && uri.Port == 18770;
+
+    private void ConfigureView(CoreWebView2 core)
+    {
+        core.Settings.AreDevToolsEnabled = false;
+        core.Settings.AreDefaultContextMenusEnabled = false;
+        core.NavigationStarting += (_, e) => { if (!IsLocal(e.Uri) && e.Uri != "about:blank") e.Cancel = true; };
+        core.NewWindowRequested += (_, e) =>
+        {
+            if (e.IsUserInitiated && Uri.TryCreate(e.Uri, UriKind.Absolute, out Uri? uri)
+                && uri.Scheme == "https" && !IsLocal(e.Uri))
+            {
+                e.Handled = true;
+                OpenPath(uri.AbsoluteUri);
+                return;
+            }
+            if (IsLocal(e.Uri) || e.Uri is "" or "about:blank")
+                _ = OpenChildAsync(e);
+            else e.Handled = true;
+        };
+        core.PermissionRequested += (_, e) => e.State = CoreWebView2PermissionState.Deny;
+    }
+
+    private async Task OpenChildAsync(CoreWebView2NewWindowRequestedEventArgs e)
+    {
+        using var deferral = e.GetDeferral();
+        var popup = new Form { Text = "弦作 · 文档与打印", Size = new Size(1000, 780), StartPosition = FormStartPosition.CenterParent };
+        var child = new WebView2 { Dock = DockStyle.Fill };
+        popup.Controls.Add(child);
+        try
+        {
+            await child.EnsureCoreWebView2Async(view.CoreWebView2.Environment);
+            ConfigureView(child.CoreWebView2);
+            child.CoreWebView2.Settings.IsWebMessageEnabled = false;
+            child.CoreWebView2.AddWebResourceRequestedFilter(Address + "*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+            child.CoreWebView2.WebResourceRequested += (_, args) =>
+            {
+                if (IsLocal(args.Request.Uri)) args.Request.Headers.SetHeader("X-Stringcraft-Desktop", desktopKey);
+            };
+            child.CoreWebView2.WindowCloseRequested += (_, _) => popup.Close();
+            e.NewWindow = child.CoreWebView2;
+            popup.Show(this);
+        }
+        catch { popup.Dispose(); e.Handled = true; }
+    }
+
+    private void ReceiveMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        if (!IsLocal(e.Source)) return;
+        string command;
+        try { command = e.TryGetWebMessageAsString(); }
+        catch (ArgumentException) { return; }
+        switch (command)
+        {
+            case "ready": workbenchReady = true; break;
+            case "settings": ShowSettings(); break;
+            case "print-tab": _ = SaveTabPdfAsync(); break;
+            case "saved": saved?.TrySetResult(true); break;
+            case "save-failed": saved?.TrySetResult(false); break;
+        }
+    }
+
+    private void Send(string command) => view.CoreWebView2?.PostWebMessageAsString(command);
+
+    private async Task SaveTabPdfAsync()
+    {
+        using var picker = new SaveFileDialog { Filter = "PDF|*.pdf", AddExtension = true, FileName = "Stringcraft.pdf" };
+        if (picker.ShowDialog(this) != DialogResult.OK) return;
+        try
+        {
+            if (!await view.CoreWebView2.PrintToPdfAsync(picker.FileName))
+                MessageBox.Show(this, "未能保存六线谱。", "弦作");
+        }
+        catch (Exception error)
+        {
+            MessageBox.Show(this, error.Message, "六线谱保存失败");
+        }
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        if (!exiting && e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            Send("pause");
+            Hide();
+        }
+        base.OnFormClosing(e);
+    }
+
+    private void RestoreWorkbench()
+    {
+        if (exiting) return;
+        Show();
+        if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
+        Activate();
+        Send("restore");
+    }
+
+    private string SettingsPath => Path.Combine(data, "desktop-settings.json");
+    private string ModelDirectory()
+    {
+        try
+        {
+            if (File.Exists(SettingsPath))
+            {
+                string? path = JsonSerializer.Deserialize<string>(File.ReadAllText(SettingsPath));
+                if (!string.IsNullOrEmpty(path) && Path.IsPathFullyQualified(path)) return path;
+            }
+        }
+        catch (Exception error) when (error is IOException or JsonException or UnauthorizedAccessException) { }
+        return Environment.GetEnvironmentVariable("STRINGCRAFT_PLUGIN_DIR")
+            ?? Path.Combine(AppContext.BaseDirectory, "runtime_plugins");
+    }
+
+    private void ShowSettings()
+    {
+        RestoreWorkbench();
+        using var settings = new Form { Text = "弦作 · 全局设置", Size = new Size(630, 230), StartPosition = FormStartPosition.CenterParent };
+        var body = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, Padding = new Padding(16), WrapContents = false };
+        body.Controls.Add(new Label { AutoSize = true, Text = "本地模型目录 · 更改后重启应用" });
+        var pathDisplay = new TextBox { Text = ModelDirectory(), ReadOnly = true, Width = 550 };
+        body.Controls.Add(pathDisplay);
+        var choose = new Button { Text = "选择模型目录", AutoSize = true };
+        choose.Click += (_, _) =>
+        {
+            using var picker = new FolderBrowserDialog { Description = "选择包含 local-separation 的 runtime_plugins 目录", SelectedPath = ModelDirectory() };
+            if (picker.ShowDialog(settings) != DialogResult.OK) return;
+            if (!File.Exists(Path.Combine(picker.SelectedPath, "local-separation", "python", "python.exe")))
+            {
+                MessageBox.Show(settings, "该目录缺少 local-separation\u005cpython\u005cpython.exe。", "模型目录无效");
+                return;
+            }
+            try
+            {
+                File.WriteAllText(SettingsPath + ".tmp", JsonSerializer.Serialize(picker.SelectedPath));
+                File.Move(SettingsPath + ".tmp", SettingsPath, true);
+                pathDisplay.Text = picker.SelectedPath;
+            }
+            catch (IOException error) { MessageBox.Show(settings, error.Message, "无法保存模型设置"); }
+        };
+        body.Controls.Add(choose);
+        var version = File.Exists(Path.Combine(AppContext.BaseDirectory, "build-info.json"))
+            ? File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "build-info.json")) : "{}";
+        using var metadata = JsonDocument.Parse(version);
+        string appVersion = metadata.RootElement.TryGetProperty("appVersion", out var v) ? v.GetString() ?? "" : "";
+        body.Controls.Add(new Label { AutoSize = true, Text = "版本 " + appVersion + "   ·   " + data });
+        var quit = new Button { Text = "退出弦作", AutoSize = true };
+        quit.Click += (_, _) => { settings.Close(); BeginInvoke(async () => await ExitAsync()); };
+        body.Controls.Add(quit);
+        settings.Controls.Add(body);
+        settings.ShowDialog(this);
+    }
+
+    private async Task ExitAsync()
+    {
+        if (exitPending || exiting) return;
+        exitPending = true;
+        if (workbenchReady)
+        {
+            saved = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Send("save-and-exit");
+            var result = await Task.WhenAny(saved.Task, Task.Delay(TimeSpan.FromSeconds(10)));
+            if (result != saved.Task || !await saved.Task)
+            {
+                RestoreWorkbench();
+                MessageBox.Show(this, "作品暂未保存。请先导出项目或重试退出。", "弦作", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                exitPending = false;
+                return;
+            }
+        }
+        exiting = true;
+        tray.Visible = false;
+        await StopServiceAsync();
+        Close();
+    }
+
+    private async Task StopServiceAsync()
+    {
+        if (service is { HasExited: false })
+        {
+            service.StandardInput.Close();
+            await Task.WhenAny(service.WaitForExitAsync(), Task.Delay(3000));
+        }
+        tree?.Dispose(); // Closing the job also reaps unfinished model descendants.
+        tree = null;
+        service?.Dispose();
+        service = null;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            activation.Unregister(null);
+            tray.Visible = false;
+            tray.ContextMenuStrip?.Dispose();
+            tray.Dispose();
+            tree?.Dispose();
+            service?.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
+    private static void OpenPath(string path)
+    {
+        try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
+        catch (System.ComponentModel.Win32Exception error) { MessageBox.Show(error.Message, "无法打开"); }
+    }
+}

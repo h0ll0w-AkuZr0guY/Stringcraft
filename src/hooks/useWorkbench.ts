@@ -137,6 +137,10 @@ export function useWorkbench() {
   );
   const [difficulty, setDifficulty] = useState<Difficulty>("normal"),
     [goal, setGoal] = useState<ArrangementGoal>("accompaniment"),
+    [profile, setProfile] =
+      useState<import("../../packages/contracts").ArrangementProfile>(
+        "classic",
+      ),
     [pattern, setPattern] = useState<"strum" | "arpeggio" | "auto">("auto"),
     [capo, setCapo] = useState(0),
     [autoCapo, setAutoCapo] = useState(true),
@@ -276,6 +280,7 @@ export function useWorkbench() {
       project.arrangement.capo !== capo ||
       project.arrangement.transpose !== transpose ||
       project.arrangement.goal !== goal ||
+      (project.arrangement.profile ?? "classic") !== profile ||
       project.arrangement.score?.tempo[0].bpm !== project.bpm ||
       (project.arrangementDraft
         ? project.arrangementDraft.inputFingerprint !==
@@ -293,6 +298,9 @@ export function useWorkbench() {
     neutralStop.current = null;
     void audioRef.current?.close().catch(() => {});
     audioRef.current = null;
+    previewRevision.current++;
+    void previewContext.current?.close().catch(() => {});
+    previewContext.current = null;
     if (stemPlayer.current) {
       stemPlayer.current.pause();
       stemPlayer.current = null;
@@ -962,7 +970,12 @@ export function useWorkbench() {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const vocal = current.tracks?.find((t) => t.role === "vocal");
-      if (goal === "fingerstyle" && vocal?.asset && !vocal.analysisRevision) {
+      if (
+        goal === "fingerstyle" &&
+        vocal?.asset &&
+        (!vocal.analysisRevision ||
+          (profile === "phrasing" && !vocal.phraseEvidence))
+      ) {
         update({
           phase: "分析人声轨",
           message: "正在独立转录人声，不重复分离。",
@@ -987,6 +1000,7 @@ export function useWorkbench() {
           pattern,
           autoCapo,
           useAI,
+          profile,
         },
         ai,
         control.signal,
@@ -1006,6 +1020,7 @@ export function useWorkbench() {
       setSelected(null);
       setActiveTrackId("arrangement");
       setMode("guitar");
+      setView("tab");
       update({
         status: "success",
         endedAt: Date.now(),
@@ -1530,8 +1545,9 @@ export function useWorkbench() {
           t.id === vocal.id
             ? {
                 ...t,
-                notes: result.notes,
+                notes: t.analysisRevision ? t.notes : result.notes,
                 melodyEvidence: result.melodyEvidence,
+                phraseEvidence: result.phraseEvidence,
                 analysisRevision: result.run?.cacheKey,
               }
             : t,
@@ -1634,7 +1650,14 @@ export function useWorkbench() {
   function activateNotes(events: NoteEvent[], at: number, guitar = false) {
     const wasPlaying = transport.snapshot().status !== "paused";
     seek(at);
-    if (!wasPlaying && events.length) void audition(events, guitar);
+    if (
+      events.length &&
+      (!wasPlaying ||
+        !audibleTrackIds.current.includes(
+          guitar ? "arrangement" : selectedTrackId,
+        ))
+    )
+      void audition(events, guitar);
   }
   async function exportAs(format: string) {
     try {
@@ -1691,6 +1714,7 @@ export function useWorkbench() {
       if (p.transcription?.status === "running")
         p = { ...p, transcription: { ...p.transcription, status: "stopped" } };
       edit(p, false);
+      setProfile(p.arrangement?.profile ?? "classic");
       if (p.arrangement) {
         setGoal(p.arrangement.goal ?? "melody");
         if (p.arrangementDraft) setPattern(p.arrangementDraft.options.pattern);
@@ -1859,6 +1883,8 @@ export function useWorkbench() {
     setProjects,
     difficulty,
     setDifficulty,
+    profile,
+    setProfile,
     capo,
     setCapo,
     autoCapo,

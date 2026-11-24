@@ -9,20 +9,31 @@ import { useEffect, useRef, useState } from "react";
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 import GenerationFeedback from "./GenerationFeedback";
 import NoteEditor from "./NoteEditor";
-import ScorePanel from "./ScorePanel";
+import ScorePanel, { printTab } from "./ScorePanel";
 import SharedTransport from "./SharedTransport";
+import ArrangementChoices from "./ArrangementChoices";
 import SourceControls from "./SourceControls";
 import "./workspace.css";
 
 export default function UnifiedWorkspace() {
   const c = useWorkbenchContext();
+  const desktop = !!(window as Window & { chrome?: { webview?: unknown } })
+    .chrome?.webview;
   const [controls, setControls] = useState(false),
     [exporting, setExporting] = useState(false),
     [extras, setExtras] = useState(false),
     [trackDrawer, setTrackDrawer] = useState(false);
+  const [professional, setProfessional] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<
+    "arrange" | "analysis" | "harmony" | "notes"
+  >("arrange");
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (c.advanced) setControls(true);
+    if (c.advanced) {
+      setProfessional(true);
+      setSettingsTab("harmony");
+      setControls(true);
+    }
   }, [c.advanced]);
   const visible = c.tracks.filter(
     (t) => extras || !["bass", "drums", "other"].includes(t.role),
@@ -31,7 +42,6 @@ export default function UnifiedWorkspace() {
     c.setMode(view === "notes" ? "editor" : "guitar");
     if (view !== "notes") {
       c.setView(view);
-      if (c.project.arrangement) c.selectTrack("arrangement");
     }
   };
   const togglePlay = () => {
@@ -41,12 +51,13 @@ export default function UnifiedWorkspace() {
   return (
     <section
       ref={root}
+      data-professional={professional}
       className={`unified-workspace ${c.inspectorOpen ? "inspector-open" : ""} ${c.filtersOpen ? "filters-open" : ""}`}
       aria-label="多轨音乐工作台"
       onKeyDown={(e) => {
         if (
           e.code === "Space" &&
-          !["INPUT", "SELECT", "TEXTAREA"].includes(
+          !["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(
             (e.target as HTMLElement).tagName,
           ) &&
           !(e.target as HTMLElement).closest('[role="application"]')
@@ -60,7 +71,7 @@ export default function UnifiedWorkspace() {
         <div>
           <strong>{c.project.name}</strong>
           <small>
-            {c.saved} ·{" "}
+            {desktop ? c.saved.replace("此浏览器", "本机") : c.saved} ·{" "}
             {c.project.tracks?.length ? "独立分轨" : "原始 / 导入音乐"}
           </small>
         </div>
@@ -82,14 +93,39 @@ export default function UnifiedWorkspace() {
           <Upload size={15} />
           上传音频 / MIDI
         </button>
-        <button
-          className="button secondary small"
-          aria-expanded={controls}
-          onClick={() => setControls(!controls)}
-        >
-          <SlidersHorizontal size={15} />
-          编配与分析设置
-        </button>
+        <div className="workspace-mode" role="group" aria-label="界面模式">
+          <button
+            type="button"
+            aria-pressed={!professional}
+            onClick={() => {
+              setProfessional(false);
+              setControls(false);
+              c.setInspectorOpen(false);
+              c.setFiltersOpen(false);
+            }}
+          >
+            常规模式
+          </button>
+          <button
+            type="button"
+            aria-pressed={professional}
+            onClick={() => {
+              setProfessional(true);
+              setControls(true);
+            }}
+          >
+            专业模式
+          </button>
+        </div>
+        {professional && !controls && (
+          <button
+            className="button secondary small"
+            onClick={() => setControls(true)}
+          >
+            <SlidersHorizontal size={15} />
+            编配与分析设置
+          </button>
+        )}
         <div className="workspace-export">
           <button
             className="button secondary small"
@@ -121,13 +157,39 @@ export default function UnifiedWorkspace() {
                   <button onClick={() => void c.exportAs("musicxml")}>
                     编配 MusicXML
                   </button>
+                  <button
+                    onClick={() => {
+                      setControls(false);
+                      setExporting(false);
+                      chooseView("tab");
+                      setTimeout(printTab, 100);
+                    }}
+                  >
+                    打印六线谱 PDF
+                  </button>
                 </>
               )}
             </div>
           )}
         </div>
       </header>
-      <SharedTransport />
+      {!controls && (
+        <div className="arrangement-bar">
+          <ArrangementChoices compact />{" "}
+          <button
+            className="button accent small"
+            disabled={
+              !c.ready || !!c.busy || !c.tracks.some((t) => t.notes.length)
+            }
+            onClick={() => void c.generate()}
+          >
+            {c.generation?.status === "running"
+              ? "正在生成，请稍候…"
+              : "生成吉他编配"}
+          </button>
+        </div>
+      )}
+      <SharedTransport professional={professional} />
       <div className="workspace-feedback">
         <GenerationFeedback result />
         {c.message.includes("工作台组件需要") && (
@@ -146,7 +208,7 @@ export default function UnifiedWorkspace() {
           </div>
         )}
       </div>
-      <div className="workspace-content">
+      <div className="workspace-content" hidden={controls}>
         <aside
           className={`track-list ${trackDrawer ? "tracks-open" : ""}`}
           aria-label="工程轨道"
@@ -171,6 +233,8 @@ export default function UnifiedWorkspace() {
                 aria-pressed={t.id === c.activeTrackId}
                 onClick={() => {
                   c.selectTrack(t.id);
+                  if (!professional && t.role === "arrangement")
+                    chooseView("tab");
                   setTrackDrawer(false);
                 }}
               >
@@ -185,7 +249,10 @@ export default function UnifiedWorkspace() {
                         : "暂无音符"}
                 </small>
               </button>
-              <div className="track-actions">
+              <div
+                className="track-actions"
+                hidden={!professional && c.monitorMode !== "mix"}
+              >
                 {c.monitorMode === "mix" && (
                   <label>
                     <input
@@ -245,7 +312,7 @@ export default function UnifiedWorkspace() {
                   />
                 </details>
               </div>
-              {t.role === "vocal" && !t.analysisRevision && (
+              {professional && t.role === "vocal" && !t.analysisRevision && (
                 <button
                   className="text-button"
                   disabled={!!c.busy || !c.localReady}
@@ -258,13 +325,17 @@ export default function UnifiedWorkspace() {
               )}
             </article>
           ))}
-          {c.tracks.some((t) =>
-            ["bass", "drums", "other"].includes(t.role),
-          ) && (
-            <button className="text-button" onClick={() => setExtras(!extras)}>
-              {extras ? "收起伴奏声部" : "展开低音、鼓与其他器乐"}
-            </button>
-          )}
+          {professional &&
+            c.tracks.some((t) =>
+              ["bass", "drums", "other"].includes(t.role),
+            ) && (
+              <button
+                className="text-button"
+                onClick={() => setExtras(!extras)}
+              >
+                {extras ? "收起伴奏声部" : "展开低音、鼓与其他器乐"}
+              </button>
+            )}
           <p className="track-help">
             伴奏包含低音、鼓与其他器乐。扫弦与单线练习用器乐，指弹按需分析人声。
           </p>
@@ -297,53 +368,94 @@ export default function UnifiedWorkspace() {
             </button>
             <span />
             <button
+              hidden={!professional}
               aria-pressed={c.filtersOpen}
               onClick={() => c.setFiltersOpen(!c.filtersOpen)}
             >
               筛选
             </button>
             <button
+              hidden={!professional}
               aria-pressed={c.inspectorOpen}
               onClick={() => c.setInspectorOpen(!c.inspectorOpen)}
             >
               <PanelRight size={14} />
               属性
             </button>
-            <button
-              className="button accent small"
-              disabled={
-                !c.ready || !!c.busy || !c.tracks.some((t) => t.notes.length)
-              }
-              onClick={() => void c.generate()}
-            >
-              {c.generation?.status === "running"
-                ? "正在生成，请稍候…"
-                : "生成吉他编配"}
-            </button>
           </nav>
           <div className="view-pane" hidden={c.mode !== "editor"}>
-            <NoteEditor />
+            <NoteEditor professional={professional} />
           </div>
           <div className="view-pane" hidden={c.mode !== "guitar"}>
-            <ScorePanel />
+            <ScorePanel professional={professional} shown={!controls} />
           </div>
         </div>
       </div>
       {controls && (
-        <div
-          className="workspace-drawer-backdrop"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setControls(false);
-          }}
-        >
-          <aside className="workspace-settings" aria-label="编配与分析设置">
-            <header>
-              <strong>编配与分析设置</strong>
-              <button onClick={() => setControls(false)}>关闭设置</button>
-            </header>
-            <SourceControls />
-          </aside>
-        </div>
+        <section className="professional-page" aria-label="编配与分析设置">
+          <header className="professional-toolbar">
+            <nav aria-label="专业配置分类">
+              {(
+                [
+                  ["arrange", "编配"],
+                  ["analysis", "识别与分轨"],
+                  ["harmony", "节拍与和弦"],
+                  ["notes", "音符与指法"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={settingsTab === id}
+                  onClick={() => setSettingsTab(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+            <button
+              className="button secondary small"
+              aria-label="关闭设置"
+              onClick={() => {
+                c.setAdvanced(false);
+                setControls(false);
+              }}
+            >
+              返回谱面
+            </button>
+          </header>
+          <div className="professional-content">
+            <SourceControls tab={settingsTab} />
+            {settingsTab === "notes" && (
+              <section className="panel professional-notes">
+                <h2>音符与指法</h2>
+                <p>
+                  在音符视图筛选和校订识别结果，或在六线谱查看指法与编辑弦位。
+                </p>
+                <button
+                  className="button secondary small"
+                  onClick={() => {
+                    chooseView("notes");
+                    c.setFiltersOpen(true);
+                    setControls(false);
+                  }}
+                >
+                  打开音符编辑器
+                </button>
+                <button
+                  className="button secondary small"
+                  onClick={() => {
+                    chooseView("tab");
+                    c.setInspectorOpen(true);
+                    setControls(false);
+                  }}
+                >
+                  打开六线谱编辑
+                </button>
+              </section>
+            )}
+          </div>
+        </section>
       )}
     </section>
   );

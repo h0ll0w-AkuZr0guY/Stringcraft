@@ -69,3 +69,9 @@ local.3 音乐规划改动先定位 `plugins/arrangement-planner`（中立乐句
 新增 `tests/transport.test.ts`、`tests/multitrack.test.ts`、`tests/assets_test.py`，以及浏览器 `multitrack.spec.ts`（长曲 seek/follow、独立校订、手势和节奏谱点击）。`multitrack-native.spec.ts` 仅在显式设置 STRINGCRAFT_TRACK_JOB、指向实际本地任务 JSON 且服务拥有对应资产时执行；报告目录由 STRINGCRAFT_TRACK_REPORT 指定，私人材料不进普通 CI。Windows 可设 PLAYWRIGHT_CHANNEL=msedge。不同 Playwright 进程需指定不同 --output 目录，避免互相清理产物。
 
 本地 worker 0.4.0 在伴奏分离之后转录，旧 0.3 缓存不复用。无在线训练；音乐知识与下一轮可执行评估见 [MUSIC_KNOWLEDGE](MUSIC_KNOWLEDGE.md)。
+
+## 接手续写
+
+从 [AGENTS.md](../AGENTS.md) 进入，按 [架构](ARCHITECTURE.md) 定位模块，再查 [公共接口](REUSABLE_INTERFACES.md) 和 [构建](BUILDING.md)。文档组织参考 MiaoTask 的分层入口和接口手册，Stringcraft 继续维护自己的稳定性约定。[MiaoTask 开发约定](https://github.com/h0ll0w-AkuZr0guY/MiaoTask/blob/main/AGENTS.md) · [MiaoTask 公共接口](https://github.com/h0ll0w-AkuZr0guY/MiaoTask/blob/main/docs/REUSABLE_INTERFACES.md)
+
+桌面生命周期位于 desktop，组件可以在常规 Vite 流程开发。修改 WebView2 桥、保存时机或打印时，从实际解压后的 Windows 包重测。修改音乐约束时增加独立真值与反例，再从整曲、谱面和试听三个入口验证；取样与阈值记录在质量报告和可执行测试中。

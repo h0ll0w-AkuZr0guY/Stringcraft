@@ -19,12 +19,13 @@ function strokes(
   denominator: number,
   easy: boolean,
   gentle: boolean,
+  phrasing: boolean,
 ): Stroke[] {
   if (numerator === 3 && denominator === 4)
     return [
       { beat: 0, up: false, velocity: 0.62, strings: 3 },
       { beat: 1, up: false, velocity: 0.38, strings: 3 },
-      { beat: 2, up: true, velocity: 0.3, strings: 2 },
+      { beat: 2, up: !phrasing, velocity: 0.3, strings: 2 },
     ];
   if (numerator === 6 && denominator === 8)
     return easy || gentle
@@ -68,7 +69,14 @@ export function naturalStrumming(
   grips: GuitarGrip[],
 ): GuitarAction[] {
   const actions: GuitarAction[] = [];
-  const add = (grip: GuitarGrip, p: Stroke, beat: number, energy: string) => {
+  const phrasing = options.profile === "phrasing";
+  const add = (
+    grip: GuitarGrip,
+    p: Stroke,
+    beat: number,
+    energy: string,
+    end = grip.endBeat,
+  ) => {
     const all = grip.shape.frets
       .map((f, i) => ({ f, string: i + 1 }))
       .filter((n) => n.f >= 0)
@@ -77,7 +85,7 @@ export function naturalStrumming(
       ? [...all].reverse().slice(0, p.strings)
       : all.slice(0, p.strings);
     // A light downstroke still states the third when the shape supplies one.
-    if (!p.up) {
+    if (!p.up && !phrasing) {
       const third =
         (grip.shape.root +
           (grip.shape.quality === "minor" || grip.shape.quality === "m7"
@@ -93,9 +101,11 @@ export function naturalStrumming(
       }
       selected.sort((a, b) => b.string - a.string);
     }
-    const durationMs = p.up
-      ? 22 + (1 - p.velocity) * 15
-      : 32 + (1 - p.velocity) * 32;
+    const durationMs = phrasing
+      ? (p.up ? 14 : 23) + selected.length * (p.up ? 3 : 5)
+      : p.up
+        ? 22 + (1 - p.velocity) * 15
+        : 32 + (1 - p.velocity) * 32;
     const strokeId = `brush-${grip.chordId}-${beat.toFixed(4)}`;
     selected.forEach((n, i) => {
       const spread =
@@ -104,13 +114,13 @@ export function naturalStrumming(
         score,
         beatToSeconds(score, beat) + (durationMs / 1000) * spread,
       );
-      if (start >= grip.endBeat - 0.001) return;
+      if (start >= end - 0.001) return;
       const envelope =
         energy === "emphatic" ? 1.08 : energy === "gentle" ? 0.9 : 1;
       actions.push({
         id: `${strokeId}-${n.string}`,
         beat: start,
-        durationBeats: grip.endBeat - start,
+        durationBeats: end - start,
         string: n.string,
         fret: n.f,
         finger: grip.shape.fingers[n.string - 1],
@@ -139,6 +149,7 @@ export function naturalStrumming(
       bar.denominator,
       options.difficulty === "easy",
       energy === "gentle",
+      phrasing,
     );
     const length = (bar.numerator * 4) / bar.denominator,
       origin = bar.pickup ? bar.endBeat - length : bar.beat;
@@ -151,7 +162,11 @@ export function naturalStrumming(
         (g) => g.beat <= beat + 0.001 && g.endBeat > beat + 0.001,
       );
       if (!grip) continue;
-      add(grip, p, beat, energy);
+      const phraseEnd =
+        phrasing && phraseEnding && phrase
+          ? Math.min(grip.endBeat, phrase.endBeat)
+          : grip.endBeat;
+      if (beat < phraseEnd - 0.001) add(grip, p, beat, energy, phraseEnd);
     }
   }
   // Short legitimate changes receive one deliberate landing, never a dense fill.

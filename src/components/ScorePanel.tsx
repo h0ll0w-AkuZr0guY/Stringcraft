@@ -9,6 +9,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
+import { useState } from "react";
 import { type GuitarNote } from "../../packages/contracts";
 import { noteName } from "../../packages/music/demo";
 import ArrangementDraftPanel from "./ArrangementDraftPanel";
@@ -18,11 +19,17 @@ import { RhythmScore, Tablature } from "./Tablature";
 
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
 import { useTransport } from "../hooks/useTransport";
-export default function ScorePanel() {
+export default function ScorePanel({
+  professional,
+  shown,
+}: {
+  professional: boolean;
+  shown: boolean;
+}) {
   const controller = useWorkbenchContext();
   const { position: time } = useTransport(
     controller.transport,
-    controller.mode === "guitar",
+    controller.mode === "guitar" && shown,
   );
   const {
     section,
@@ -53,9 +60,15 @@ export default function ScorePanel() {
     exportAs,
     generation,
   } = useWorkbenchContext();
+  const [zoom, setZoom] = useState(1);
   return (
     <section className="panel score-panel">
-      <ArrangementDraftPanel />
+      {professional && (
+        <details className="score-analysis">
+          <summary>编配依据与声部试听</summary>
+          <ArrangementDraftPanel />
+        </details>
+      )}
       {stale && (
         <p className="stale-note">
           设置已改变，谱面仍为上次结果。重新生成后应用新设置。
@@ -84,6 +97,20 @@ export default function ScorePanel() {
           </button>
         </div>
         <div className="edit-toolbar">
+          <label className="score-zoom">
+            谱面缩放{" "}
+            <select
+              aria-label="谱面缩放"
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+            >
+              {[0.8, 0.9, 1, 1.15, 1.3, 1.5].map((level) => (
+                <option key={level} value={level}>
+                  {Math.round(level * 100)}%
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             className="icon-button"
             title="撤销"
@@ -131,7 +158,7 @@ export default function ScorePanel() {
             <p>
               {generation
                 ? generation.message
-                : "选择弹奏目标和难度，点击左侧「生成吉他编配」。"}
+                : "选择弹奏目标和难度，点击「生成吉他编配」。"}
             </p>
           </div>
         ) : view === "tab" ? (
@@ -140,19 +167,23 @@ export default function ScorePanel() {
             selected={selected}
             onSelect={(n) => {
               setSelected(n.id);
-              controller.setInspectorOpen(true);
+              if (professional) controller.setInspectorOpen(true);
               controller.activateNotes([n], n.start, true);
             }}
             time={time}
+            zoom={zoom}
+            professional={professional}
             onSeek={controller.seek}
           />
         ) : view === "rhythm" ? (
           <RhythmScore
             project={project}
             time={time}
+            zoom={zoom}
+            professional={professional}
             onActivate={(ns, at) => {
               if (ns[0]) setSelected(ns[0].id);
-              controller.setInspectorOpen(true);
+              if (professional) controller.setInspectorOpen(true);
               controller.activateNotes(ns, at, true);
             }}
           />
@@ -166,7 +197,10 @@ export default function ScorePanel() {
           主旋律 <i className="legend-line" />
           持续时间
         </span>
-        <span>点击谱上音符可修改 · 品位相对变调夹</span>
+        <span>
+          {professional ? "点击音符试听与校订" : "点击音符试听与定位"} ·
+          品位相对变调夹
+        </span>
       </div>
       {chosen && controller.inspectorOpen && (
         <div className="note-editor">
@@ -466,7 +500,7 @@ export default function ScorePanel() {
             className="text-button"
             onClick={() => {
               setView("tab");
-              setTimeout(() => window.print(), 100);
+              setTimeout(printTab, 100);
             }}
           >
             打印六线谱 PDF
@@ -482,4 +516,14 @@ export default function ScorePanel() {
       </div>
     </section>
   );
+}
+
+export function printTab() {
+  const webview = (
+    window as Window & {
+      chrome?: { webview?: { postMessage: (command: string) => void } };
+    }
+  ).chrome?.webview;
+  if (webview) webview.postMessage("print-tab");
+  else window.print();
 }

@@ -1,3 +1,4 @@
+import { openSettings } from "./workspace-helpers";
 import { expect, test } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { demoProject } from "../../packages/music/demo";
@@ -60,9 +61,7 @@ test("local stems, lazy vocal analysis and portable audio survive reimport", asy
     page.getByRole("button", { name: "暂停播放", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "暂停播放", exact: true }).click();
-  await page
-    .getByRole("button", { name: "编配与分析设置", exact: true })
-    .click();
+  await openSettings(page, "编配");
   await page
     .getByLabel("编配目标", { exact: true })
     .selectOption("fingerstyle");

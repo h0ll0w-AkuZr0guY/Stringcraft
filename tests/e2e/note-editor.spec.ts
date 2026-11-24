@@ -76,6 +76,8 @@ test("note editor: audition, gestures, nondestructive edits, exports and guitar 
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await ready(page);
+  await openSettings(page);
+  await closeSettings(page);
   const original = await saved(page);
   await page.getByRole("button", { name: "播放当前轨道", exact: true }).click();
   await expect(page.getByRole("button", { name: "暂停播放" })).toBeVisible();
@@ -306,6 +308,10 @@ test("cancel retains partial notes and corrections; replacing a task cannot over
       ),
     )
     .toBeGreaterThan(0);
+  await openSettings(page, "音符与指法");
+  await page
+    .getByRole("button", { name: "打开音符编辑器", exact: true })
+    .click();
   await page.getByRole("button", { name: "属性", exact: true }).click();
   await page.getByRole("button", { name: "添加校订音符" }).click();
   await page.getByRole("button", { name: "取消", exact: true }).click();

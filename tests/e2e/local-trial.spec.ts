@@ -49,7 +49,7 @@ test("whole-score WAV reuses decoded sample buffers instead of decoding each att
     dropped: [],
     warnings: [],
   };
-  await page.locator('input[accept=".json"]').setInputFiles({
+  await page.getByTestId("project-import").setInputFiles({
     name: "sample-reuse.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(p)),
@@ -285,7 +285,7 @@ test("unknown harmony gives a correction action and keeps the input unchanged", 
   p.arrangement = null;
   p.notes = p.notes.slice(0, 1);
   p.melody = p.notes;
-  await page.locator('input[accept=".json"]').setInputFiles({
+  await page.getByTestId("project-import").setInputFiles({
     name: "unknown.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(p)),

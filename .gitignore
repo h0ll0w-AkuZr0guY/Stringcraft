@@ -27,3 +27,6 @@ public/legal/
 
 public/demo/
 public/benchmarks/
+
+/desktop/bin/
+/desktop/obj/

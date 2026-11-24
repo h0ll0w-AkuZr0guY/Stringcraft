@@ -7,13 +7,17 @@ import { planArrangement } from "../plugins/arrangement-planner";
 import { extractMelody } from "../plugins/melody";
 import { arrange } from "../plugins/guitar";
 import { projectScore } from "../packages/music/score";
+import { projectHarmony } from "../packages/music/harmony";
+import { arrangementTracks } from "../packages/music/tracks";
 import { arrangementRevision } from "../packages/music/arrangement-revision";
 import {
   eventRole,
+  beatToSeconds,
   soundingEvents,
   type MusicProject,
   type Arrangement,
   type GuitarNote,
+  type ArrangementProfile,
 } from "../packages/contracts";
 
 function statistics(a: Arrangement) {
@@ -65,30 +69,128 @@ const baseline = baselineFile
   ? await import(pathToFileURL(baselineFile).href)
   : null;
 const cases = JSON.parse(await readFile(manifest, "utf8"));
+const compareProfiles = process.env.STRINGCRAFT_COMPARE_PROFILES === "1";
 const rows = [];
 for (const item of cases) {
   const input = await readFile(item.path, "utf8"),
     parsed = JSON.parse(input);
-  const project: MusicProject = parsed.schemaVersion
-    ? parsed
-    : {
+  const project: MusicProject = item.harmonyOnly
+    ? {
+        ...parsed,
         schemaVersion: 2,
-        id: item.id,
-        name: item.id,
-        createdAt: "reference",
-        updatedAt: "reference",
-        duration: (parsed.score.durationBeats * 60) / parsed.score.tempo[0].bpm,
-        bpm: parsed.score.tempo[0].bpm,
-        beatOffset: parsed.score.beatOffsetSeconds,
-        sourceOffset: 0,
-        sourceKind: "musicxml",
-        score: parsed.score,
-        notes: soundingEvents(parsed.score),
-        melody: soundingEvents(parsed.score).filter((n) => n.role === "melody"),
-        arrangement: null,
-        pluginVersions: {},
-      };
+        sourceKind: "audio",
+        beatOffset: 0,
+        melody: extractMelody(parsed.notes),
+      }
+    : parsed.schemaVersion
+      ? parsed
+      : {
+          schemaVersion: 2,
+          id: item.id,
+          name: item.id,
+          createdAt: "reference",
+          updatedAt: "reference",
+          duration:
+            (parsed.score.durationBeats * 60) / parsed.score.tempo[0].bpm,
+          bpm: parsed.score.tempo[0].bpm,
+          beatOffset: parsed.score.beatOffsetSeconds,
+          sourceOffset: 0,
+          sourceKind: "musicxml",
+          score: parsed.score,
+          notes: soundingEvents(parsed.score),
+          melody: soundingEvents(parsed.score).filter(
+            (n) => n.role === "melody",
+          ),
+          arrangement: null,
+          pluginVersions: {},
+        };
   const source = projectScore(project);
+  if (compareProfiles) {
+    const variants = item.harmonyOnly
+      ? (["strum"] as const)
+      : (["strum", "arpeggio", "fingerstyle"] as const);
+    for (const variant of variants) {
+      if (
+        project.sourceKind !== "audio" &&
+        variant !== "fingerstyle" &&
+        !source.chords.length
+      )
+        continue;
+      const goal = variant === "fingerstyle" ? "fingerstyle" : "accompaniment";
+      const settings = {
+        goal,
+        difficulty: variant === "fingerstyle" ? "hard" : "normal",
+        pattern: variant === "fingerstyle" ? "arpeggio" : variant,
+        capo: item.capo ?? 0,
+        transpose: item.transpose ?? 0,
+        bpm: project.bpm,
+      } as const;
+      const profiles: Partial<Record<ArrangementProfile, unknown>> = {};
+      for (const profile of ["classic", "phrasing"] as const) {
+        try {
+          const route = arrangementTracks(
+            project,
+            goal,
+            profile === "phrasing",
+          );
+          const harmony = route.harmony
+            ? projectHarmony(route.harmony, source)
+            : source;
+          const draft = planArrangement(
+            {
+              score: harmony,
+              sourceKind: project.sourceKind,
+              inputFingerprint: arrangementRevision(project),
+              melodyCandidates:
+                project.sourceKind === "audio"
+                  ? extractMelody(route.notes)
+                  : undefined,
+              melodyEvidence: route.melodyEvidence,
+              bassEvidence: route.bassEvidence,
+            },
+            { ...settings, profile },
+          );
+          if (item.harmonyOnly) {
+            profiles[profile] = {
+              segments: draft.score.chords.map((c) => ({
+                start: beatToSeconds(draft.score, c.beat),
+                end: beatToSeconds(draft.score, c.beat + c.durationBeats),
+                root: c.root,
+                quality: c.quality,
+              })),
+            };
+            continue;
+          }
+          const arrangement = arrange(project.melody, {
+            ...settings,
+            profile,
+            score: draft.score,
+            phrases: draft.phrases,
+          });
+          arrangement.profile = profile;
+          profiles[profile] = {
+            ...statistics(arrangement),
+            harmony: draft.statistics,
+          };
+          if (item.projectOutput) {
+            await mkdir(item.projectOutput, { recursive: true });
+            await writeFile(
+              `${item.projectOutput}/${variant}-${profile}.json`,
+              JSON.stringify({
+                ...project,
+                arrangementDraft: draft,
+                arrangement,
+              }),
+            );
+          }
+        } catch (error) {
+          profiles[profile] = { error: String(error) };
+        }
+      }
+      rows.push({ id: item.id, duration: project.duration, variant, profiles });
+    }
+    continue;
+  }
   for (const variant of ["strum", "arpeggio", "fingerstyle"] as const) {
     if (
       project.sourceKind !== "audio" &&
@@ -184,4 +286,11 @@ for (const item of cases) {
       ),
     );
   }
+}
+if (compareProfiles) {
+  await mkdir(dirname(output), { recursive: true });
+  await writeFile(
+    output,
+    JSON.stringify({ protocol: "same-input-phrasing-ab-v1", rows }, null, 2),
+  );
 }

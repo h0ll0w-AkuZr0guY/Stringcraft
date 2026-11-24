@@ -55,7 +55,7 @@ subprocess.run(
         "PyInstaller",
         "--noconfirm",
         "--name",
-        "Stringcraft",
+        "StringcraftService",
         "--onedir",
         "--paths",
         str(ROOT),
@@ -79,6 +79,36 @@ subprocess.run(
     cwd=ROOT,
 )
 bundle = stage / "Stringcraft"
+subprocess.run(
+    [
+        "dotnet", "publish", str(ROOT / "desktop/Stringcraft.Desktop.csproj"),
+        "-c", "Release", "-r", "win-x64", "--self-contained", "true",
+        "-p:RestoreLockedMode=true",
+        "-o", str(bundle),
+    ],
+    check=True,
+    cwd=ROOT,
+)
+shutil.move(str(stage / "StringcraftService"), str(bundle / "service"))
+# The SDK's self-contained publish omits the runtime packs' notice files.
+assets = json.loads((ROOT / "desktop/obj/project.assets.json").read_text("utf-8"))
+framework = next(iter(assets["project"]["frameworks"].values()))
+for dependency in framework["downloadDependencies"]:
+    package = dependency["name"].lower()
+    if package not in (
+        "microsoft.netcore.app.runtime.win-x64",
+        "microsoft.windowsdesktop.app.runtime.win-x64",
+    ):
+        continue
+    version = dependency["version"].strip("[]").split(",")[0].strip()
+    directory = next(
+        Path(folder) / package / version
+        for folder in assets["packageFolders"]
+        if (Path(folder) / package / version).is_dir()
+    )
+    for notice in directory.iterdir():
+        if notice.name.upper() in {"LICENSE", "LICENSE.TXT", "THIRD-PARTY-NOTICES.TXT"}:
+            shutil.copy2(notice, bundle / f"{dependency['name']}-{notice.name}")
 for name in ("LICENSE", "NOTICE", "README.md"):
     shutil.copy2(ROOT / name, bundle / name)
 shutil.copy2(ROOT / "dist" / "build-info.json", bundle / "build-info.json")

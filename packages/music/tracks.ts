@@ -88,7 +88,11 @@ export function changeTrackEditor(
     ),
   };
 }
-export function arrangementTracks(p: MusicProject, goal: ArrangementGoal) {
+export function arrangementTracks(
+  p: MusicProject,
+  goal: ArrangementGoal,
+  phrasing = false,
+) {
   const instrumental = p.tracks?.find((t) => t.role === "instrumental"),
     vocal = p.tracks?.find((t) => t.role === "vocal"),
     bass = p.tracks?.find((t) => t.role === "bass");
@@ -101,7 +105,18 @@ export function arrangementTracks(p: MusicProject, goal: ArrangementGoal) {
   return {
     notes: filteredNotes(input),
     melodyEvidence:
-      lead?.melodyEvidence ?? (!instrumental ? p.melodyEvidence : undefined),
+      (phrasing && lead?.phraseEvidence?.length
+        ? lead.phraseEvidence
+        : lead?.melodyEvidence) ??
+      (!instrumental ? p.melodyEvidence : undefined),
+    bassEvidence:
+      !phrasing || p.sourceKind !== "audio"
+        ? undefined
+        : bass?.notes.length
+          ? filteredNotes(editorTrackProject(p, bass.id))
+          : filteredNotes(
+              instrumental ? editorTrackProject(p, instrumental.id) : p,
+            ).filter((n) => n.pitch.midi <= 55),
     harmony: instrumental?.harmonyAnalysis ?? p.harmonyAnalysis,
     ids: [
       ...new Set(
