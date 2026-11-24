@@ -96,7 +96,7 @@ try {
     .selectOption("accompaniment");
   await close();
   await page.getByTestId("whole-audio-input").setInputFiles(audio);
-  await expect(page.getByRole("status")).toContainText("转录完成", {
+  await expect(page.getByRole("status")).toContainText("本地增强完成", {
     timeout: 900000,
   });
   const raw = await saved("raw-project.json");
@@ -130,7 +130,7 @@ try {
   expect(slow.arrangement.notes.length).toBeGreaterThan(0);
   expect(fast.arrangement.notes.length).toBeGreaterThan(0);
   await page.getByTestId("whole-audio-input").setInputFiles(audio);
-  await expect(page.getByRole("status")).toContainText("转录完成", {
+  await expect(page.getByRole("status")).toContainText("本地增强完成", {
     timeout: 900000,
   });
   const cached = await saved("cached-project.json");
