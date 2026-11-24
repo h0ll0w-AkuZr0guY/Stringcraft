@@ -44,8 +44,11 @@ if ($LASTEXITCODE -ne 0 -or -not $managed) {
 }
 $source = Split-Path -Parent ($managed | Select-Object -Last 1)
 $pythonRoot = Join-Path $stage 'python'
-& robocopy $source $pythonRoot /E /XD (Join-Path $source 'Lib/site-packages') '__pycache__' 'Scripts' /XF '*.pyc' /NFL /NDL /NJH /NJS /NP
-if ($LASTEXITCODE -gt 7) { throw 'Portable Python copy failed.' }
+function Copy-PortablePython {
+  & robocopy $source $pythonRoot /E /XD (Join-Path $source 'Lib/site-packages') '__pycache__' 'Scripts' /XF '*.pyc' /NFL /NDL /NJH /NJS /NP /R:2 /W:2
+  if ($LASTEXITCODE -gt 7) { throw 'Portable Python copy failed.' }
+}
+Copy-PortablePython
 $python = Join-Path $pythonRoot 'python.exe'
 New-Item -ItemType Directory -Force -Path (Join-Path $pythonRoot 'Lib/site-packages'),(Join-Path $stage 'bin') | Out-Null
 $torchDigests = @{
@@ -71,15 +74,19 @@ if ($TorchWheel) {
 if ($LASTEXITCODE -ne 0) { throw 'Music runtime installation failed. For interrupted PyTorch downloads, see MUSIC_RUNTIME in the included instructions.' }
 & $UvPath pip install --link-mode=copy --break-system-packages --python $python --index-url https://pypi.org/simple --no-deps 'basic-pitch==0.4.0'
 if ($LASTEXITCODE -ne 0) { throw 'Basic Pitch installation failed.' }
+if (-not (Test-Path -LiteralPath (Join-Path $pythonRoot 'Lib/uuid.py') -PathType Leaf)) {
+  Write-Host 'Restoring the portable Python standard library.'
+  Copy-PortablePython
+}
 $tools = Join-Path $PSScriptRoot 'runtime-tools.py'
-$ffmpeg = & $python $tools 'ffmpeg'
+$ffmpeg = & $python -I $tools 'ffmpeg'
 if ($LASTEXITCODE -ne 0 -or -not $ffmpeg) { throw 'FFmpeg executable unavailable.' }
 Copy-Item -LiteralPath $ffmpeg -Destination (Join-Path $stage 'bin/ffmpeg.exe')
 Copy-Item -LiteralPath $tools,(Join-Path $PSScriptRoot 'btc-LICENSE.txt'),(Join-Path $PSScriptRoot 'runtime.json') -Destination $stage
-& $python $tools verify $info.device
+& $python -I $tools verify $info.device
 if ($LASTEXITCODE -ne 0) { throw 'Music runtime self-check failed.' }
 if ($WithModels) {
-  & $python $tools models $stage
+  & $python -I $tools models $stage
   if ($LASTEXITCODE -ne 0) { throw 'Model initialization failed.' }
 }
 & $UvPath pip freeze --python $python | Set-Content -LiteralPath (Join-Path $stage 'installed-requirements.txt') -Encoding UTF8
