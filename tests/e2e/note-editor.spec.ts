@@ -1,3 +1,4 @@
+import { openSettings, closeSettings } from "./workspace-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import midiPackage from "@tonejs/midi";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -192,6 +193,17 @@ test("whole-file inference produces real notes and provenance without arrangemen
     path: "artifacts/note-inference.png",
     fullPage: true,
   });
+  await openSettings(page);
+  await page.getByLabel("编配目标", { exact: true }).selectOption("melody");
+  await closeSettings(page);
+  await page.getByRole("button", { name: "生成吉他编配", exact: true }).click();
+  await expect(page.getByTestId("generation-result")).toHaveAttribute(
+    "data-status",
+    "success",
+  );
+  await expect(
+    page.getByTestId("tablature").locator(".tab-note").first(),
+  ).toBeVisible();
 });
 test("ten thousand notes stay virtualized and mobile stays within viewport", async ({
   page,

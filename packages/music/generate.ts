@@ -106,23 +106,9 @@ export async function runGeneration(
       ? filteredNotes(project)
       : (project.refinement?.notes ?? project.notes);
   mark("提取旋律");
-  const melody = project.tracks?.length
-    ? await invoke<NoteEvent[]>(
-        "melody-tracker",
-        "extractMelody",
-        [musicalInput],
-        signal,
-      )
-    : project.score
-      ? soundingEvents(project.score).filter((n) => n.role === "melody")
-      : project.melody.length
-        ? project.melody
-        : await invoke<NoteEvent[]>(
-            "melody-tracker",
-            "extractMelody",
-            [musicalInput],
-            signal,
-          );
+  const written = project.score
+    ? soundingEvents(project.score).filter((n) => n.role === "melody")
+    : [];
   const melodyCandidates =
     project.sourceKind === "audio"
       ? await invoke<NoteEvent[]>(
@@ -132,6 +118,25 @@ export async function runGeneration(
           signal,
         )
       : undefined;
+  const melody = project.tracks?.length
+    ? (melodyCandidates ??
+      (await invoke<NoteEvent[]>(
+        "melody-tracker",
+        "extractMelody",
+        [musicalInput],
+        signal,
+      )))
+    : written.length
+      ? written
+      : project.melody.length
+        ? project.melody
+        : (melodyCandidates ??
+          (await invoke<NoteEvent[]>(
+            "melody-tracker",
+            "extractMelody",
+            [musicalInput],
+            signal,
+          )));
   const base = projectScore({ ...project, melody });
   mark("分析和弦");
   const harmonyAnalysis =

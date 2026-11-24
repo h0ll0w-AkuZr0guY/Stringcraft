@@ -1,3 +1,4 @@
+import { extractMelody } from "../plugins/melody";
 import { beforeEach, expect, it, vi } from "vitest";
 import { demoProject } from "../packages/music/demo";
 import { arrange } from "../plugins/guitar";
@@ -36,6 +37,7 @@ vi.mock("../packages/plugin-host", () => ({
     },
   }),
   invoke: vi.fn(async (id: string, method: string, args: any[]) => {
+    if (method === "extractMelody") return extractMelody(args[0]);
     if (method === "planArrangement") return planArrangement(args[0], args[1]);
     if (method === "analyzeHarmony") return args[1];
     if (method === "recommendCapos") return [{ capo: 0, score: 100 }];
@@ -164,5 +166,32 @@ it("a conflicting locked fingering rejects the new arrangement and preserves the
       () => {},
     ),
   ).rejects.toThrow();
+  expect(p).toEqual(before);
+});
+
+it("direct whole-file melody generation does not treat the initial empty score as a selected voice", async () => {
+  const p = demoProject();
+  p.sourceKind = "audio";
+  p.score!.events = [];
+  p.melody = [];
+  p.harmonyAnalysis = {
+    version: 1,
+    method: "fixture",
+    duration: p.duration,
+    frameHop: 0.5,
+    segments: [],
+    executions: [],
+    warnings: [],
+  };
+  const before = structuredClone(p);
+  const result = await runGeneration(
+    p,
+    { ...options, goal: "melody" },
+    ai,
+    new AbortController().signal,
+    () => {},
+  );
+  expect(result.project.arrangement!.notes.length).toBeGreaterThan(0);
+  expect(result.project.melody.length).toBeGreaterThan(0);
   expect(p).toEqual(before);
 });
