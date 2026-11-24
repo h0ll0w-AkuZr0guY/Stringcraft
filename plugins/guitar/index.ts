@@ -98,6 +98,8 @@ export function arrange(
       pitch: { ...n.pitch, midi: n.pitch.midi + options.transpose },
     }))
     .sort((a, b) => a.start - b.start || (a.role === "melody" ? -1 : 1));
+  const phrasePractice =
+    options.profile === "phrasing" && options.goal === "melody";
   const groups: NoteEvent[][] = [];
   for (const n of source) {
     if (!groups.length || n.start - groups.at(-1)![0].start > 0.055)
@@ -110,6 +112,7 @@ export function arrange(
     position: number;
     lastTime: number;
     lastAttack: number;
+    lastString?: number;
   };
   let beam: State[] = [
     { notes: locked, cost: 0, position: 0, lastTime: -100, lastAttack: -100 },
@@ -121,14 +124,19 @@ export function arrange(
           (b.role === "melody" ? 1 : 0) - (a.role === "melody" ? 1 : 0) ||
           b.score - a.score,
       )
-      .slice(0, 8);
+      .slice(0, phrasePractice ? 1 : 8);
     let local = beam;
     for (const note of ordered) {
       const next: State[] = [];
       for (const state of local) {
         next.push({
           ...state,
-          cost: state.cost - (note.role === "melody" ? 9 : 0),
+          cost:
+            state.cost -
+            (note.role === "melody" ? 9 : 0) -
+            (phrasePractice && (note.source === "manual" || note.locked)
+              ? 6
+              : 0),
         });
         if (
           note.start - state.lastAttack < c.gap - 0.00001 &&
@@ -186,17 +194,33 @@ export function arrange(
           )
             continue;
           notes = [...notes, candidate];
+          const movement = Math.abs(center - state.position);
+          const phraseCost =
+            phrasePractice && dt < 1.05
+              ? movement *
+                  (options.difficulty === "easy" ||
+                  options.difficulty === "normal"
+                    ? 0.42
+                    : 0.2) +
+                (state.lastString === undefined
+                  ? 0
+                  : Math.max(0, Math.abs(state.lastString - pos.string) - 1) *
+                    0.36) /
+                  (Math.max(0.24, dt) * 2)
+              : 0;
           const reward =
             (note.role === "melody" ? 12 : 1.5) +
             note.score * 0.7 -
             pos.fret * 0.025 -
-            Math.abs(center - state.position) * 0.08;
+            movement * 0.08 -
+            phraseCost;
           next.push({
             notes,
             cost: state.cost + reward,
             position: center,
             lastTime: note.start,
             lastAttack: note.start,
+            lastString: pos.string,
           });
         }
       }

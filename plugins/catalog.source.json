@@ -27,7 +27,7 @@
     "id": "guitar-standard",
     "name": "标准吉他",
     "directory": "guitar",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "capabilities": ["instrument"],
     "description": "和弦伴奏、独奏指弹与单线练习；独立按弦与演奏动作验证",
     "license": "Apache-2.0",
@@ -96,15 +96,15 @@
     "bundle": "audio"
   },
   {
-    "id": "piano-proof",
-    "name": "钢琴契约验证包",
+    "id": "piano",
+    "name": "钢琴与双谱表",
     "directory": "piano",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "capabilities": ["instrument"],
-    "description": "SDK v2 开发示例：双手、琴键与跨度。尚未接入工作台，不提供完整钢琴编配。",
+    "description": "清晰独奏与谱件的双手分配、互动大谱表和导出。",
     "license": "Apache-2.0",
-    "audience": "developer",
-    "maturity": "example",
+    "audience": "user",
+    "maturity": "ready",
     "bundle": "audio"
   },
   {

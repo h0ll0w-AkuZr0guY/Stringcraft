@@ -1,3 +1,4 @@
+import { measureGrid } from "../../packages/music/structure";
 import {
   soundingEvents,
   secondsToBeat,
@@ -114,6 +115,7 @@ export function fingerstyle(
         previous.fret !== pos.fret &&
         Math.abs(previous.fret - pos.fret) <= 3 &&
         Math.abs(previous.beat + previous.durationBeats - beat) < 0.002;
+      const phrasing = options.profile === "phrasing";
       const kind = legato
         ? pos.fret > previous!.fret
           ? "hammer"
@@ -129,7 +131,9 @@ export function fingerstyle(
         rightFinger: rightFinger(pos.string),
         kind,
         from: legato ? previous!.id : undefined,
-        velocity: n.velocity * 0.9,
+        velocity: phrasing
+          ? Math.min(0.9, 0.43 + n.velocity * 0.52)
+          : n.velocity * 0.9,
         role: "melody",
         sourceIds: [n.id],
       });
@@ -144,11 +148,39 @@ export function fingerstyle(
       ? addWrittenVoices(score, actions, options)
       : actions;
   actions.splice(0, actions.length, ...withWritten);
+  const grid = options.profile === "phrasing" ? measureGrid(score) : undefined;
   if (options.goal === "fingerstyle" && !hasWrittenSupportingVoice(score))
     for (const grip of grips) {
       const s = grip.shape.frets.findLastIndex((f) => f >= 0) + 1;
-      // Roots on beats 1 and 3, with sustained melody kept ahead of bass.
-      for (let beat = grip.beat; beat < grip.endBeat; beat += 2) {
+      const targets = grid
+        ? [
+            ...new Set([
+              grip.beat,
+              ...grid
+                .filter(
+                  (bar) => bar.beat < grip.endBeat && bar.endBeat > grip.beat,
+                )
+                .flatMap((bar) => {
+                  const span =
+                    bar.denominator === 8 && bar.numerator % 3 === 0
+                      ? 1.5
+                      : bar.numerator === 3
+                        ? 3
+                        : 2;
+                  return [bar.beat, bar.beat + span].filter(
+                    (at) =>
+                      at < bar.endBeat - 0.001 &&
+                      at > grip.beat + 0.12 &&
+                      at < grip.endBeat - 0.001,
+                  );
+                }),
+            ]),
+          ].sort((a, b) => a - b)
+        : Array.from(
+            { length: Math.ceil((grip.endBeat - grip.beat) / 2) },
+            (_, i) => grip.beat + i * 2,
+          );
+      for (const [index, beat] of targets.entries()) {
         if (
           actions.some(
             (a) => a.role === "bass" && Math.abs(a.beat - beat) < 0.08,
@@ -163,13 +195,16 @@ export function fingerstyle(
         const candidate: GuitarAction = {
           id: `bass-${grip.chordId}-${beat}`,
           beat,
-          durationBeats: Math.min(2, grip.endBeat - beat),
+          durationBeats: Math.min(
+            grid ? (targets[index + 1] ?? grip.endBeat) - beat : 2,
+            grip.endBeat - beat,
+          ),
           string: s,
           fret: grip.shape.frets[s - 1],
           finger: 0,
           rightFinger: "p",
           kind: "pluck",
-          velocity: 0.46,
+          velocity: grid ? (index === 0 ? 0.51 : 0.4) : 0.46,
           role: "bass",
           sourceIds: [],
         };

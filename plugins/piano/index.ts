@@ -1,26 +1,18 @@
-/** Minimal SDK v2 proof package. A keyboard action has hands and keys, never guitar frets. */
 import type {
   InstrumentPluginV2,
   MusicalScore,
   PerformancePlan,
   PerformanceIssue,
-  NoteEvent,
 } from "../../packages/contracts";
 import {
   beatToSeconds,
   secondsToBeat,
   soundingEvents,
+  eventRole,
 } from "../../packages/contracts";
-export interface PianoAction {
-  id: string;
-  beat: number;
-  durationBeats: number;
-  midi: number;
-  hand: "left" | "right";
-  finger: number;
-  velocity: number;
-  kind: "key" | "pedal-down" | "pedal-up";
-}
+import type { PianoAction, PianoHand } from "../../packages/contracts/piano";
+export type { PianoAction } from "../../packages/contracts/piano";
+
 export interface PianoOptions {
   difficulty: "easy" | "normal" | "hard" | "expert";
   split: number;
@@ -31,33 +23,38 @@ export function validatePerformance(
   options: PianoOptions,
 ): PerformanceIssue[] {
   const issues: PerformanceIssue[] = [];
-  for (const a of plan.actions.filter((a) => a.kind === "key")) {
-    const active = plan.actions.filter(
-      (b) =>
-        b.kind === "key" &&
-        b.hand === a.hand &&
-        b.beat <= a.beat &&
-        b.beat + b.durationBeats > a.beat,
-    );
-    const pitches = active.map((b) => b.midi);
+  const held = { left: [] as PianoAction[], right: [] as PianoAction[] };
+  for (const a of [...plan.actions].sort((a, b) => a.beat - b.beat)) {
     if (
-      active.length > 5 ||
-      new Set(active.map((n) => n.finger)).size < active.length ||
+      a.hand === "unassigned" ||
+      a.finger === 0 ||
+      a.midi < 21 ||
+      a.midi > 108
+    ) {
+      issues.push({
+        code: "keyboard-unassigned",
+        severity: "warning",
+        eventIds: [a.id],
+        message: "此音保留在谱面，手别或指法待核对。",
+      });
+      if (a.hand === "unassigned" || a.finger === 0) continue;
+    }
+    const active = held[a.hand].filter(
+      (b) => b.beat + b.durationBeats > a.beat + 0.000001,
+    );
+    const pitches = [a.midi, ...active.map((n) => n.midi)];
+    if (
+      active.length >= 5 ||
+      active.some((n) => n.finger === a.finger) ||
       Math.max(...pitches) - Math.min(...pitches) > options.maxSpan
     )
       issues.push({
         code: "keyboard-hand",
         severity: "error",
-        eventIds: active.map((n) => n.id),
+        eventIds: [a.id, ...active.map((n) => n.id)],
         message: "同一只手的指法或跨度超出设置",
       });
-    if (a.midi < 21 || a.midi > 108 || a.finger < 1 || a.finger > 5)
-      issues.push({
-        code: "keyboard-range",
-        severity: "error",
-        eventIds: [a.id],
-        message: "琴键或指法无效",
-      });
+    held[a.hand] = [...active, a];
   }
   return issues;
 }
@@ -65,27 +62,81 @@ export function arrangeScore(
   score: MusicalScore,
   options: PianoOptions,
 ): PerformancePlan<PianoAction> {
+  const held = { left: [] as PianoAction[], right: [] as PianoAction[] };
+  const previous: Partial<Record<"left" | "right", PianoAction>> = {};
+  const events = new Map(score.events.map((e) => [e.id, e]));
+  const staffCount = score.events.some((e) => /\/staff-2\//.test(e.voice));
   const actions: PianoAction[] = [];
-  for (const n of soundingEvents(score)) {
+  for (const n of soundingEvents(score).sort(
+    (a, b) => a.start - b.start || a.pitch.midi - b.pitch.midi,
+  )) {
+    const event = events.get(n.id)!;
     const beat = secondsToBeat(score, n.start),
-      hand = n.pitch.midi < options.split ? "left" : "right";
-    const held = actions.filter(
-      (a) =>
-        a.kind === "key" && a.hand === hand && a.beat + a.durationBeats > beat,
-    );
-    const available = [1, 2, 3, 4, 5].filter(
-      (f) => !held.some((a) => a.finger === f),
-    );
-    actions.push({
+      midi = n.pitch.midi;
+    const written = event.voice.match(/^part-\d+\/staff-(\d+)\//)?.[1];
+    const authoredHand: Exclude<PianoHand, "unassigned"> | undefined =
+      staffCount && written ? (written === "1" ? "right" : "left") : undefined;
+    const preferred =
+      midi < options.split || eventRole(event) === "bass" ? "left" : "right";
+    const choices: { hand: "left" | "right"; finger: number; cost: number }[] =
+      [];
+    for (const hand of authoredHand
+      ? [authoredHand]
+      : (["left", "right"] as const)) {
+      held[hand] = held[hand].filter(
+        (e) => e.beat + e.durationBeats > beat + 0.000001,
+      );
+      const current = held[hand],
+        last = previous[hand];
+      const pitches = [midi, ...current.map((e) => e.midi)];
+      if (
+        midi < 21 ||
+        midi > 108 ||
+        Math.max(...pitches) - Math.min(...pitches) > options.maxSpan
+      )
+        continue;
+      for (let finger = 1; finger <= 5; finger++) {
+        if (
+          current.some(
+            (e) =>
+              e.finger === finger ||
+              e.midi === midi ||
+              Math.sign(finger - e.finger) !==
+                Math.sign(midi - e.midi) * (hand === "left" ? -1 : 1),
+          )
+        )
+          continue;
+        const base = hand === "left" ? 5 : 1;
+        const travel = last
+          ? Math.abs(midi - last.midi) * 0.05 +
+            Math.abs(finger - last.finger) * 0.07
+          : 0;
+        choices.push({
+          hand,
+          finger,
+          cost:
+            (hand === preferred ? 0 : 1.4) +
+            travel +
+            Math.abs(finger - base) * 0.12,
+        });
+      }
+    }
+    const choice = choices.sort((a, b) => a.cost - b.cost)[0];
+    const action: PianoAction = {
       id: n.id,
+      kind: "key",
       beat,
       durationBeats: secondsToBeat(score, n.start + n.duration) - beat,
-      midi: n.pitch.midi,
-      hand,
-      finger: available[0] ?? 1,
+      midi,
+      hand: choice?.hand ?? authoredHand ?? "unassigned",
+      finger: choice?.finger ?? 0,
       velocity: n.velocity,
-      kind: "key",
-    });
+    };
+    actions.push(action);
+    if (choice) {
+      held[choice.hand].push(action);
+      previous[choice.hand] = action;
+    }
   }
   const plan: PerformancePlan<PianoAction> = {
     instrumentId: "piano",
@@ -101,20 +152,16 @@ export function arrangeScore(
 export function soundEvents(
   plan: PerformancePlan<PianoAction>,
   score: MusicalScore,
-): NoteEvent[] {
-  return plan.actions
-    .filter((a) => a.kind === "key")
-    .map((a) => ({
-      id: a.id,
-      start: beatToSeconds(score, a.beat),
-      duration:
-        beatToSeconds(score, a.beat + a.durationBeats) -
-        beatToSeconds(score, a.beat),
-      pitch: { midi: a.midi },
-      velocity: a.velocity,
-      score: 1,
-      source: "generated",
-    }));
+) {
+  const written = new Map(soundingEvents(score).map((n) => [n.id, n]));
+  return plan.actions.map((a) => {
+    const start = beatToSeconds(score, a.beat);
+    return {
+      ...written.get(a.id)!,
+      start,
+      duration: beatToSeconds(score, a.beat + a.durationBeats) - start,
+    };
+  });
 }
 export default {
   id: "piano",
@@ -124,8 +171,8 @@ export default {
   notation: (plan) => plan.actions,
   editor: {
     fields: [
-      { key: "split", label: "左右手分界音", kind: "number" },
-      { key: "maxSpan", label: "单手最大跨度（半音）", kind: "number" },
+      { key: "split", label: "左右手参考分界音", kind: "number" },
+      { key: "maxSpan", label: "单手最大跨度", kind: "number" },
     ],
   },
 } satisfies InstrumentPluginV2<PianoOptions, PianoAction, PianoAction[]>;

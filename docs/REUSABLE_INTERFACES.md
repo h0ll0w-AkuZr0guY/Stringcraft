@@ -135,3 +135,10 @@ MusicProject 可选 arrangementDraft、melodyEvidence；旧项目省略即可，
 | Windows 宿主桥 | 工作台发 ready、settings、print-tab、saved 或 save-failed。宿主发 pause、restore、save-and-exit。消息局限在桌面窗口与私有环回来源。 |
 
 后续乐器共用 Transport、ScoreHit 与 ScoreRegion。谱面适配器负责把当前秒时间映射至可见区域，并将单音或和弦击中交给工作台的试听与 seek。
+
+## 0.2.0 接口
+
+- MusicProject.card 可选保存图标、配色、标签和置顶，名称用现有 name。含音频工程与 JSON 携带同一份字段。
+- MusicProject.piano 可选保存由钢琴插件生成的 score、演奏计划和发声音符。吉他 arrangement 字段保留原语义。
+- 练习 SDK v1 接受 PracticeChart 的秒时间攻击组，用 create、begin、press、tick、next、report 交互。谱面投影和键位由应用提供。桌面导入签名 ZIP，Pages 只加载随应用构建的原创试玩。
+- 桌面桥支持 open-settings、choose-models、models-selected、open-data、quit。文件夹选择使用原生对话框。私有服务令牌只由 WebView2 处理器注入环回请求。

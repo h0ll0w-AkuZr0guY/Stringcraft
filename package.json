@@ -1,6 +1,6 @@
 {
   "name": "stringcraft",
-  "version": "0.2.0-local.5",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "A local-first, extensible polyphonic note editor and instrument workbench",
@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && node scripts/build-plugins.mjs && node scripts/build-docs.mjs && node scripts/collect-licenses.mjs && vite build",
+    "build:pages": "tsc -b && node scripts/build-plugins.mjs && node scripts/build-docs.mjs && node scripts/collect-licenses.mjs && vite build --mode pages --outDir dist-pages && node scripts/verify-pages-build.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "playwright test",
@@ -23,6 +24,7 @@
     "@tensorflow/tfjs": "^3.21.0",
     "@tensorflow/tfjs-backend-wasm": "^3.21.0",
     "@tonejs/midi": "2.0.28",
+    "fflate": "0.8.2",
     "idb-keyval": "^6.2.2",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",

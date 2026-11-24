@@ -1,0 +1,273 @@
+.practice-page {
+  max-width: 1200px;
+  margin: auto;
+  color: #18382a;
+}
+.practice-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.practice-heading h1 {
+  margin: 0;
+  font-size: calc(27px * var(--ui-scale));
+}
+.practice-heading p {
+  margin: 5px 0;
+  color: #526b59;
+  font-size: var(--ui-body);
+}
+.practice-choices,
+.practice-controls,
+.practice-caption,
+.practice-results p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.practice-choices {
+  margin-bottom: 13px;
+}
+.practice-choices [role="group"],
+.practice-controls [role="group"] {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.practice-choices button,
+.practice-controls [role="group"] button,
+.guitar-input button,
+.practice-keymap button {
+  border: 1px solid #b6c7b7;
+  border-radius: 6px;
+  padding: 6px 9px;
+  color: #244737;
+  background: #f6faf5;
+}
+.practice-choices button[aria-pressed="true"],
+.practice-controls button[aria-pressed="true"],
+.guitar-input button[aria-pressed="true"] {
+  background: #dbead7;
+  border-color: #729275;
+  font-weight: 650;
+}
+.practice-studio {
+  border: 1px solid #c8d8c7;
+  background: #fbfcf8;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.practice-controls {
+  padding: 12px;
+}
+.practice-controls > strong {
+  margin-right: auto;
+}
+.practice-controls label {
+  margin: 0;
+}
+.practice-controls select {
+  padding: 3px 8px;
+}
+.practice-board {
+  background: #18342b;
+  color: #eef7ee;
+  outline: none;
+  padding: 10px 14px 14px;
+}
+.practice-board:focus-visible {
+  outline: 2px solid #e5bc72;
+  outline-offset: -3px;
+}
+.practice-caption {
+  justify-content: space-between;
+  padding: 5px 0 12px;
+  font-size: var(--ui-small);
+}
+.piano-waterfall,
+.guitar-timing {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    90deg,
+    #112922 0,
+    #112922 calc(100% / 24 - 1px),
+    #29453b calc(100% / 24 - 1px),
+    #29453b calc(100% / 24)
+  );
+  border-bottom: 3px solid #dfb068;
+  border-radius: 7px 7px 0 0;
+}
+.piano-waterfall .fall {
+  width: 3.2%;
+  position: absolute;
+  border-radius: 6px;
+  background: #c9e2a7;
+  box-shadow: 0 0 10px #9bc89155;
+}
+.piano-waterfall .fall[data-hand="left"] {
+  background: #e1b56f;
+}
+.piano-keys {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(14px, 1fr));
+  gap: 2px;
+  min-height: 100px;
+  overflow-x: auto;
+}
+.piano-keys button {
+  min-width: 0;
+  background: #f2eee1;
+  color: #26362b;
+  border-radius: 0 0 5px 5px;
+  padding: 3px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  align-items: center;
+  gap: 2px;
+  touch-action: none;
+}
+.piano-keys button.black {
+  background: #263431;
+  color: #f4f2e7;
+  border: 1px solid #5b6c63;
+  min-height: 74%;
+  height: 74%;
+}
+.piano-keys button[data-active="true"] {
+  background: #e0a951;
+  color: #182d24;
+}
+.piano-keys small,
+.piano-keys kbd {
+  font-size: clamp(8px, 1.2vw, 12px);
+}
+.guitar-timing {
+  min-height: 100px;
+  background: linear-gradient(90deg, #405c41, #122c25);
+  border-left: 3px solid #dfb068;
+  border-bottom: 0;
+}
+.guitar-cue {
+  position: absolute;
+  top: 30%;
+  background: #d4e6bf;
+  color: #182d22;
+  padding: 6px 9px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.guitar-fretboard {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  background: #644934;
+  color: #fff3df;
+  margin: 12px 0;
+}
+.guitar-fretboard span {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-right: 1px solid #dfbd8a66;
+}
+.guitar-input {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.guitar-input > div {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.guitar-input kbd {
+  margin-left: 6px;
+  color: #597253;
+}
+.practice-results,
+.practice-settings {
+  padding: 10px 13px;
+  border-top: 1px solid #dce8d9;
+}
+.practice-results p {
+  margin: 4px 0;
+}
+.practice-results ol {
+  list-style: none;
+  padding: 0 6px;
+  max-height: 130px;
+  overflow: auto;
+}
+.practice-results button {
+  color: #2a5a44;
+  text-align: left;
+}
+.practice-fields {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.practice-fields label {
+  min-width: 115px;
+  margin: 8px 0;
+}
+.practice-fields input {
+  max-width: 120px;
+}
+.practice-keymap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+@media (max-width: 600px) {
+  .piano-waterfall {
+    min-height: 160px;
+  }
+  .practice-board {
+    padding-inline: 6px;
+  }
+  .piano-keys {
+    gap: 1px;
+    grid-template-columns: repeat(24, minmax(10px, 1fr));
+    min-height: 76px;
+  }
+  .piano-keys small {
+    display: none;
+  }
+}
+
+.piano-keys {
+  position: relative;
+  display: block;
+  height: 108px;
+  overflow: hidden;
+}
+.piano-keys button {
+  position: absolute;
+  top: 0;
+  width: calc(100% / 14 - 1px);
+  height: 100%;
+  transform: translateX(-50%);
+  border: 1px solid #d7d3c8;
+}
+.piano-keys button.black {
+  width: 4.1%;
+  height: 62%;
+  min-height: 0;
+  z-index: 1;
+}
+.piano-waterfall {
+  background: repeating-linear-gradient(
+    90deg,
+    #112922 0,
+    #112922 calc(100% / 14 - 1px),
+    #29453b calc(100% / 14 - 1px),
+    #29453b calc(100% / 14)
+  );
+}

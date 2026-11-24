@@ -50,7 +50,7 @@ export function trackPlayback(
             track.role === "arrangement"
               ? track.notes
               : filteredNotes(editorTrackProject(project, track.id));
-          (track.role === "arrangement" ? guitar : neutral).push(
+          (track.id === "arrangement" ? guitar : neutral).push(
             ...input.map((n) => ({
               ...n,
               velocity: Math.min(1, n.velocity * gain),

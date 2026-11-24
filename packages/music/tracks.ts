@@ -21,18 +21,31 @@ export function projectTracks(p: MusicProject): ProjectTrack[] {
           melody: p.melody,
         },
       ];
-  return p.arrangement
-    ? [
-        ...tracks,
-        {
-          id: "arrangement",
-          name: "吉他编配",
-          role: "arrangement",
-          notes: p.arrangement.notes,
-          score: p.arrangement.score,
-        },
-      ]
-    : tracks;
+  return [
+    ...tracks,
+    ...(p.arrangement
+      ? [
+          {
+            id: "arrangement",
+            name: "吉他编配",
+            role: "arrangement" as const,
+            notes: p.arrangement.notes,
+            score: p.arrangement.score,
+          },
+        ]
+      : []),
+    ...(p.piano
+      ? [
+          {
+            id: "piano-arrangement",
+            name: "钢琴编配",
+            role: "arrangement" as const,
+            notes: p.piano.notes,
+            score: p.piano.score,
+          },
+        ]
+      : []),
+  ];
 }
 export function editorTrackProject(p: MusicProject, id: string): MusicProject {
   const track = projectTracks(p).find((t) => t.id === id);
@@ -53,7 +66,7 @@ export function commitTrackNotes(
   id: string,
   changes: NoteOverride[],
 ) {
-  if (id === "arrangement")
+  if (id === "arrangement" || id === "piano-arrangement")
     throw new Error("编配音符请在乐器谱面中修改弦位和演奏动作。");
   if (!p.tracks?.some((t) => t.id === id)) return commitNotes(p, changes);
   const edited = commitNotes(editorTrackProject(p, id), changes);

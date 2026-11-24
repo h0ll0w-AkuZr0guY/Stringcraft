@@ -52,10 +52,6 @@ export default function SourceControls({
     tone,
     stop,
     setTone,
-    useAI,
-    setUseAI,
-    ai,
-    setSettings,
     notes,
     generate,
     advice,
@@ -232,7 +228,7 @@ export default function SourceControls({
           </select>
         </label>
         <details className="generation-advanced-controls">
-          <summary>高级设置：变调、速度与 AI</summary>
+          <summary>高级设置：变调、速度与音色</summary>
           <fieldset disabled={!!busy}>
             <div className="field-row">
               <label>
@@ -302,20 +298,6 @@ export default function SourceControls({
                 </select>
               </label>
             </div>
-            <label className="toggle-row">
-              <span>
-                <strong>AI 变调夹建议</strong>
-                <small>可选 · 不参与音符或和弦识别</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={useAI}
-                onChange={(e) => {
-                  setUseAI(e.target.checked);
-                  if (e.target.checked && !ai.key) setSettings(true);
-                }}
-              />
-            </label>
           </fieldset>
         </details>
         <button

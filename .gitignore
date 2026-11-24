@@ -8,6 +8,7 @@ __pycache__/
 !.env.example
 *apikey*
 runtime/
+!/scripts/runtime/
 playwright-report/
 test-results/
 artifacts/
@@ -30,3 +31,5 @@ public/benchmarks/
 
 /desktop/bin/
 /desktop/obj/
+
+dist-pages/

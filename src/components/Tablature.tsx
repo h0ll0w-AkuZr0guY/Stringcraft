@@ -1,3 +1,5 @@
+import { alphaPiano } from "../../plugins/piano/alpha";
+import type { NoteEvent } from "../../packages/contracts";
 import type { AlphaTabApi, model } from "@coderline/alphatab";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -487,12 +489,14 @@ export function RhythmScore({
   zoom = 1,
   professional = false,
   onActivate,
+  piano = false,
 }: {
   project: MusicProject;
   time?: number;
   zoom?: number;
   professional?: boolean;
-  onActivate?: (notes: GuitarNote[], at: number) => void;
+  onActivate?: (notes: NoteEvent[], at: number) => void;
+  piano?: boolean;
 }) {
   const follow = useScoreFollow(),
     cursor = useRef<HTMLDivElement>(null);
@@ -540,6 +544,9 @@ export function RhythmScore({
         api = a;
         a.settings.core.includeNoteBounds = true;
         const bindings = new Map<model.Beat, ScoreHit>();
+        const notes: NoteEvent[] = piano
+          ? (project.piano?.notes ?? [])
+          : (project.arrangement?.notes ?? []);
         let noteHit = false;
         a.beatMouseUp.on((beat) => {
           noteHit = false;
@@ -547,9 +554,7 @@ export function RhythmScore({
           queueMicrotask(() => {
             if (hit && !noteHit)
               onActivate?.(
-                (project.arrangement?.notes ?? []).filter((n) =>
-                  hit.noteIds.includes(n.id),
-                ),
+                notes.filter((n) => hit.noteIds.includes(n.id)),
                 hit.startSeconds,
               );
           });
@@ -558,11 +563,13 @@ export function RhythmScore({
           if (!note) return;
           const hit = bindings.get(note.beat);
           if (!hit) return;
-          const selected = (project.arrangement?.notes ?? []).find(
+          const selected = notes.find(
             (n) =>
               hit.noteIds.includes(n.id) &&
-              n.string === 7 - note.string &&
-              n.fret === note.fret,
+              (piano
+                ? n.pitch.midi === note.realValue
+                : (n as GuitarNote).string === 7 - note.string &&
+                  (n as GuitarNote).fret === note.fret),
           );
           if (selected) {
             noteHit = true;
@@ -580,9 +587,11 @@ export function RhythmScore({
         a.renderFinished.on(() => {
           if (!disposed) setRendered((version) => version + 1);
         });
-        const score = alphaScore(alpha, project, fingering, (beat, hit) =>
-          bindings.set(beat, hit),
-        );
+        const bind = (beat: model.Beat, hit: ScoreHit) =>
+          bindings.set(beat, hit);
+        const score = piano
+          ? alphaPiano(alpha, project, bind)
+          : alphaScore(alpha, project, fingering, bind);
         projection.current = {
           api: a,
           hits: [...bindings].sort(
@@ -598,7 +607,7 @@ export function RhythmScore({
       api?.destroy();
       projection.current = null;
     };
-  }, [project, fingering, zoom]);
+  }, [project, fingering, zoom, piano]);
   useEffect(() => {
     const p = projection.current,
       el = element.current,
@@ -649,7 +658,7 @@ export function RhythmScore({
           {follow.following ? "跟随播放" : "回到播放位置"}
         </button>
         {!follow.following && <span>跟随已暂停</span>}
-        {professional && (
+        {professional && !piano && (
           <label>
             <input
               type="checkbox"

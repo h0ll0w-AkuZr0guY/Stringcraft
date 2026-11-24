@@ -66,7 +66,9 @@ export default function NoteEditor({
       [active, f.strength, f.minimumDuration, f.low, f.high],
     ),
     chosen = active.find((n) => selected.has(n.id)),
-    editable = layer === "corrected" && c.activeTrackId !== "arrangement",
+    editable =
+      layer === "corrected" &&
+      !["arrangement", "piano-arrangement"].includes(c.activeTrackId),
     partial = !!p.transcription && p.transcription.status !== "complete";
   useEffect(() => {
     setSelected(new Set());

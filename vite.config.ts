@@ -14,7 +14,7 @@ try {
       : "");
 } catch {}
 const buildInfo = { appVersion, buildSha, builtAt: new Date().toISOString() };
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     {
@@ -23,7 +23,10 @@ export default defineConfig({
         this.emitFile({
           type: "asset",
           fileName: "build-info.json",
-          source: JSON.stringify(buildInfo),
+          source: JSON.stringify({
+            ...buildInfo,
+            edition: mode === "pages" ? "pages" : "desktop",
+          }),
         });
       },
     },
@@ -36,4 +39,4 @@ export default defineConfig({
   worker: { format: "es" },
   build: { chunkSizeWarningLimit: 1500 },
   test: { include: ["tests/**/*.test.ts"] },
-});
+}));

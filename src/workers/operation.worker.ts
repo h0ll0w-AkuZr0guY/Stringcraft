@@ -5,6 +5,7 @@ self.onmessage = async (
     method:
       | "extractMelody"
       | "planArrangement"
+      | "arrangeScore"
       | "assessMusic"
       | "arrange"
       | "analyzeTiming"
@@ -20,9 +21,9 @@ self.onmessage = async (
   try {
     const plugin = (await import(/* @vite-ignore */ url))
       .default as MusicPlugin;
-    const method = plugin[e.data.method] as
-      | ((...args: unknown[]) => unknown)
-      | undefined;
+    const method = (plugin as MusicPlugin & { arrangeScore?: unknown })[
+      e.data.method
+    ] as ((...args: unknown[]) => unknown) | undefined;
     if (!method) throw new Error("插件不支持此能力");
     self.postMessage({ result: await method(...e.data.args) });
   } catch (error) {

@@ -1,5 +1,9 @@
+import { nativeHost, pagesEdition } from "../edition";
+import PianoScore from "./PianoScore";
 import {
   Download,
+  Maximize2,
+  Minimize2,
   PanelRight,
   SlidersHorizontal,
   Upload,
@@ -17,8 +21,14 @@ import "./workspace.css";
 
 export default function UnifiedWorkspace() {
   const c = useWorkbenchContext();
-  const desktop = !!(window as Window & { chrome?: { webview?: unknown } })
-    .chrome?.webview;
+  const desktop = !!nativeHost();
+  const [instrument, setInstrument] = useState<"guitar" | "piano">(
+    c.mode === "piano" ? "piano" : "guitar",
+  );
+  const [reading, setReading] = useState(false);
+  const [paper, setPaper] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const pianoInput = useRef<HTMLInputElement>(null);
   const [controls, setControls] = useState(false),
     [exporting, setExporting] = useState(false),
     [extras, setExtras] = useState(false),
@@ -29,12 +39,58 @@ export default function UnifiedWorkspace() {
   >("arrange");
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (c.advanced) {
+    if (c.advanced && !pagesEdition) {
       setProfessional(true);
       setSettingsTab("harmony");
       setControls(true);
+    } else if (c.advanced && pagesEdition) {
+      c.setAdvanced(false);
+      c.notify("可改用单线练习，或在桌面版校订和弦。");
     }
   }, [c.advanced]);
+  useEffect(() => {
+    const el = root.current;
+    if (!reading || !el) return;
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setReading(false);
+        setZoom(1);
+        setPaper(false);
+      }
+    };
+    const wheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const area = (e.target as Element).closest<HTMLElement>(".notation-body");
+      setZoom((old) => {
+        const next =
+          Math.round(
+            Math.min(2.5, Math.max(0.65, old * Math.exp(-e.deltaY * 0.0018))) *
+              100,
+          ) / 100;
+        if (area && next !== old) {
+          const bounds = area.getBoundingClientRect();
+          const x = e.clientX - bounds.left,
+            y = e.clientY - bounds.top;
+          const left = ((area.scrollLeft + x) * next) / old - x,
+            top = ((area.scrollTop + y) * next) / old - y;
+          requestAnimationFrame(() => area.scrollTo(left, top));
+        }
+        return next;
+      });
+    };
+    el.addEventListener("wheel", wheel, { passive: false });
+    window.addEventListener("keydown", key);
+    return () => {
+      el.removeEventListener("wheel", wheel);
+      window.removeEventListener("keydown", key);
+    };
+  }, [reading]);
+  const closeReader = () => {
+    setReading(false);
+    setZoom(1);
+    setPaper(false);
+  };
   const visible = c.tracks.filter(
     (t) => extras || !["bass", "drums", "other"].includes(t.role),
   );
@@ -52,6 +108,8 @@ export default function UnifiedWorkspace() {
     <section
       ref={root}
       data-professional={professional}
+      data-reading={reading}
+      data-paper={paper}
       className={`unified-workspace ${c.inspectorOpen ? "inspector-open" : ""} ${c.filtersOpen ? "filters-open" : ""}`}
       aria-label="多轨音乐工作台"
       onKeyDown={(e) => {
@@ -83,40 +141,44 @@ export default function UnifiedWorkspace() {
             (c.local && c.engineState?.status === "checking")
           }
           onClick={() =>
-            root.current
-              ?.querySelector<HTMLInputElement>(
-                '[data-testid="whole-audio-input"]',
-              )
-              ?.click()
+            instrument === "piano"
+              ? pianoInput.current?.click()
+              : root.current
+                  ?.querySelector<HTMLInputElement>(
+                    '[data-testid="whole-audio-input"]',
+                  )
+                  ?.click()
           }
         >
           <Upload size={15} />
           上传音频 / MIDI
         </button>
-        <div className="workspace-mode" role="group" aria-label="界面模式">
-          <button
-            type="button"
-            aria-pressed={!professional}
-            onClick={() => {
-              setProfessional(false);
-              setControls(false);
-              c.setInspectorOpen(false);
-              c.setFiltersOpen(false);
-            }}
-          >
-            常规模式
-          </button>
-          <button
-            type="button"
-            aria-pressed={professional}
-            onClick={() => {
-              setProfessional(true);
-              setControls(true);
-            }}
-          >
-            专业模式
-          </button>
-        </div>
+        {!pagesEdition && (
+          <div className="workspace-mode" role="group" aria-label="界面模式">
+            <button
+              type="button"
+              aria-pressed={!professional}
+              onClick={() => {
+                setProfessional(false);
+                setControls(false);
+                c.setInspectorOpen(false);
+                c.setFiltersOpen(false);
+              }}
+            >
+              常规模式
+            </button>
+            <button
+              type="button"
+              aria-pressed={professional}
+              onClick={() => {
+                setProfessional(true);
+                setControls(true);
+              }}
+            >
+              专业模式
+            </button>
+          </div>
+        )}
         {professional && !controls && (
           <button
             className="button secondary small"
@@ -146,6 +208,16 @@ export default function UnifiedWorkspace() {
               >
                 导出含音频工程
               </button>
+              {c.project.piano && (
+                <>
+                  <button onClick={() => void c.exportPiano("midi")}>
+                    钢琴 MIDI
+                  </button>
+                  <button onClick={() => void c.exportPiano("musicxml")}>
+                    钢琴 MusicXML
+                  </button>
+                </>
+              )}
               {c.project.arrangement && (
                 <>
                   <button onClick={() => void c.exportAs("midi")}>
@@ -173,19 +245,80 @@ export default function UnifiedWorkspace() {
           )}
         </div>
       </header>
+      <input
+        ref={pianoInput}
+        type="file"
+        className="visually-hidden"
+        accept="audio/*,.mid,.midi,.musicxml,.xml"
+        aria-label="上传钢琴素材"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) void c.analyzeWhole(file, { soloPiano: true });
+        }}
+      />
       {!controls && (
         <div className="arrangement-bar">
-          <ArrangementChoices compact />{" "}
+          {!pagesEdition && (
+            <label className="instrument-choice">
+              乐器
+              <select
+                aria-label="乐器"
+                value={instrument}
+                onChange={(e) => {
+                  const target = e.target.value as typeof instrument;
+                  setInstrument(target);
+                  if (target === "piano") c.setMode("piano");
+                  else chooseView("tab");
+                }}
+              >
+                <option value="guitar">吉他</option>
+                <option value="piano">钢琴</option>
+              </select>
+            </label>
+          )}
+          {instrument === "guitar" ? (
+            <ArrangementChoices compact />
+          ) : (
+            <p className="piano-input-help">MIDI、MusicXML 或清晰钢琴独奏</p>
+          )}
           <button
             className="button accent small"
             disabled={
               !c.ready || !!c.busy || !c.tracks.some((t) => t.notes.length)
             }
-            onClick={() => void c.generate()}
+            onClick={() =>
+              void (instrument === "guitar" ? c.generate() : c.generatePiano())
+            }
           >
             {c.generation?.status === "running"
               ? "正在生成，请稍候…"
-              : "生成吉他编配"}
+              : instrument === "guitar"
+                ? "生成吉他编配"
+                : "生成钢琴双手谱"}
+          </button>
+        </div>
+      )}
+      {reading && (
+        <div className="reader-toolbar">
+          <strong>{c.project.name}</strong>
+          <span />
+          <button className="button secondary small" onClick={() => setZoom(1)}>
+            适合宽度
+          </button>
+          <button
+            className="button secondary small"
+            aria-pressed={paper}
+            onClick={() => {
+              setPaper(!paper);
+              setZoom(1);
+            }}
+          >
+            A4 预览
+          </button>
+          <button className="button secondary small" onClick={closeReader}>
+            <Minimize2 size={16} />
+            退出全屏
           </button>
         </div>
       )}
@@ -233,8 +366,13 @@ export default function UnifiedWorkspace() {
                 aria-pressed={t.id === c.activeTrackId}
                 onClick={() => {
                   c.selectTrack(t.id);
-                  if (!professional && t.role === "arrangement")
+                  if (t.id === "piano-arrangement") {
+                    setInstrument("piano");
+                    c.setMode("piano");
+                  } else if (!professional && t.role === "arrangement") {
+                    setInstrument("guitar");
                     chooseView("tab");
+                  }
                   setTrackDrawer(false);
                 }}
               >
@@ -366,6 +504,25 @@ export default function UnifiedWorkspace() {
             >
               节奏谱
             </button>
+            {!pagesEdition && c.project.piano && (
+              <button
+                aria-pressed={c.mode === "piano"}
+                onClick={() => c.setMode("piano")}
+              >
+                钢琴谱
+              </button>
+            )}
+            {!reading &&
+              c.mode !== "editor" &&
+              (c.project.piano || c.project.arrangement) && (
+                <button
+                  className="reader-open"
+                  onClick={() => setReading(true)}
+                >
+                  <Maximize2 size={15} />
+                  全屏读谱
+                </button>
+              )}
             <span />
             <button
               hidden={!professional}
@@ -387,8 +544,17 @@ export default function UnifiedWorkspace() {
             <NoteEditor professional={professional} />
           </div>
           <div className="view-pane" hidden={c.mode !== "guitar"}>
-            <ScorePanel professional={professional} shown={!controls} />
+            <ScorePanel
+              professional={professional && !reading}
+              shown={!controls}
+              zoom={zoom}
+            />
           </div>
+          {c.mode === "piano" && (
+            <div className="view-pane">
+              <PianoScore zoom={zoom} shown={!controls} />
+            </div>
+          )}
         </div>
       </div>
       {controls && (

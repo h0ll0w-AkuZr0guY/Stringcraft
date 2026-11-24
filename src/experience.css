@@ -1,0 +1,269 @@
+/* UI text scales independently of musical coordinates. */
+:root {
+  --ui-scale: 1;
+  --ui-body: calc(15px * var(--ui-scale));
+  --ui-small: calc(13px * var(--ui-scale));
+}
+body,
+.unified-workspace :is(button, select, input, label),
+.global-settings,
+.project-library {
+  font-size: var(--ui-body);
+}
+.app-shell
+  :is(
+    .version,
+    .local-build,
+    .local-status,
+    .track-select small,
+    .workspace-title small,
+    .track-help,
+    .plugin-meta,
+    .generation-feedback small,
+    .arrangement-choices small,
+    .notation-hint
+  ) {
+  font-size: var(--ui-small);
+  color: #536952;
+}
+.app-shell .sidebar nav :is(a, button),
+.app-shell .topbar .download-app {
+  font-size: var(--ui-small);
+}
+.app-shell .sidebar nav button svg,
+.instrument-choice select {
+  flex-shrink: 0;
+}
+.global-settings {
+  width: min(680px, calc(100vw - 32px));
+  max-height: calc(100dvh - 38px);
+  border: 1px solid #cbd8c4;
+  border-radius: 14px;
+  padding: 22px;
+  color: #17372b;
+  background: #fafbf7;
+  box-shadow: 0 15px 65px #253b3333;
+}
+.global-settings::backdrop {
+  background: #21392e66;
+}
+.global-settings h2,
+.global-settings h3 {
+  margin: 0 0 10px;
+}
+.global-settings section {
+  border-top: 1px solid #dce6d7;
+  padding: 16px 0;
+  display: grid;
+  gap: 10px;
+}
+.global-settings p {
+  margin: 0;
+  color: #506552;
+}
+.global-settings :is(input:not([type="checkbox"]), select) {
+  width: 100%;
+  min-height: 38px;
+}
+.global-settings .inline-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.settings-header,
+.settings-actions,
+.settings-fields,
+.global-settings footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.settings-fields > * {
+  flex: 1;
+  min-width: 0;
+}
+.settings-privacy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.global-settings footer {
+  justify-content: flex-end;
+}
+.project-library .section-title {
+  margin-bottom: 16px;
+}
+.project-library .section-title h1 {
+  margin: 0;
+}
+.project-library .project-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 225px), 285px));
+  justify-content: start;
+}
+.project-library .compact-card {
+  padding: 17px;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.compact-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.compact-card .project-art {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border-radius: 10px;
+  background: #e0ebda;
+  color: #315e44;
+}
+.compact-card[data-color="sand"] .project-art {
+  background: #f3e6cb;
+  color: #7c592a;
+}
+.compact-card[data-color="blue"] .project-art {
+  background: #e1edf1;
+  color: #285d70;
+}
+.compact-card[data-color="plum"] .project-art {
+  background: #f0e4ef;
+  color: #775473;
+}
+.compact-card h2 {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: calc(18px * var(--ui-scale));
+}
+.compact-card p,
+.compact-card small {
+  margin: 0;
+  color: #506552;
+}
+.project-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--ui-small);
+}
+.project-tags li {
+  background: #e9efe4;
+  padding: 2px 6px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+.project-card-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.project-filter {
+  max-width: 230px;
+  margin-bottom: 12px;
+}
+.instrument-choice {
+  max-width: 100px;
+}
+.unified-workspace .instrument-choice select {
+  padding: 4px 10px;
+}
+.piano-input-help {
+  margin: 0;
+  color: #526957;
+}
+.score-view-tabs .reader-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.piano-score-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+.unified-workspace[data-reading="true"] {
+  position: fixed;
+  inset: 0;
+  background: #f3f6ef;
+  z-index: 100;
+  padding: 12px;
+  min-height: 0;
+  margin: 0;
+}
+.unified-workspace[data-reading="true"]
+  :is(
+    .workspace-title,
+    .arrangement-bar,
+    .workspace-feedback,
+    .track-list,
+    .track-help,
+    .notation-hint,
+    .notation-footer
+  ) {
+  display: none;
+}
+.unified-workspace[data-reading="true"] .workspace-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.unified-workspace[data-reading="true"] .notation-body {
+  background: #fffefb;
+}
+.reader-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.reader-toolbar strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 55%;
+}
+.reader-toolbar span {
+  flex: 1;
+}
+.unified-workspace[data-paper="true"] .notation-body {
+  width: min(100%, 794px);
+  margin: auto;
+  box-shadow: 0 2px 22px #243e2e22;
+  border: 1px solid #e1e7da;
+}
+@media print {
+  .reader-toolbar,
+  .piano-score-tools,
+  .global-settings {
+    display: none !important;
+  }
+  .unified-workspace[data-reading] {
+    position: static !important;
+  }
+}
+@media (max-width: 620px) {
+  .settings-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .reader-toolbar strong {
+    max-width: 100%;
+  }
+  .app-shell .local-build {
+    display: none;
+  }
+}

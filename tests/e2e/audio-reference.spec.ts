@@ -295,8 +295,12 @@ test("saved references reopen and deleting a project clears only its own recordi
   );
   await page.getByRole("button", { name: "我的作品", exact: true }).click();
   await page
-    .getByRole("button", { name: `删除 ${p.name}`, exact: true })
+    .locator(".project-card")
+    .filter({ has: page.getByRole("heading", { name: p.name, exact: true }) })
+    .getByRole("button", { name: "编辑卡片" })
     .click();
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.getByRole("button", { name: "删除作品", exact: true }).click();
   await expect(page.getByRole("status")).toContainText(
     "关联录音已从此浏览器删除",
   );

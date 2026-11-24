@@ -187,6 +187,7 @@ export async function invoke<T>(
   method:
     | "extractMelody"
     | "planArrangement"
+    | "arrangeScore"
     | "assessMusic"
     | "arrange"
     | "analyzeTiming"

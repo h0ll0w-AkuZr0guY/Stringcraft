@@ -40,7 +40,7 @@ test("generated draft stays separate, voice audition works, and source edits mar
     .getByRole("button", { name: "停止分声部试听", exact: true })
     .click();
   await openSettings(page);
-  await page.getByText("高级设置：变调、速度与 AI", { exact: true }).click();
+  await page.getByText("高级设置：变调、速度与音色", { exact: true }).click();
   await (await setting(page, "参考速度 BPM")).fill("90");
   await closeSettings(page);
   await expect(

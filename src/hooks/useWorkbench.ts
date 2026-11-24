@@ -1,3 +1,9 @@
+import { loadInstrument } from "../../packages/plugin-host";
+import type { PianoAction } from "../../packages/contracts/piano";
+import type { PianoOptions } from "../../plugins/piano";
+import { pianoMusicXml } from "../../plugins/piano/musicxml";
+import { pagesEdition } from "../edition";
+import { initialAI } from "../preferences";
 import { savedAudioAsset } from "../../packages/music/local";
 import {
   useCallback,
@@ -102,9 +108,9 @@ function errorMessage(e: unknown) {
 }
 
 export function useWorkbench() {
-  const [page, setPage] = useState<"workbench" | "projects" | "plugins">(
-      "workbench",
-    ),
+  const [page, setPage] = useState<
+      "workbench" | "projects" | "plugins" | "practice"
+    >("workbench"),
     [project, setProject] = useState<MusicProject>(demoProject),
     [ready, setReady] = useState(false),
     [message, setMessage] = useState(""),
@@ -130,7 +136,7 @@ export function useWorkbench() {
   const previewContext = useRef<AudioContext | null>(null);
   const previewRevision = useRef(0);
   const [pluginCount, setPluginCount] = useState<number | null>(null);
-  const [mode, setMode] = useState<"editor" | "guitar">(() =>
+  const [mode, setMode] = useState<"editor" | "guitar" | "piano">(() =>
     new URLSearchParams(location.search).get("view") === "guitar"
       ? "guitar"
       : "editor",
@@ -194,11 +200,7 @@ export function useWorkbench() {
     }
   }, [loop, loopStart, loopEnd, project.duration, transport]);
   const [settings, setSettings] = useState(false),
-    [ai, setAI] = useState<AISettings>({
-      key: "",
-      endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      model: "qwen-plus",
-    }),
+    [ai, setAI] = useState<AISettings>(initialAI),
     [useAI, setUseAI] = useState(false),
     [advice, setAdvice] = useState("");
   const [engineState, setEngineState] = useState<
@@ -256,7 +258,10 @@ export function useWorkbench() {
     setAdvanced(false);
     setInspectorOpen(false);
     setActiveTrackId(
-      project.tracks?.find((t) => t.role === "instrumental")?.id ?? "legacy",
+      project.piano && !project.arrangement
+        ? "piano-arrangement"
+        : (project.tracks?.find((t) => t.role === "instrumental")?.id ??
+            "legacy"),
     );
     setSoloTrackId(null);
     setMutedTracks(new Set());
@@ -410,6 +415,7 @@ export function useWorkbench() {
     [],
   );
   useEffect(() => {
+    if (pagesEdition) return;
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
     const refresh = async () => {
@@ -463,7 +469,7 @@ export function useWorkbench() {
   }
   async function analyzeWhole(
     f: File,
-    range?: { offset: number; seconds: number },
+    range?: { offset?: number; seconds?: number; soloPiano?: boolean },
   ) {
     if (/\.(mid|midi|xml|musicxml)$/i.test(f.name)) {
       abortRef.current?.abort();
@@ -485,7 +491,8 @@ export function useWorkbench() {
         throw new Error(
           "工作台组件需要更新或启用，请点击“修复工作台组件”，再重新分析。原项目已保留。",
         );
-      const native = localMode === "accompaniment";
+      const native =
+        !pagesEdition && !range?.soloPiano && localMode === "accompaniment";
       if (native && !engineState?.ready)
         throw new Error(
           engineState?.message ??
@@ -510,7 +517,10 @@ export function useWorkbench() {
         : await decodeWhole(f, control.signal);
       const offset = range?.offset ?? 0;
       if (range)
-        data.duration = Math.min(range.seconds, data.duration - offset);
+        data.duration = Math.min(
+          range.seconds ?? data.duration,
+          data.duration - offset,
+        );
       if (data.duration <= 0) throw new Error("分析起点超出录音范围");
       control.signal.throwIfAborted();
       let engine = await installed("basic-pitch-stream");
@@ -942,6 +952,97 @@ export function useWorkbench() {
         setBusy("");
         abortRef.current = null;
       }
+    }
+  }
+  async function generatePiano() {
+    if (busy || abortRef.current) return;
+    const control = new AbortController();
+    abortRef.current = control;
+    const current = projectRef.current;
+    setBusy("正在分配钢琴左右手");
+    stop();
+    try {
+      const expected = (await catalog()).find((x) => x.id === "piano");
+      if (!expected) throw new Error("当前版本缺少钢琴插件目录。");
+      const prior = await installed("piano");
+      if (prior && !prior.enabled)
+        throw new Error("请在插件中心启用钢琴插件。");
+      if (!prior || prior.manifest.sha256 !== expected.sha256)
+        await install(expected);
+      const input = filteredNotes(current);
+      const written = current.sourceKind === "musicxml" && !current.noteEditor;
+      const score = projectScore(
+        written ? current : { ...current, score: undefined, melody: input },
+      );
+      if (!score.events.some((e) => e.midi !== null))
+        throw new Error("请先导入包含音符的谱件或识别钢琴独奏。");
+      const piano = await loadInstrument<
+        PianoOptions,
+        PianoAction,
+        PianoAction[]
+      >("piano");
+      control.signal.throwIfAborted();
+      const options: PianoOptions = {
+        split: 60,
+        maxSpan: difficulty === "easy" ? 9 : 12,
+        difficulty,
+      };
+      const performance = await invoke<
+        import("../../packages/contracts").PerformancePlan<PianoAction>
+      >("piano", "arrangeScore", [score, options], control.signal);
+      const notes = piano.soundEvents(performance, score);
+      if (projectRef.current !== current)
+        throw new Error("工程已改动，请重新生成钢琴谱。");
+      commitEdit(
+        {
+          ...current,
+          piano: { version: 1, score, performance, notes },
+          pluginVersions: {
+            ...current.pluginVersions,
+            piano: expected.version,
+          },
+        },
+        false,
+      );
+      setActiveTrackId("piano-arrangement");
+      setMode("piano");
+      notify(
+        performance.issues.length
+          ? "钢琴谱已生成，部分音符需核对手别。"
+          : "钢琴谱已生成，可点击试听。",
+      );
+    } catch (error) {
+      if (!control.signal.aborted) notify(errorMessage(error));
+    } finally {
+      if (abortRef.current === control) {
+        abortRef.current = null;
+        setBusy("");
+      }
+    }
+  }
+  async function exportPiano(format: "musicxml" | "midi") {
+    const piano = project.piano;
+    if (!piano) return;
+    try {
+      if (format === "musicxml")
+        download(
+          pianoMusicXml(project.name, piano),
+          "application/vnd.recordare.musicxml+xml",
+          project.name + "-钢琴.musicxml",
+        );
+      else {
+        const data = (await load("note-exporters")).exportNotes!(
+          piano.notes,
+          project.bpm,
+        );
+        download(
+          new Uint8Array(data).buffer,
+          "audio/midi",
+          project.name + "-钢琴.mid",
+        );
+      }
+    } catch (error) {
+      notify(errorMessage(error));
     }
   }
   async function generate() {
@@ -1714,6 +1815,10 @@ export function useWorkbench() {
       if (p.transcription?.status === "running")
         p = { ...p, transcription: { ...p.transcription, status: "stopped" } };
       edit(p, false);
+      if (p.piano && !p.arrangement) {
+        setMode("piano");
+        setActiveTrackId("piano-arrangement");
+      }
       setProfile(p.arrangement?.profile ?? "classic");
       if (p.arrangement) {
         setGoal(p.arrangement.goal ?? "melody");
@@ -1778,10 +1883,16 @@ export function useWorkbench() {
     stop();
     setPage(p);
     setSettings(false);
-    if (p === "projects")
-      listProjects()
+    if (p === "projects") {
+      const pending = dirty
+        ? saveProject(projectRef.current)
+        : Promise.resolve();
+      pending
+        .catch((e) => notify(errorMessage(e)))
+        .then(listProjects)
         .then(setProjects)
         .catch((e) => notify(errorMessage(e)));
+    }
   };
   async function importFile(file: File) {
     try {
@@ -1853,6 +1964,8 @@ export function useWorkbench() {
     mode,
     setMode,
     analyzeWhole,
+    generatePiano,
+    exportPiano,
     handoffToGuitar,
     updateEditorProject,
     playNeutral: (events: NoteEvent[], position?: number) =>

@@ -136,7 +136,7 @@ if args.environment:
 )
 archive = (
     output_root
-    / f"Stringcraft-{VERSION}-{'full' if args.environment else 'preview'}-windows-x64.zip"
+    / f"Stringcraft-{VERSION}{'-full' if args.environment else ''}-windows-x64.zip"
 )
 with zipfile.ZipFile(
     archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=1, allowZip64=True

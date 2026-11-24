@@ -65,7 +65,7 @@ internal sealed class WorkbenchWindow : Form
         Controls.Add(view);
         var menu = new ContextMenuStrip();
         menu.Items.Add("显示工作台", null, (_, _) => RestoreWorkbench());
-        menu.Items.Add("全局设置", null, (_, _) => ShowSettings());
+        menu.Items.Add("全局设置", null, (_, _) => { RestoreWorkbench(); Send("open-settings"); });
         menu.Items.Add("打开数据目录", null, (_, _) => OpenPath(data));
         menu.Items.Add("退出弦作", null, async (_, _) => await ExitAsync());
         tray = new NotifyIcon { Icon = Icon, Text = "弦作 Stringcraft", Visible = true, ContextMenuStrip = menu };
@@ -179,13 +179,13 @@ internal sealed class WorkbenchWindow : Form
             await child.EnsureCoreWebView2Async(view.CoreWebView2.Environment);
             ConfigureView(child.CoreWebView2);
             child.CoreWebView2.Settings.IsWebMessageEnabled = false;
+            e.NewWindow = child.CoreWebView2;
             child.CoreWebView2.AddWebResourceRequestedFilter(Address + "*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
             child.CoreWebView2.WebResourceRequested += (_, args) =>
             {
                 if (IsLocal(args.Request.Uri)) args.Request.Headers.SetHeader("X-Stringcraft-Desktop", desktopKey);
             };
             child.CoreWebView2.WindowCloseRequested += (_, _) => popup.Close();
-            e.NewWindow = child.CoreWebView2;
             popup.Show(this);
         }
         catch { popup.Dispose(); e.Handled = true; }
@@ -200,7 +200,9 @@ internal sealed class WorkbenchWindow : Form
         switch (command)
         {
             case "ready": workbenchReady = true; break;
-            case "settings": ShowSettings(); break;
+            case "choose-models": ChooseModelDirectory(this); break;
+            case "open-data": OpenPath(data); break;
+            case "quit": _ = ExitAsync(); break;
             case "print-tab": _ = SaveTabPdfAsync(); break;
             case "saved": saved?.TrySetResult(true); break;
             case "save-failed": saved?.TrySetResult(false); break;
@@ -260,43 +262,27 @@ internal sealed class WorkbenchWindow : Form
             ?? Path.Combine(AppContext.BaseDirectory, "runtime_plugins");
     }
 
-    private void ShowSettings()
+    private bool ChooseModelDirectory(IWin32Window owner)
     {
-        RestoreWorkbench();
-        using var settings = new Form { Text = "弦作 · 全局设置", Size = new Size(630, 230), StartPosition = FormStartPosition.CenterParent };
-        var body = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, Padding = new Padding(16), WrapContents = false };
-        body.Controls.Add(new Label { AutoSize = true, Text = "本地模型目录 · 更改后重启应用" });
-        var pathDisplay = new TextBox { Text = ModelDirectory(), ReadOnly = true, Width = 550 };
-        body.Controls.Add(pathDisplay);
-        var choose = new Button { Text = "选择模型目录", AutoSize = true };
-        choose.Click += (_, _) =>
+        using var picker = new FolderBrowserDialog { Description = "选择包含 local-separation 的 runtime_plugins 目录", SelectedPath = ModelDirectory() };
+        if (picker.ShowDialog(owner) != DialogResult.OK) return false;
+        if (!File.Exists(Path.Combine(picker.SelectedPath, "local-separation", "python", "python.exe")))
         {
-            using var picker = new FolderBrowserDialog { Description = "选择包含 local-separation 的 runtime_plugins 目录", SelectedPath = ModelDirectory() };
-            if (picker.ShowDialog(settings) != DialogResult.OK) return;
-            if (!File.Exists(Path.Combine(picker.SelectedPath, "local-separation", "python", "python.exe")))
-            {
-                MessageBox.Show(settings, "该目录缺少 local-separation\u005cpython\u005cpython.exe。", "模型目录无效");
-                return;
-            }
-            try
-            {
-                File.WriteAllText(SettingsPath + ".tmp", JsonSerializer.Serialize(picker.SelectedPath));
-                File.Move(SettingsPath + ".tmp", SettingsPath, true);
-                pathDisplay.Text = picker.SelectedPath;
-            }
-            catch (IOException error) { MessageBox.Show(settings, error.Message, "无法保存模型设置"); }
-        };
-        body.Controls.Add(choose);
-        var version = File.Exists(Path.Combine(AppContext.BaseDirectory, "build-info.json"))
-            ? File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "build-info.json")) : "{}";
-        using var metadata = JsonDocument.Parse(version);
-        string appVersion = metadata.RootElement.TryGetProperty("appVersion", out var v) ? v.GetString() ?? "" : "";
-        body.Controls.Add(new Label { AutoSize = true, Text = "版本 " + appVersion + "   ·   " + data });
-        var quit = new Button { Text = "退出弦作", AutoSize = true };
-        quit.Click += (_, _) => { settings.Close(); BeginInvoke(async () => await ExitAsync()); };
-        body.Controls.Add(quit);
-        settings.Controls.Add(body);
-        settings.ShowDialog(this);
+            MessageBox.Show(owner, "此目录没有找到独立模型运行环境。", "模型目录无效");
+            return false;
+        }
+        try
+        {
+            File.WriteAllText(SettingsPath + ".tmp", JsonSerializer.Serialize(picker.SelectedPath));
+            File.Move(SettingsPath + ".tmp", SettingsPath, true);
+            Send("models-selected");
+            return true;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(owner, error.Message, "无法保存模型设置");
+            return false;
+        }
     }
 
     private async Task ExitAsync()

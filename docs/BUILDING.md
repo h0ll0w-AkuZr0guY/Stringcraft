@@ -45,3 +45,11 @@ ci.yml 检查每个 PR。pages.yml 手动发布网页；release.yml 对明确 v 
 自动化桌面检查可用测试数据目录启动 EXE。仅为该次启动设置 WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS 为 --remote-debugging-port=19229。再设置 TEST_DESKTOP_CDP 和 STRINGCRAFT_DESKTOP_REPORT，用 node scripts/verify-desktop.mjs 检查窗口上真实的分轨、编配和 WAV。可选 STRINGCRAFT_TRACK_BUNDLE 指定已授权的旧版工程 ZIP，同时检查迁移与整曲谱面定位。
 
 本地候选完成试用后再按明确授权发布。版本和构建摘要从包内 build-info.json 统一提供。
+
+## 0.2.0 公开发布
+
+npm run build 生成桌面 WebView2 资源，npm run build:pages 生成仅常规模式和原创试玩的 dist-pages。后者检查产物版别及私有内容。Pages 从 main 对应受测提交手动部署。
+
+核心 Windows ZIP 由固定提交生成。长期运行扩展分别生成 CPU、CUDA 资产，执行 python scripts/build-runtime-extensions.py --output-root artifacts/extensions。扩展是安装包，初始化时按固定版本从上游下载组件与模型，保留每个依赖的来源和许可。详见 [安装说明](MUSIC_RUNTIME.md)。
+
+核心版本标签与运行扩展标签独立。发布前审核实际解压包和下载摘要。完整版练习引擎在独立目录构建，使用桌面 trust key 对 manifest 签名；发行私钥、完整源码和安装 ZIP 不进入公开仓库或 CI。

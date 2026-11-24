@@ -1,3 +1,4 @@
+import { nativeHost } from "../edition";
 import {
   localCapabilities,
   type LocalEngineState,
@@ -5,6 +6,7 @@ import {
 import { repairWorkbenchComponents } from "../../packages/music/maintenance";
 import {
   ArrowUpRight,
+  Gamepad2,
   Check,
   Download,
   Package,
@@ -26,6 +28,7 @@ export default function PluginCenter({
 }: {
   notify: (s: string) => void;
 }) {
+  const [practiceVersion, setPracticeVersion] = useState<string>();
   const [list, setList] = useState<PluginManifest[]>([]),
     [states, setStates] = useState<
       Record<
@@ -47,6 +50,14 @@ export default function PluginCenter({
       (m) => m.audience === "user" && m.maturity !== "example",
     );
     setList(items);
+    if (nativeHost())
+      setPracticeVersion(
+        (
+          await (
+            await import("../../packages/plugin-host/practice")
+          ).privatePractice()
+        )?.version,
+      );
     setLocalEngine((await localCapabilities())?.engine ?? null);
     const pairs = await Promise.all(
       items.map(async (m) => {
@@ -119,6 +130,53 @@ export default function PluginCenter({
           修复工作台组件
         </button>
       </div>
+      {nativeHost() && (
+        <section className="plugin-notice practice-import">
+          <Gamepad2 size={22} />
+          <div>
+            <strong>完整版键盘练习</strong>
+            <p>
+              {practiceVersion
+                ? "已安装 · " + practiceVersion
+                : "导入官方签名的练习插件 ZIP"}
+            </p>
+          </div>
+          <label className="button secondary small">
+            导入练习插件
+            <input
+              type="file"
+              aria-label="导入练习插件"
+              className="visually-hidden"
+              accept=".zip"
+              disabled={!!busy}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file)
+                  void act("practice", async () => {
+                    await (
+                      await import("../../packages/plugin-host/practice")
+                    ).installPracticeZip(file);
+                  });
+              }}
+            />
+          </label>
+          {practiceVersion && (
+            <button
+              className="text-button"
+              onClick={() =>
+                void act("practice", async () => {
+                  await (
+                    await import("../../packages/plugin-host/practice")
+                  ).removePrivatePractice();
+                })
+              }
+            >
+              卸载练习插件
+            </button>
+          )}
+        </section>
+      )}
       <div className="plugin-grid">
         {list.map((m) => {
           const p = states[m.id];

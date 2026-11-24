@@ -22,9 +22,11 @@ import { useTransport } from "../hooks/useTransport";
 export default function ScorePanel({
   professional,
   shown,
+  zoom = 1,
 }: {
   professional: boolean;
   shown: boolean;
+  zoom?: number;
 }) {
   const controller = useWorkbenchContext();
   const { position: time } = useTransport(
@@ -60,7 +62,6 @@ export default function ScorePanel({
     exportAs,
     generation,
   } = useWorkbenchContext();
-  const [zoom, setZoom] = useState(1);
   return (
     <section className="panel score-panel">
       {professional && (
@@ -97,20 +98,6 @@ export default function ScorePanel({
           </button>
         </div>
         <div className="edit-toolbar">
-          <label className="score-zoom">
-            谱面缩放{" "}
-            <select
-              aria-label="谱面缩放"
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-            >
-              {[0.8, 0.9, 1, 1.15, 1.3, 1.5].map((level) => (
-                <option key={level} value={level}>
-                  {Math.round(level * 100)}%
-                </option>
-              ))}
-            </select>
-          </label>
           <button
             className="icon-button"
             title="撤销"

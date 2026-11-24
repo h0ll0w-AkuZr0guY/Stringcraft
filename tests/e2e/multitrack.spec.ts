@@ -325,7 +325,17 @@ test("normal controls and long scores stay usable through seeking, playback and 
   await page.setViewportSize({ width: 1050, height: 700 });
   await visibleMeasure(46);
   await page.getByRole("button", { name: "六线谱", exact: true }).click();
-  await page.getByLabel("谱面缩放").selectOption("0.8");
+  await page.getByRole("button", { name: "全屏读谱" }).click();
+  await page.getByRole("button", { name: "A4 预览" }).click();
+  await expect(page.locator(".unified-workspace")).toHaveAttribute(
+    "data-paper",
+    "true",
+  );
+  await expect(page.locator(".unified-workspace")).toHaveAttribute(
+    "data-reading",
+    "true",
+  );
+  await page.keyboard.press("Escape");
   await visibleMeasure(46);
   const shellGeometry = async () =>
     page.locator(".sidebar").evaluate((el) => el.getBoundingClientRect().width);

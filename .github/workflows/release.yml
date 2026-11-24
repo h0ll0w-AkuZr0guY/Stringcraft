@@ -1,15 +1,8 @@
-name: Build Preview Release
+name: Build Windows Release
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
-    inputs:
-      environment:
-        description: Also build the independent CPU music environment
-        type: boolean
-        default: false
 permissions:
-  contents: write
+  contents: read
 jobs:
   windows:
     runs-on: windows-latest
@@ -29,30 +22,16 @@ jobs:
       - run: npm run check
       - run: npm run build
       - run: python scripts/build-local.py
+      - run: python scripts/build-runtime-extensions.py --output-root artifacts/extensions
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-base
-          path: artifacts/*.zip
-      - name: Publish preview
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: pwsh
-        run: |
-          $taskAssets = @(Get-ChildItem -LiteralPath artifacts -Filter '*.zip' | ForEach-Object FullName)
-          gh release view $env:GITHUB_REF_NAME 1>$null 2>$null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $env:GITHUB_REF_NAME @taskAssets
-          } else {
-            gh release create $env:GITHUB_REF_NAME @taskAssets --prerelease --title "Stringcraft $env:GITHUB_REF_NAME" --notes-file docs/RELEASES.md
-          }
-          if ($LASTEXITCODE -ne 0) { throw 'Preview publication failed' }
-      - uses: astral-sh/setup-uv@v6
-        if: inputs.environment
-      - run: ./scripts/build-environment.ps1 -WithModels
-        if: inputs.environment
+          name: windows-core
+          path: |
+            artifacts/*.zip
+            artifacts/*.sha256
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: inputs.environment
         with:
-          name: windows-music-environment
-          path: artifacts/Stringcraft-local-music-*.zip
+          name: music-runtime-installers
+          path: artifacts/extensions/*
+          if-no-files-found: error

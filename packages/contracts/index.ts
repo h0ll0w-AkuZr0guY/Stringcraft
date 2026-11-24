@@ -1,3 +1,4 @@
+import { validatePianoArrangement } from "./piano";
 export * from "./arrangement-draft";
 export * from "./audio-reference";
 export * from "./harmony";
@@ -100,7 +101,15 @@ export interface Arrangement<N extends NoteEvent = GuitarNote> {
   score?: MusicalScore;
   performance?: PerformancePlan<unknown>;
 }
+export interface ProjectCardStyle {
+  icon: "music" | "guitar" | "piano" | "headphones";
+  color: "sage" | "sand" | "blue" | "plum";
+  tags: string[];
+  pinned: boolean;
+}
 export interface MusicProject<N extends NoteEvent = GuitarNote> {
+  card?: ProjectCardStyle;
+  piano?: import("./piano").PianoArrangement;
   tracks?: ProjectTrack[];
   schemaVersion: 1 | 2;
   score?: MusicalScore;
@@ -322,6 +331,22 @@ export function validateProject(value: unknown): asserts value is MusicProject {
     !Number.isFinite(p.beatOffset)
   )
     throw new Error("项目版本或元数据无效");
+  if (
+    p.card &&
+    (!["music", "guitar", "piano", "headphones"].includes(p.card.icon) ||
+      !["sage", "sand", "blue", "plum"].includes(p.card.color) ||
+      typeof p.card.pinned !== "boolean" ||
+      !Array.isArray(p.card.tags) ||
+      p.card.tags.length > 6 ||
+      p.card.tags.some(
+        (tag) => typeof tag !== "string" || !tag.trim() || tag.length > 20,
+      ))
+  )
+    throw new Error("作品卡片格式无效");
+  if (p.piano) {
+    validatePianoArrangement(p.piano, p.duration);
+    validateNotes(p.piano.notes);
+  }
   validateNotes(p.notes);
   if (p.tracks) {
     if (!Array.isArray(p.tracks) || p.tracks.length > 64)
