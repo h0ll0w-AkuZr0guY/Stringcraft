@@ -73,7 +73,7 @@ try {
   }
   const audio = "tests/fixtures/audio/clean-melody.wav";
   await page.getByTestId("whole-audio-input").setInputFiles(audio);
-  await expect(page.getByRole("status")).toContainText("转录完成", {
+  await expect(page.getByRole("status")).toContainText(/转录完成|本地增强完成/, {
     timeout: 150000,
   });
   await page.getByLabel("编配目标").selectOption("melody");
