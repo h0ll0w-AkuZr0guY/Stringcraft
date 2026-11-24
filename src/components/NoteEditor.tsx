@@ -20,7 +20,6 @@ import { load } from "../../packages/plugin-host";
 import "../editor.css";
 import { useTransport } from "../hooks/useTransport";
 import { useWorkbenchContext } from "../hooks/WorkbenchContext";
-import AnalysisEngine from "./AnalysisEngine";
 import PianoRollEditor from "./PianoRollEditor";
 const download = (data: BlobPart, mime: string, name: string) => {
   const url = URL.createObjectURL(new Blob([data], { type: mime })),
@@ -299,7 +298,6 @@ export default function NoteEditor() {
           }}
         />
       </header>
-      <AnalysisEngine />
       <div className="note-meta">
         <Music2 size={18} />
         <strong>{p.name}</strong>
