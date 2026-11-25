@@ -60,6 +60,14 @@ async function authenticatedResponse(path: string, init?: RequestInit) {
 async function request(path: string, init?: RequestInit) {
   return (await authenticatedResponse(path, init)).json();
 }
+export function localPluginInbox(): Promise<string[]> {
+  return request("plugin-inbox");
+}
+export async function readLocalPlugin(name: string): Promise<ArrayBuffer> {
+  return (
+    await authenticatedResponse("plugin-inbox/" + encodeURIComponent(name))
+  ).arrayBuffer();
+}
 export async function analyzeLocal(
   file: File,
   mode: string,

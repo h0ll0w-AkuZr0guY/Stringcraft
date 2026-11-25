@@ -205,6 +205,15 @@ export interface MusicPlugin {
     atTime?: number,
   ) => { origin: number; stop: () => void };
   renderNotes?: (notes: NoteEvent[], duration: number) => Promise<ArrayBuffer>;
+  playSampleNote?: (
+    ctx: BaseAudioContext,
+    midi: number,
+    velocity: number,
+    start: number,
+    duration?: number,
+    offset?: number,
+  ) => (() => void) | undefined;
+  hasSamples?: (notes: NoteEvent[]) => boolean;
   exportNotes?: (notes: NoteEvent[], bpm: number) => Uint8Array;
   analyzeTiming?: (
     samples: Float32Array,

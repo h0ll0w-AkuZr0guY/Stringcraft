@@ -2,15 +2,22 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--output-root", type=Path, required=True)
+parser.add_argument("--output-root", type=Path)
 args = parser.parse_args()
 version = "1.0.1"
 root = Path(__file__).resolve().parents[1]
-out = args.output_root.resolve()
+sys.path.insert(0, str(root))
+from backend.workspace import find_workspace, managed_path
+
+workspace = find_workspace(root)
+out = (args.output_root or (workspace / "exports" if workspace else root / "artifacts")).resolve()
+if workspace:
+    out = managed_path(workspace, out)
 out.mkdir(parents=True, exist_ok=True)
 files = {
     "Install-MusicRuntime.ps1": root / "scripts/runtime/Install-MusicRuntime.ps1",

@@ -30,7 +30,7 @@ Settings → Pages 的 source 选择 GitHub Actions。pages.yml 仅允许 workfl
 
 ## 发布流程
 
-ci.yml 检查每个 PR。pages.yml 手动发布网页；release.yml 对明确 v 标签构建 Windows 基础包并创建预览 Release，同时提供环境构建的独立 workflow_dispatch。CI 不读取本地 Key、不调用付费模型。
+ci.yml 检查推送及 PR。pages.yml 手动发布网页。release.yml 手动对指定引用构建核心 Windows ZIP 和音乐扩展安装器。验收构建附件后，维护者发布对应版本的 GitHub Release。CI 不读取本地 Key、不调用付费模型。
 
 维护者发布前检查差异、第三方许可、质量报告、版本和下载包。0.1.0 只能标记 preview，真人试弹与真实混音门槛未过前不作为稳定版 Latest。不要覆盖历史附件；新环境包应使用新版本名，提供 SHA-256。
 
@@ -53,3 +53,17 @@ npm run build 生成桌面 WebView2 资源，npm run build:pages 生成仅常规
 核心 Windows ZIP 由固定提交生成。长期运行扩展分别生成 CPU、CUDA 资产，执行 python scripts/build-runtime-extensions.py --output-root artifacts/extensions。扩展是安装包，初始化时按固定版本从上游下载组件与模型，保留每个依赖的来源和许可。详见 [安装说明](MUSIC_RUNTIME.md)。
 
 核心版本标签与运行扩展标签独立。发布前审核实际解压包和下载摘要。完整版练习引擎在独立目录构建，使用桌面 trust key 对 manifest 签名；发行私钥、完整源码和安装 ZIP 不进入公开仓库或 CI。
+
+## 0.2.1 音色与本地离线包
+
+Salamander 音色与其许可随源码分发，直接执行 `npm run build` 即可包含音色。维护者需要重新编码时，可用带 libopus 的 FFmpeg 执行 `python scripts/build-piano-samples.py`。在独立构建目录使用 `python scripts/build-local.py --environment <local-separation> --output-root <目录>` 可生成含 CPU 环境的本地候选。公开核心包延续独立扩展方式。
+
+`scripts/build-offline-runtime.py` 打包预置 CUDA 环境，`scripts/sign-runtime-package.mjs` 使用发行密钥给同名 ZIP 生成 `.sig`。维护者通过 `scripts/build-browser-plugin-package.mjs` 构建签名浏览器插件。桌面用户可在插件中心打开本地收件箱、扫描包，或选择已签名的离线 CUDA ZIP。
+
+## 统一工作区
+
+在仓库上一级建立 `.stringcraft-workspace` 标记，仓库目录命名为 `source`。同一工作区的 `app`、`data`、`runtime`、`exports` 分别保存桌面程序、作品库、唯一计算环境和导出。新增构建和试运行写进工作区，测试的独立数据可放在 `.maintenance`。
+
+用 `uv pip install --break-system-packages --python <工作区>/runtime/local-separation/python/python.exe -r scripts/requirements-build.txt` 把构建与测试依赖装到共享环境。执行 `npm run build` 后，用同一 Python 执行 `scripts/build-local.py --stage-app`。暂存的 `app.next` 通过桌面与模型验收后替换 `app`。试用更新无需构建 ZIP 或复制模型环境。
+
+升级模型时，在 `.maintenance` 内准备新的 `local-separation`，退出弦作后执行 `scripts/activate-workspace-runtime.ps1 -Candidate <目录>`。命令会探测新环境再交换目录，再次探测通过后清除旧环境。试运行、构建、源谱、密钥和私人插件按目录管理，均不得提交到源码仓库。

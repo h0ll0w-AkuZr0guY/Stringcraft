@@ -18,30 +18,40 @@ import uuid
 import webbrowser
 import socket
 import hashlib
+import re
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, Body
 from backend.assets import AudioAssets
 from backend.bundles import export_bundle, import_bundle, MAX_EXPANDED
+from backend.workspace import runtime_workspace, managed_path, use_local_temporary_files
 from starlette.background import BackgroundTask
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
+WORKSPACE = runtime_workspace()
 USER_ROOT = Path(
     os.environ.get(
         "STRINGCRAFT_DATA",
+        WORKSPACE / "data" if WORKSPACE else
         Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Stringcraft",
     )
 )
 PLUGIN_ROOT = Path(
     os.environ.get(
         "STRINGCRAFT_PLUGIN_DIR",
+        WORKSPACE / "runtime" if WORKSPACE else
         Path(sys.executable).parent / "runtime_plugins"
         if getattr(sys, "frozen", False)
         else ROOT / "runtime_plugins",
     )
 )
+if WORKSPACE:
+    USER_ROOT = managed_path(WORKSPACE, USER_ROOT)
+    PLUGIN_ROOT = managed_path(WORKSPACE, PLUGIN_ROOT)
+    use_local_temporary_files(USER_ROOT / "tmp")
+    tempfile.tempdir = str(USER_ROOT / "tmp")
 RUNTIME = USER_ROOT / "jobs"
 TOKEN = secrets.token_urlsafe(32)
 DESKTOP_KEY = os.environ.pop("STRINGCRAFT_DESKTOP_KEY", "")
@@ -50,6 +60,7 @@ JOBS: dict[str, dict] = {}
 PROCESSES: dict[str, asyncio.subprocess.Process] = {}
 TASKS: set[asyncio.Task] = set()
 ENGINE = {"status": "checking", "ready": False}
+SWITCHING_RUNTIME = False
 PIPELINE_VERSION = "audio-harmony-0.4.0-tracks"
 ASSETS = AudioAssets(USER_ROOT / "assets")
 
@@ -244,6 +255,8 @@ async def guard(request: Request, call_next):
             request.headers.get("authorization", ""), "Bearer " + TOKEN
         ):
             return JSONResponse({"detail": "Invalid local session"}, status_code=401)
+    if SWITCHING_RUNTIME and request.method == "POST" and request.url.path.startswith("/api/v1/jobs"):
+        return JSONResponse({"detail": "正在切换音乐运行环境，请稍后重试。"}, status_code=409)
     response = await call_next(request)
     if request.url.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
@@ -275,6 +288,75 @@ def capabilities():
         },
         "maxUploadBytes": MAX_BYTES,
     }
+
+
+def inbox_file(name: str) -> Path:
+    root = USER_ROOT / "plugins" / "inbox"
+    if root.is_symlink() or not re.fullmatch(r"[^\\/:]{1,150}\.zip", name, re.IGNORECASE):
+        raise HTTPException(404, "插件包不可用。")
+    path = root / name
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 266240:
+        raise HTTPException(404, "插件包不可用。")
+    if not path.resolve().is_relative_to(root.resolve()):
+        raise HTTPException(404, "插件包路径无效。")
+    return path
+
+
+@app.get("/api/v1/plugin-inbox")
+def list_plugin_inbox():
+    root = USER_ROOT / "plugins" / "inbox"
+    if root.is_symlink() or not root.is_dir():
+        return []
+    files = []
+    for path in sorted(root.iterdir())[:200]:
+        try:
+            inbox_file(path.name)
+        except HTTPException:
+            continue
+        files.append(path.name)
+    return files
+
+
+@app.get("/api/v1/plugin-inbox/{name}")
+def read_plugin_inbox(name: str):
+    return FileResponse(inbox_file(name), media_type="application/zip")
+
+
+@app.post("/api/v1/plugin-runtime/{digest}")
+async def activate_plugin_runtime(digest: str, request: Request):
+    global PLUGIN_ROOT, ENGINE, SWITCHING_RUNTIME
+    if not DESKTOP_KEY or not secrets.compare_digest(
+        request.headers.get("x-stringcraft-activation", ""), DESKTOP_KEY
+    ):
+        raise HTTPException(403, "仅允许桌面宿主切换运行环境。")
+    if not re.fullmatch(r"[a-f0-9]{64}", digest):
+        raise HTTPException(404, "无效的 CUDA 包编号。")
+    root = USER_ROOT / "plugins" / "runtimes"
+    target = root / digest
+    marker = target / ".verified-runtime"
+    if (target.is_symlink() or marker.is_symlink() or not marker.is_file()
+            or target.resolve().parent != root.resolve()
+            or marker.read_text(encoding="ascii") != digest):
+        raise HTTPException(404, "未验证的运行环境。")
+    if SWITCHING_RUNTIME or ENGINE.get("status") == "checking" or any(
+        job["status"] in ("queued", "running") for job in JOBS.values()
+    ):
+        raise HTTPException(409, "等待当前作业结束。")
+    old_root, old_engine = PLUGIN_ROOT, ENGINE
+    SWITCHING_RUNTIME = True
+    PLUGIN_ROOT = target
+    ENGINE = {"status": "checking", "ready": False}
+    try:
+        result = await asyncio.to_thread(engine_probe)
+        if not result.get("ready") or result.get("device") != "cuda":
+            raise HTTPException(422, "CUDA 自检未通过。")
+        ENGINE = result
+        return ENGINE
+    except BaseException:
+        PLUGIN_ROOT, ENGINE = old_root, old_engine
+        raise
+    finally:
+        SWITCHING_RUNTIME = False
 
 
 async def run_job(identifier: str, source: Path, mode: str, settings=None):

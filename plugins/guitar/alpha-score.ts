@@ -3,6 +3,7 @@ import type { MusicProject, ScoreHit } from "../../packages/contracts";
 import { beatToSeconds, secondsToBeat } from "../../packages/contracts/score";
 import { projectScore } from "../../packages/music/score";
 import { tabMeasures } from "./notation";
+import type { GuitarPerformance } from "./types";
 
 /** Structured alphaTab model; independent voices and explicit ties, never flat alphaTex chords. */
 export function alphaScore(
@@ -16,6 +17,8 @@ export function alphaScore(
     track = new m.Track(),
     staff = new m.Staff();
   score.title = project.name;
+  score.subTitle =
+    "标准调弦 E A D G B E · 变调夹 " + (project.arrangement?.capo ?? 0) + " 品";
   score.addTrack(track);
   track.addStaff(staff);
   track.name = "吉他";
@@ -28,13 +31,44 @@ export function alphaScore(
   const musical = project.arrangement?.score ?? projectScore(project),
     notes = project.arrangement?.notes ?? [];
   const origins = new Map<string, Alpha.model.Note>();
+  const grips =
+    (project.arrangement?.performance as GuitarPerformance | undefined)
+      ?.grips ?? [];
+  for (const grip of grips) {
+    const chord = new m.Chord();
+    chord.name = grip.name;
+    chord.strings = [...grip.shape.frets];
+    chord.firstFret = Math.max(
+      1,
+      Math.min(...chord.strings.filter((x) => x > 0)),
+    );
+    if (!Number.isFinite(chord.firstFret) || chord.firstFret < 4)
+      chord.firstFret = 1;
+    chord.showName = chord.showDiagram = true;
+    staff.addChord(grip.chordId, chord);
+  }
+  const strikes = new Map<string, number>();
+  for (const note of notes)
+    if (note.strokeId)
+      strikes.set(
+        note.strokeId,
+        Math.min(note.start, strikes.get(note.strokeId) ?? Infinity),
+      );
   const roles = (["melody", "bass", "harmony"] as const).filter((role) =>
-    notes.some((n) => (n.role ?? "harmony") === role),
+    notes.some(
+      (n) => (n.strokeId ? "harmony" : (n.role ?? "harmony")) === role,
+    ),
   );
   if (!roles.length) roles.push("melody");
   const written = notes.map((n) => ({
     note: n,
-    start: Math.round(secondsToBeat(musical, n.start) * 4) / 4,
+    start:
+      Math.round(
+        secondsToBeat(
+          musical,
+          n.strokeId ? strikes.get(n.strokeId)! : n.start,
+        ) * 4,
+      ) / 4,
     end: Math.max(
       Math.round(secondsToBeat(musical, n.start) * 4) / 4 + 0.25,
       n.dead && n.notationDurationBeats
@@ -51,6 +85,15 @@ export function alphaScore(
     master.timeSignatureNumerator = meter.numerator;
     master.isAnacrusis = measure.index === 0 && !!musical.pickupBeats;
     master.timeSignatureDenominator = meter.denominator;
+    const part = musical.sections.find(
+      (s) => s.beat >= measure.beat - 0.001 && s.beat < measure.endBeat - 0.001,
+    );
+    if (part) {
+      const section = new m.Section();
+      section.text = part.label;
+      section.marker = "";
+      master.section = section;
+    }
     const tempo =
       musical.tempo.findLast((t) => t.beat <= measure.beat) ?? musical.tempo[0];
     if (
@@ -77,7 +120,8 @@ export function alphaScore(
       const voice = new m.Voice();
       bar.addVoice(voice);
       const roleNotes = written.filter(
-        ({ note: n }) => (n.role ?? "harmony") === role,
+        ({ note: n }) =>
+          (n.strokeId ? "harmony" : (n.role ?? "harmony")) === role,
       );
       const boundaries = [
         ...new Set([
@@ -113,6 +157,10 @@ export function alphaScore(
           cell.duration = duration;
           cell.dots = dots;
           voice.addBeat(cell);
+          const chord =
+            role === roles.at(-1) &&
+            grips.find((grip) => Math.abs(grip.beat - beat) < 0.002);
+          if (chord) cell.chordId = chord.chordId;
           for (const { note: n, start, end } of roleNotes) {
             if (start > beat + 0.001 || end <= beat + 0.001) continue;
             const note = new m.Note();
@@ -122,6 +170,13 @@ export function alphaScore(
             note.isTieDestination = start < beat - 0.001;
             note.isLetRing = !!n.letRing;
             note.isPalmMute = n.technique === "pm";
+            if (!note.isTieDestination && n.stroke) {
+              cell.brushType =
+                n.stroke === "down"
+                  ? m.BrushType.BrushDown
+                  : m.BrushType.BrushUp;
+              cell.brushDuration = 60;
+            }
             if (showFingering && n.leftFinger)
               note.leftHandFinger = n.leftFinger;
             if (showFingering && n.rightFinger)

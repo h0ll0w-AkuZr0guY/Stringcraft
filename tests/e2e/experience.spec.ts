@@ -81,13 +81,18 @@ test("original piano and guitar demos play from the mapped keys", async ({
   const studio = page.getByRole("application", { name: "键盘练习区" });
   await page.getByRole("button", { name: "自由弹奏", exact: true }).click();
   await page.getByRole("button", { name: "开始弹奏", exact: true }).click();
-  await page.keyboard.down("q");
+  await page.keyboard.down("j");
   await expect(
-    page.getByRole("button", { name: "C4 Q", exact: true }),
+    page.getByRole("button", { name: "C4 J", exact: true }),
   ).toHaveAttribute("data-active", "true");
-  await page.keyboard.up("q");
+  await page.keyboard.down("a");
   await expect(
-    page.getByRole("button", { name: "C4 Q", exact: true }),
+    page.getByRole("button", { name: "C3 A", exact: true }),
+  ).toHaveAttribute("data-active", "true");
+  await page.keyboard.up("a");
+  await page.keyboard.up("j");
+  await expect(
+    page.getByRole("button", { name: "C4 J", exact: true }),
   ).toHaveAttribute("data-active", "false");
   await page.getByRole("button", { name: "吉他", exact: true }).click();
   await page.getByRole("button", { name: "开始跟练", exact: true }).click();

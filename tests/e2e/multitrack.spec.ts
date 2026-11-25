@@ -205,11 +205,13 @@ test("guitar and rhythm score hits use the shared position and stay audible", as
   await page.getByRole("button", { name: "节奏谱", exact: true }).click();
   await expect(page.locator(".at-surface")).toBeVisible();
   await expect(page.locator(".inline-error")).toHaveCount(0);
-  // Bounds are the same lookup used by alphaTab's pointer interaction.
+  // Find a rendered beat through the playhead, then click that beat from zero.
+  await seek(page, 1);
+  const cursor = page.locator(".score-play-cursor");
+  await expect(cursor).toBeInViewport();
+  const rect = (await cursor.boundingBox())!;
   await seek(page, 0);
-  const surface = page.locator(".at-surface");
-  const rect = (await surface.boundingBox())!;
-  await page.mouse.click(rect.x + 250, rect.y + 100);
+  await page.mouse.click(rect.x + 3, rect.y + rect.height / 2);
   await expect.poll(() => position(page)).toBeGreaterThan(0.1);
   await mkdir("artifacts", { recursive: true });
   await page.screenshot({ path: "artifacts/local4-rhythm.png" });

@@ -21,7 +21,7 @@ export function demoChart(instrument: "piano" | "guitar"): PracticeChart {
   };
   if (instrument === "piano") {
     const melody = [
-      60, 62, 64, 67, 65, 64, 62, 60, 64, 67, 69, 67, 65, 64, 62, 60,
+      60, 62, 64, 67, 65, 64, 62, 60, 64, 67, 65, 67, 65, 64, 62, 60,
     ];
     chart.attacks = melody.map((midi, i) => ({
       id: "n" + i,
@@ -35,6 +35,18 @@ export function demoChart(instrument: "piano" | "guitar"): PracticeChart {
           midi % 12
         ] + "4",
     }));
+    for (const [index, midi] of [48, 53, 55, 48].entries()) {
+      chart.attacks.push({
+        id: "bass" + index,
+        at: 1.5 + index * 4,
+        duration: 0.64,
+        measure: index * 2 + 1,
+        token: "key:left:" + midi,
+        pitches: [midi],
+        label: ["C3", "F3", "G3", "C3"][index],
+      });
+    }
+    chart.attacks.sort((a, b) => a.at - b.at);
   } else {
     const tuning = [40, 45, 50, 55, 59, 64];
     chart.chords = banks.map(([name, frets], i) => ({

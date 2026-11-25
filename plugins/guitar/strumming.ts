@@ -139,16 +139,16 @@ export function naturalStrumming(
     const phrase = options.phrases?.find(
       (p) => p.beat <= bar.beat && p.endBeat > bar.beat,
     );
-    const energy =
-      score.sections.find((s) => s.beat <= bar.beat && s.endBeat > bar.beat)
-        ?.energy ??
-      phrase?.energy ??
-      "steady";
+    const section = score.sections.find(
+      (s) => s.beat <= bar.beat && s.endBeat > bar.beat,
+    );
+    const energy = section?.energy ?? phrase?.energy ?? "steady";
     const pattern = strokes(
       bar.numerator,
       bar.denominator,
       options.difficulty === "easy",
-      energy === "gentle",
+      (section?.energy ??
+        (options.difficulty === "normal" ? "steady" : energy)) === "gentle",
       phrasing,
     );
     const length = (bar.numerator * 4) / bar.denominator,

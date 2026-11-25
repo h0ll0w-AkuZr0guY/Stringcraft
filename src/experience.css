@@ -267,3 +267,110 @@ body,
     display: none;
   }
 }
+
+.unified-workspace[data-paper="true"] .notation-body:has(.score-paper) {
+  width: 100%;
+  box-shadow: none;
+  border: 0;
+  background: #e8eee6;
+}
+.score-paper {
+  width: 794px;
+  min-height: 1122px;
+  margin: 18px auto;
+  padding: 40px 46px 26px;
+  position: relative;
+  box-sizing: border-box;
+  background: #fff;
+  color: #101610;
+  box-shadow: 0 2px 15px #172c2020;
+}
+.score-paper-heading {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.score-paper-heading strong {
+  font-size: 24px;
+}
+.score-paper-heading small {
+  color: #384239;
+}
+.score-paper-footer {
+  position: absolute;
+  bottom: 24px;
+  right: 46px;
+  font-size: 12px;
+}
+.score-paper .score-row {
+  display: block;
+  max-width: none !important;
+}
+.score-paper .time-label,
+.score-paper .fret,
+.score-paper .measure-label,
+.score-paper .finger-label,
+.score-grip {
+  fill: #191f1a;
+}
+.score-grip {
+  font-size: 10px;
+}
+.tab-stroke-arrow {
+  fill: none;
+  stroke: #15271e;
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+@page scoreSheet {
+  size: A4;
+  margin: 0;
+}
+@media print {
+  .unified-workspace[data-paper="true"],
+  .unified-workspace[data-paper="true"] .score-panel {
+    background: white !important;
+  }
+  .unified-workspace [data-score-playhead],
+  .unified-workspace .score-play-cursor {
+    display: none !important;
+  }
+  .unified-workspace[data-paper="true"] .notation-body:has(.score-paper) {
+    display: block;
+    width: auto;
+    overflow: visible;
+    background: white;
+  }
+  .score-paper {
+    zoom: 1 !important;
+    page: scoreSheet;
+    break-after: page;
+    break-inside: avoid;
+    width: 209mm;
+    min-height: 296mm;
+    box-shadow: none;
+    margin: 0;
+  }
+  .score-paper:last-child {
+    break-after: auto;
+  }
+}
+
+.rhythm-view[data-rhythm-paper="true"] .rhythm-paper-width {
+  box-sizing: content-box;
+  width: 700px;
+  background: white;
+  margin: 12px auto;
+  padding: 28px 34px;
+}
+@media print {
+  .rhythm-view[data-rhythm-paper="true"] .rhythm-paper-width {
+    zoom: 1 !important;
+    margin: 0;
+    padding: 12mm 0;
+  }
+  .rhythm-view[data-rhythm-paper="true"] .at-surface > * {
+    break-inside: avoid;
+  }
+}

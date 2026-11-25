@@ -1,0 +1,369 @@
+{
+  "name": "Salamander Grand Piano v3",
+  "author": "Alexander Holm",
+  "license": "CC-BY-3.0",
+  "source": "https://github.com/sfzinstruments/SalamanderGrandPiano/tree/3382bf9496bba2486f5ab0de55a264d1dfc38404",
+  "changes": "Two velocity layers, converted to Opus and shortened to eight seconds.",
+  "files": [
+    {
+      "midi": 21,
+      "layer": 5,
+      "file": "21-5.ogg",
+      "sha256": "bfbd6c2e0a8ace9653c9f507149623fd2161a20861d2d86b9f3c5d75b5c75922"
+    },
+    {
+      "midi": 21,
+      "layer": 12,
+      "file": "21-12.ogg",
+      "sha256": "0e661fd5a94b55f79d973b692f41bc91bced5bae15f5d260917fbd0a3f176e60"
+    },
+    {
+      "midi": 24,
+      "layer": 5,
+      "file": "24-5.ogg",
+      "sha256": "1e1838653811ef52810089ae92fd3e19678b3ef6850fe18e589ea064d5bce155"
+    },
+    {
+      "midi": 24,
+      "layer": 12,
+      "file": "24-12.ogg",
+      "sha256": "7b8de1b493d38ded34f00aa0fd19e5fb4aeab14eeb7f25a2142aa209279cedd1"
+    },
+    {
+      "midi": 27,
+      "layer": 5,
+      "file": "27-5.ogg",
+      "sha256": "ba0dc9c106fe1a895122241bab079734777ff37046e51f21c4334c20d3a7ae36"
+    },
+    {
+      "midi": 27,
+      "layer": 12,
+      "file": "27-12.ogg",
+      "sha256": "7c2c6210daa8863816d9d62385ff62e81562ba1c2ec6ccfbdf4b3d263131a751"
+    },
+    {
+      "midi": 30,
+      "layer": 5,
+      "file": "30-5.ogg",
+      "sha256": "4d136f33d9c1461651f4394f77536ff7303c37173508a49a0877653ebbce5f5b"
+    },
+    {
+      "midi": 30,
+      "layer": 12,
+      "file": "30-12.ogg",
+      "sha256": "5490b64208a11f9053d1b4562a9e8ed681c4327e8394ef209262d146b070f191"
+    },
+    {
+      "midi": 33,
+      "layer": 5,
+      "file": "33-5.ogg",
+      "sha256": "071649208192b0ebe32aa09d02324c8a457441d8e81248bc49212f7832f46b70"
+    },
+    {
+      "midi": 33,
+      "layer": 12,
+      "file": "33-12.ogg",
+      "sha256": "c6f231e92959006e432ca710340f8a9f725d648d981e9c6f345d279aaf0aa48e"
+    },
+    {
+      "midi": 36,
+      "layer": 5,
+      "file": "36-5.ogg",
+      "sha256": "52af3a53d774ec2adcb37a5cc61357a6b1b79c85bc4b172c2de867375d7ae57a"
+    },
+    {
+      "midi": 36,
+      "layer": 12,
+      "file": "36-12.ogg",
+      "sha256": "30dc73225b858754d4c86a41e0b28fd16bf52402183880ce1498c74c5485a6d6"
+    },
+    {
+      "midi": 39,
+      "layer": 5,
+      "file": "39-5.ogg",
+      "sha256": "e5fc80b8cc5c7819dc3be337fefd93b574cf919e1699ac06e38946ae21030985"
+    },
+    {
+      "midi": 39,
+      "layer": 12,
+      "file": "39-12.ogg",
+      "sha256": "d4dd922e4260040ebb836e706eaa0dab2d9fc08435a7ad3f3b6207b76b3b610e"
+    },
+    {
+      "midi": 42,
+      "layer": 5,
+      "file": "42-5.ogg",
+      "sha256": "fa2684f43c582eaea64332fb30bf71c3a7197fc74a269578a0e30caaece2b854"
+    },
+    {
+      "midi": 42,
+      "layer": 12,
+      "file": "42-12.ogg",
+      "sha256": "f0ffee3a4ab901f4f8b6b8d3588177a97544956ca71e571a740189ac9b112ba0"
+    },
+    {
+      "midi": 45,
+      "layer": 5,
+      "file": "45-5.ogg",
+      "sha256": "d65b02794d63777bc33f2be86b78568740de569f8148a1f57f3d2155d270c245"
+    },
+    {
+      "midi": 45,
+      "layer": 12,
+      "file": "45-12.ogg",
+      "sha256": "36f4e3e2df3561eca6df262765e80a980c1b02458880b7ee3d2094cbe71be9f1"
+    },
+    {
+      "midi": 48,
+      "layer": 5,
+      "file": "48-5.ogg",
+      "sha256": "3e11c2ebb9c2ad98a44315280b7666abe786467e7f24a92b2b7284a8c3501212"
+    },
+    {
+      "midi": 48,
+      "layer": 12,
+      "file": "48-12.ogg",
+      "sha256": "79eb1689dcc5fbe2e649bbd13fd4cc233aeb165147946c2e8bf7c214224da63b"
+    },
+    {
+      "midi": 51,
+      "layer": 5,
+      "file": "51-5.ogg",
+      "sha256": "485e03b3bf0f6c680ad59895aa10562d747e99c1402a92c9a1b7a06687fdc0c2"
+    },
+    {
+      "midi": 51,
+      "layer": 12,
+      "file": "51-12.ogg",
+      "sha256": "3f62fb54c35dfce366a3a8a313ff76549e8e8964e3cc7fce7acd6113886be989"
+    },
+    {
+      "midi": 54,
+      "layer": 5,
+      "file": "54-5.ogg",
+      "sha256": "b3b3ab6170ed3e749e3477c6b7327cd6c771789b101c0c2d02cc3f2d4cc72155"
+    },
+    {
+      "midi": 54,
+      "layer": 12,
+      "file": "54-12.ogg",
+      "sha256": "199241b5d57297a9c98a8e1e80677cc62f4a14f22bbf7ea6f9a7203b884c57ee"
+    },
+    {
+      "midi": 57,
+      "layer": 5,
+      "file": "57-5.ogg",
+      "sha256": "0ed5e942d0a55638e8fae11264873086e83f657eb04d0a388b179c5c2dc71c7a"
+    },
+    {
+      "midi": 57,
+      "layer": 12,
+      "file": "57-12.ogg",
+      "sha256": "c07f1c17f286d266cd2c1319e593e5917c47576aa0bb90fc5f51838684dea234"
+    },
+    {
+      "midi": 60,
+      "layer": 5,
+      "file": "60-5.ogg",
+      "sha256": "15cad8b96739748396e0c24f7dde0e5b70c427ce79729ed6098e672ed94c6883"
+    },
+    {
+      "midi": 60,
+      "layer": 12,
+      "file": "60-12.ogg",
+      "sha256": "8781807356f976fd02f400c074515861194418a23b16099facd7e63d4e74229f"
+    },
+    {
+      "midi": 63,
+      "layer": 5,
+      "file": "63-5.ogg",
+      "sha256": "9286d0e1f41c83ddd6ec5c6cb308c2241d397f307a797e8d65e9febd44fbf3c9"
+    },
+    {
+      "midi": 63,
+      "layer": 12,
+      "file": "63-12.ogg",
+      "sha256": "7362694df091f5ba2e99ba0056d34596e126ae8490dd570565c66a7cacfe124c"
+    },
+    {
+      "midi": 66,
+      "layer": 5,
+      "file": "66-5.ogg",
+      "sha256": "8a57a71d7f608d01664a3829947e0b3e22955376a6626ddeb5f1a6a9a519d83b"
+    },
+    {
+      "midi": 66,
+      "layer": 12,
+      "file": "66-12.ogg",
+      "sha256": "83ed00039aebfed0d5cdf20cfc2b283e236de1ec1359b41b3531e707a9773db6"
+    },
+    {
+      "midi": 69,
+      "layer": 5,
+      "file": "69-5.ogg",
+      "sha256": "0e42963eb9771bab0770e7b965027c59b957791ba531ed3ff3f39a129d6082bd"
+    },
+    {
+      "midi": 69,
+      "layer": 12,
+      "file": "69-12.ogg",
+      "sha256": "038ca1a7398ecdc444d0462b453412b8a68fd723b3f218f093883b1920118227"
+    },
+    {
+      "midi": 72,
+      "layer": 5,
+      "file": "72-5.ogg",
+      "sha256": "0b66e73d30af635b74ff5ce9f8c1a44bef75f6e55acc1149ad5f77e403231162"
+    },
+    {
+      "midi": 72,
+      "layer": 12,
+      "file": "72-12.ogg",
+      "sha256": "dc08191f7f4a87d1182269f3efde12fc76c67d6df76ea55576eb91340c4513b5"
+    },
+    {
+      "midi": 75,
+      "layer": 5,
+      "file": "75-5.ogg",
+      "sha256": "6666cb5a4348dc4d3b7ccc5e08501261e58586db7ec0e2b351cee97cc6ff52f1"
+    },
+    {
+      "midi": 75,
+      "layer": 12,
+      "file": "75-12.ogg",
+      "sha256": "d8519f75b9aca4281791eed379489fbc12af879c99a56ddaa5699580ee3731e3"
+    },
+    {
+      "midi": 78,
+      "layer": 5,
+      "file": "78-5.ogg",
+      "sha256": "acda3205706b9ad9a41682cc7b5b4f76b2d4fe9c82c124c849cfe126e77a85d8"
+    },
+    {
+      "midi": 78,
+      "layer": 12,
+      "file": "78-12.ogg",
+      "sha256": "135e7797d8ffd7373a099c1bbd929c608432fe6a5cb0699d7a593422c7b8ed36"
+    },
+    {
+      "midi": 81,
+      "layer": 5,
+      "file": "81-5.ogg",
+      "sha256": "1601f3f2b0a3e1f1709aff92dca4e0d1e19ad2589f5f9c174cf7002cddf71232"
+    },
+    {
+      "midi": 81,
+      "layer": 12,
+      "file": "81-12.ogg",
+      "sha256": "8d9f22e0dcafbdce049f2eb048fa95f8edcb10b5b95a7e72f6bd5b1e6132b031"
+    },
+    {
+      "midi": 84,
+      "layer": 5,
+      "file": "84-5.ogg",
+      "sha256": "5a7e1d7c3cc2afd8950a7e7594274cd06ed6f69c5abbba575e40defba41317f7"
+    },
+    {
+      "midi": 84,
+      "layer": 12,
+      "file": "84-12.ogg",
+      "sha256": "32bbda0b71982b5a3cf91749b0a4d2956c9b6dbaf2bff6762cd1d58d4ed9b897"
+    },
+    {
+      "midi": 87,
+      "layer": 5,
+      "file": "87-5.ogg",
+      "sha256": "895bc2728dd0112f5945d1a0b2cc78b2ea2df087c92f13f9b4e11928b310f753"
+    },
+    {
+      "midi": 87,
+      "layer": 12,
+      "file": "87-12.ogg",
+      "sha256": "d4bc9613b0d1598e72e4eddd6851b82870d9598261b57a2d9c8d43742811a254"
+    },
+    {
+      "midi": 90,
+      "layer": 5,
+      "file": "90-5.ogg",
+      "sha256": "4f3ca510743740e3c5831d83223b7a2202fbcda1d1a569bea83cef49fe591b40"
+    },
+    {
+      "midi": 90,
+      "layer": 12,
+      "file": "90-12.ogg",
+      "sha256": "ced8274dab2e7054cc2ea75b08307a0c1351ed41fc79fdc597d9d790a74b794a"
+    },
+    {
+      "midi": 93,
+      "layer": 5,
+      "file": "93-5.ogg",
+      "sha256": "a41a2d28eb6bbc40cbd1b4dc50a2abfcaa7168db61ef477a8b66ff69c26682e9"
+    },
+    {
+      "midi": 93,
+      "layer": 12,
+      "file": "93-12.ogg",
+      "sha256": "8d88ef312e420ae1726f059b6d8c087d37f37351dbb5e3fe42a9fe8777eaa226"
+    },
+    {
+      "midi": 96,
+      "layer": 5,
+      "file": "96-5.ogg",
+      "sha256": "8322954b8593362a07d2e18b251a502e5a0f3d6703e2b1350e4856f480e6f0d0"
+    },
+    {
+      "midi": 96,
+      "layer": 12,
+      "file": "96-12.ogg",
+      "sha256": "ad1ac4c2e03e93f353c62f657fcfbb72abe7c4af260a5159679b36c103e8a3ba"
+    },
+    {
+      "midi": 99,
+      "layer": 5,
+      "file": "99-5.ogg",
+      "sha256": "ec9310f3b9965dd09b07e895a9bf70be032b990e167406fcb988d84517dd1587"
+    },
+    {
+      "midi": 99,
+      "layer": 12,
+      "file": "99-12.ogg",
+      "sha256": "5b1c2484f59cea4f104a091610e6741ecc02ad8bd1b2a10dad0b42d748088bc6"
+    },
+    {
+      "midi": 102,
+      "layer": 5,
+      "file": "102-5.ogg",
+      "sha256": "d4a0917395ab515699fcbc46f8be8c8473a8fd1300e37760c5a454ee67a95625"
+    },
+    {
+      "midi": 102,
+      "layer": 12,
+      "file": "102-12.ogg",
+      "sha256": "9b26922ad0e1ddd8320f7fd40730af94cf065c9675804630f97f037718fa906f"
+    },
+    {
+      "midi": 105,
+      "layer": 5,
+      "file": "105-5.ogg",
+      "sha256": "0e98ca045c5dd77d802230575f20f6789de1ec549156fa4b7e88b728a27e25ae"
+    },
+    {
+      "midi": 105,
+      "layer": 12,
+      "file": "105-12.ogg",
+      "sha256": "e9760dadde8bbd3c3939d20d358f2a397e138ad0374084d1471e2518741c9ec6"
+    },
+    {
+      "midi": 108,
+      "layer": 5,
+      "file": "108-5.ogg",
+      "sha256": "dd3df4617b519e19aeab2920d3bebe58e06ffdfb262b68321f6ce66207aa383b"
+    },
+    {
+      "midi": 108,
+      "layer": 12,
+      "file": "108-12.ogg",
+      "sha256": "f0a84fcc0834280d59bc6d3698e86f457ce421a7902fa2c4f1689631c1713e2b"
+    }
+  ]
+}

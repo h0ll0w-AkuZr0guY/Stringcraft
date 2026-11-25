@@ -23,10 +23,14 @@ export default function ScorePanel({
   professional,
   shown,
   zoom = 1,
+  paper = false,
+  onPrintTab,
 }: {
   professional: boolean;
   shown: boolean;
   zoom?: number;
+  paper?: boolean;
+  onPrintTab?: () => void;
 }) {
   const controller = useWorkbenchContext();
   const { position: time } = useTransport(
@@ -160,6 +164,7 @@ export default function ScorePanel({
             time={time}
             zoom={zoom}
             professional={professional}
+            paper={paper}
             onSeek={controller.seek}
           />
         ) : view === "rhythm" ? (
@@ -167,6 +172,7 @@ export default function ScorePanel({
             project={project}
             time={time}
             zoom={zoom}
+            paper={paper}
             professional={professional}
             onActivate={(ns, at) => {
               if (ns[0]) setSelected(ns[0].id);
@@ -486,8 +492,11 @@ export default function ScorePanel({
           <button
             className="text-button"
             onClick={() => {
-              setView("tab");
-              setTimeout(printTab, 100);
+              if (onPrintTab) onPrintTab();
+              else {
+                setView("tab");
+                setTimeout(printTab, 100);
+              }
             }}
           >
             打印六线谱 PDF

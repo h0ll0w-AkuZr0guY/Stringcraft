@@ -1,5 +1,13 @@
 # Windows 桌面使用与项目迁移
 
+统一工作区从根目录的「启动弦作」打开。桌面作品和插件保存在 `data`，模型复用根目录的 `runtime`。桌面下载自动进入 `exports`，PDF 保存对话框也从这里打开。升级桌面程序时保留作品库和计算环境。独立便携发布包仍按下文运行。
+
+0.2.1 本地试用包自带 CPU 分轨运行环境和实录钢琴音色。解压后从根目录启动 `Stringcraft.exe`，应用依赖集中在 `_internal`。有 NVIDIA 显卡时可在插件中心导入另行提供的 CUDA 离线 ZIP，签名文件 `.zip.sig` 放在 ZIP 同目录。自检通过后会切换运行环境。作品仍保存在当前 Windows 用户的数据目录。
+
+插件中心可以打开 `plugins/inbox` 并扫描手动放入的签名插件 ZIP。钢琴跟练默认左手 `A S D F G`、右手 `J K L ; '`。吉他用左手选和弦、右手方向键扫弦，`H J K L ; '` 对应六弦到一弦。旧键位和旧改键可以从预设菜单选回。
+
+六线谱进入全屏后可打开 A4 预览，使用「适合整页」「适合宽度」和 Ctrl＋滚轮。打印六线谱沿用预览分行。五线谱加六线谱可通过「节奏谱」打开。
+
 完整解压后双击 Stringcraft.exe。Windows x64 桌面应用使用系统 WebView2 Runtime。如果系统缺少它，安装 Microsoft 的 x64 Evergreen 离线运行时并重新启动。[微软安装说明](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)
 
 ## 第一次上手

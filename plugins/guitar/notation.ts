@@ -22,6 +22,58 @@ export interface TabMeasure {
   width: number;
   columns: TabColumn[];
 }
+
+export const A4_TAB_WIDTH = 700;
+export const A4_TAB_ROWS = 3;
+
+/** Measure boundaries stay intact. Stretch spacing, leaving glyph sizes unchanged. */
+export function tabSystems(
+  bars: TabMeasure[],
+  width: number,
+  justify: boolean,
+) {
+  const preferredWidth = (bar: TabMeasure) =>
+    justify
+      ? Math.max(
+          186,
+          65 +
+            bar.columns.length * 31 +
+            bar.columns.filter((c) => c.chord).length * 12,
+        )
+      : bar.width;
+  const rows: TabMeasure[][] = [];
+  let row: TabMeasure[] = [];
+  let used = 16;
+  for (const bar of bars) {
+    if (
+      row.length &&
+      (used + preferredWidth(bar) > width || (justify && row.length === 3))
+    ) {
+      rows.push(row);
+      row = [];
+      used = 16;
+    }
+    row.push(bar);
+    used += preferredWidth(bar);
+  }
+  if (row.length) rows.push(row);
+  if (!justify) return rows;
+  return rows.map((system) => {
+    const total = system.reduce((sum, bar) => sum + preferredWidth(bar), 0);
+    const stretch = (width - 16) / total;
+    return system.map((bar) => ({
+      ...bar,
+      width: preferredWidth(bar) * stretch,
+      columns: bar.columns.map((column) => ({
+        ...column,
+        x:
+          42 +
+          ((column.x - 42) * (preferredWidth(bar) * stretch - 60)) /
+            (bar.width - 60),
+      })),
+    }));
+  });
+}
 /** Minimum column spacing is physical glyph space, not a fixed number of seconds. */
 export function tabMeasures(project: MusicProject): TabMeasure[] {
   const score = project.arrangement?.score ?? projectScore(project),

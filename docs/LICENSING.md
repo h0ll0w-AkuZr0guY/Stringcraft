@@ -10,6 +10,7 @@
 | React | https://github.com/facebook/react | MIT |
 | Lucide | https://github.com/lucide-icons/lucide | ISC |
 | 吉他单音采样 | https://github.com/facebookincubator/Meta-open-sound | 乐器采样 CC0-1.0；逐样本映射在 manifest |
+| Salamander Grand Piano v3 | https://github.com/sfzinstruments/SalamanderGrandPiano | Alexander Holm，CC BY 3.0。保留两个力度层，将单音剪至八秒后转为 Opus；来源、摘要与许可随 `public/piano-samples` 分发 |
 | HTDemucs | https://github.com/facebookresearch/demucs | 可选 MIT 模型/代码，随环境保留实际许可 |
 | NumPy/SciPy/librosa/音频工具 | 对应 Python 包元数据 | 独立环境保留 dist-info 的 license 文件 |
 

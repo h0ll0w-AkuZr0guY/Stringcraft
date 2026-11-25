@@ -1,4 +1,4 @@
-import { get, set } from "idb-keyval";
+import { get, set, setMany } from "idb-keyval";
 import {
   SDK_VERSION,
   type InstrumentPluginV2,
@@ -12,6 +12,7 @@ type Installed = {
   enabled: boolean;
   previous?: Omit<Installed, "previous">;
 };
+const signedIndex = "plugins:signed-installations";
 const live = new Map<string, MusicPlugin>();
 const base = () => new URL(import.meta.env.BASE_URL, location.href);
 export async function catalog(): Promise<PluginManifest[]> {
@@ -21,9 +22,54 @@ export async function catalog(): Promise<PluginManifest[]> {
   if (!response.ok) throw new Error("插件目录暂时无法访问");
   const value = await response.json();
   if (!Array.isArray(value)) throw new Error("插件目录格式无效");
+  const signed = (await get<string[]>(signedIndex)) ?? [];
+  for (const id of signed) {
+    const item = await installed(id);
+    if (!item?.code) continue;
+    const index = value.findIndex((entry: PluginManifest) => entry.id === id);
+    if (index >= 0) value[index] = item.manifest;
+    else value.push(item.manifest);
+  }
   return value;
 }
 export const installed = (id: string) => get<Installed>(`plugin:${id}`);
+export async function installSignedBrowserPackage(bytes: ArrayBuffer) {
+  const { verifyBrowserPackage } = await import("./browser-package");
+  const { manifest, code } = await verifyBrowserPackage(bytes);
+  for (const dependency of manifest.dependencies)
+    if (!(await installed(dependency))?.enabled)
+      throw new Error(`请先启用依赖 ${dependency}。`);
+  const old = await installed(manifest.id);
+  if (old?.manifest.sha256 === manifest.sha256 && old.code) return manifest;
+  const url = URL.createObjectURL(
+    new Blob([code], { type: "text/javascript" }),
+  );
+  try {
+    const module = (await import(/* @vite-ignore */ url)).default;
+    if (!module || typeof module !== "object")
+      throw new Error("插件入口缺失。");
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+  const ids = new Set((await get<string[]>(signedIndex)) ?? []);
+  ids.add(manifest.id);
+  await setMany([
+    [signedIndex, [...ids]],
+    [
+      `plugin:${manifest.id}`,
+      {
+        manifest,
+        code,
+        enabled: old?.enabled ?? true,
+        previous: old?.code
+          ? { manifest: old.manifest, code: old.code, enabled: old.enabled }
+          : undefined,
+      } satisfies Installed,
+    ],
+  ]);
+  live.delete(manifest.id);
+  return manifest;
+}
 export async function install(
   manifest: PluginManifest,
   trail = new Set<string>(),
@@ -166,6 +212,7 @@ export async function bootstrap() {
   for (const id of [
     "piano-roll",
     "note-audio",
+    "piano-samples",
     "note-exporters",
     "melody-tracker",
     "guitar-standard",

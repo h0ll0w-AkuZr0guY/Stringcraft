@@ -27,7 +27,8 @@ export function trackPlayback(
     try {
       const real: { buffer: AudioBuffer; gain: number; offset: number }[] = [],
         guitar: NoteEvent[] = [],
-        neutral: NoteEvent[] = [];
+        neutral: NoteEvent[] = [],
+        piano: NoteEvent[] = [];
       for (const track of material) {
         if (!current()) throw new DOMException("已取消", "AbortError");
         const gain = settings.volumes[track.id] ?? 1;
@@ -50,7 +51,12 @@ export function trackPlayback(
             track.role === "arrangement"
               ? track.notes
               : filteredNotes(editorTrackProject(project, track.id));
-          (track.id === "arrangement" ? guitar : neutral).push(
+          (track.id === "arrangement"
+            ? guitar
+            : track.id === "piano-arrangement"
+              ? piano
+              : neutral
+          ).push(
             ...input.map((n) => ({
               ...n,
               velocity: Math.min(1, n.velocity * gain),
@@ -62,6 +68,10 @@ export function trackPlayback(
         throw new Error("当前轨道还没有音符；请分析该轨道或选择轨道音频。");
       const renderer = guitar.length ? await load("guitar-samples") : null;
       if (renderer) await renderer.prepareAudio?.(ctx, guitar, settings.tone);
+      const pianoRenderer = piano.length
+        ? await load("piano-samples").catch(() => load("note-audio"))
+        : null;
+      await pianoRenderer?.prepareAudio?.(ctx, piano, "grand");
       const noteRenderer = neutral.length ? await load("note-audio") : null;
       if (!current()) throw new DOMException("已取消", "AbortError");
       const origin = ctx.currentTime + 0.08;
@@ -85,6 +95,14 @@ export function trackPlayback(
           speed,
           origin,
         ).stop;
+      const releasePiano = pianoRenderer?.scheduleNotes?.(
+        ctx,
+        piano,
+        from,
+        to,
+        speed,
+        origin,
+      ).stop;
       for (const item of real) {
         const source = ctx.createBufferSource(),
           gain = ctx.createGain();
@@ -105,6 +123,7 @@ export function trackPlayback(
         position: () => from + Math.max(0, ctx.currentTime - origin) * speed,
         stop: () => {
           releaseNotes?.();
+          releasePiano?.();
           void ctx.close().catch(() => {});
         },
       };

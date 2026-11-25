@@ -89,7 +89,11 @@ export async function renderNotes(notes: NoteEvent[], duration: number) {
   out.connect(ctx.destination);
   for (const n of notes)
     voice(ctx, out, n, n.start, Math.min(duration, n.start + n.duration));
-  const buffer = await ctx.startRendering(),
+  return monoWav(await ctx.startRendering());
+}
+
+export function monoWav(buffer: AudioBuffer) {
+  const rate = buffer.sampleRate,
     data = buffer.getChannelData(0),
     bytes = new ArrayBuffer(44 + data.length * 2),
     v = new DataView(bytes);

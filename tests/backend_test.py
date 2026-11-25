@@ -6,11 +6,21 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from backend.workspace import find_workspace
 
-os.environ["STRINGCRAFT_DATA"] = tempfile.mkdtemp(prefix="stringcraft-test-")
+workspace = find_workspace(Path(__file__).parent)
+test_directory = workspace / ".maintenance" if workspace else None
+if test_directory:
+    test_directory.mkdir(exist_ok=True)
+test_data = tempfile.TemporaryDirectory(prefix="server-test-", dir=test_directory)
+os.environ["STRINGCRAFT_DATA"] = test_data.name
 from fastapi.testclient import TestClient
 from backend.server import app
 from backend import server
+
+
+def tearDownModule():
+    test_data.cleanup()
 
 
 class LocalHostTests(unittest.TestCase):

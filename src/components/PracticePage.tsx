@@ -9,6 +9,8 @@ import type {
   PracticeReport,
 } from "../../packages/contracts/practice";
 import type { PlaybackDriver } from "../../packages/music/transport";
+import type { MusicPlugin, NoteEvent } from "../../packages/contracts";
+import { load } from "../../packages/plugin-host";
 import { noteName } from "../../packages/music/demo";
 import { demoChart, demoPractice } from "../../plugins/practice-demo";
 import { projectChart } from "../../plugins/practice-demo/project";
@@ -19,38 +21,15 @@ import { useTransport } from "../hooks/useTransport";
 import { playPracticeTone } from "./practice-audio";
 import "./practice.css";
 
-const keyboard = {
-  left: [
-    "KeyZ",
-    "KeyS",
-    "KeyX",
-    "KeyD",
-    "KeyC",
-    "KeyV",
-    "KeyG",
-    "KeyB",
-    "KeyH",
-    "KeyN",
-    "KeyJ",
-    "KeyM",
-  ],
-  right: [
-    "KeyQ",
-    "Digit2",
-    "KeyW",
-    "Digit3",
-    "KeyE",
-    "KeyR",
-    "Digit5",
-    "KeyT",
-    "Digit6",
-    "KeyY",
-    "Digit7",
-    "KeyU",
-  ],
-};
-const pick = ["KeyU", "KeyI", "KeyO", "KeyP", "BracketLeft", "BracketRight"];
-const chordKeys = Array.from({ length: 8 }, (_, i) => "Digit" + (i + 1));
+import {
+  guitarKeys,
+  legacyGuitarKeys,
+  pianoKeys,
+  splitKeys,
+  whiteAnchors,
+  type PracticeHand,
+} from "./practice-keys";
+
 const modeLabel = { free: "自由弹奏", rhythm: "按拍跟练", wait: "等弹对" };
 const verdict = {
   perfect: "精准",
@@ -68,17 +47,15 @@ type Binding = {
   pitches: number[];
   label: string;
 };
-const blackKey = (index: number) => [1, 3, 6, 8, 10].includes(index % 12);
-const keyCenter = (index: number) =>
-  ((Math.floor(index / 12) * 7 +
-    [0.5, 1, 1.5, 2, 2.5, 3.5, 4, 4.5, 5, 5.5, 6, 6.5][index % 12]) /
-    14) *
-  100;
 const showCode = (key: string) =>
   key
     .replace(/^(Key|Digit)/, "")
     .replace("BracketLeft", "[")
-    .replace("BracketRight", "]");
+    .replace("BracketRight", "]")
+    .replace("Semicolon", ";")
+    .replace("Quote", "'")
+    .replace("ArrowDown", "↓")
+    .replace("ArrowUp", "↑");
 
 export default function PracticePage() {
   const c = useWorkbenchContext();
@@ -197,8 +174,9 @@ function PracticeStudio({
   const [bases, setBases] = useState(() =>
     getPreference("practice-octaves", { left: 48, right: 60 }),
   );
+  const [layout, setLayout] = useState<"split" | "wide" | "legacy">("split");
   const [keyMap, setKeyMap] = useState<Record<string, string>>(() =>
-    getPreference("practice-keys", {}),
+    getPreference("practice-keys-v2", {}),
   );
   const [remap, setRemap] = useState<string>();
   const [bank, setBank] = useState(0);
@@ -217,22 +195,75 @@ function PracticeStudio({
   const [waitAt, setWaitAt] = useState(rangeStart);
   const current = useRef({ playing: false, position: rangeStart, base: 0 });
   const piano = chart.instrument === "piano";
+  const [sampleRenderer, setSampleRenderer] = useState<MusicPlugin>();
+  const [toneStatus, setToneStatus] = useState("检查钢琴音色");
+  useEffect(() => {
+    if (!piano) return;
+    let alive = true;
+    const ctx = new OfflineAudioContext(1, 32, 24000);
+    const notes: NoteEvent[] = Array.from({ length: 30 }, (_, index) => ({
+      id: "key-" + index,
+      start: 0,
+      duration: 0.2,
+      pitch: { midi: 21 + index * 3 },
+      velocity: 0.56,
+      score: 1,
+      source: "demo",
+    }));
+    void load("piano-samples")
+      .then(async (plugin) => {
+        await plugin.prepareAudio?.(ctx, notes, "grand");
+        if (alive) {
+          setSampleRenderer(plugin);
+          setToneStatus(
+            plugin.hasSamples?.(notes)
+              ? "实录钢琴 · Salamander"
+              : "合成键盘 · 采样未齐",
+          );
+        }
+      })
+      .catch(() => {
+        if (alive) setToneStatus("合成键盘 · 采样未启用");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [piano]);
+  const sound = (
+    ctx: AudioContext,
+    midi: number,
+    at: number,
+    duration?: number,
+  ) =>
+    (piano
+      ? sampleRenderer?.playSampleNote?.(ctx, midi, 0.56, at, duration)
+      : undefined) ??
+    playPracticeTone(ctx, midi, chart.instrument, at, duration);
   const chordPage = chart.chords.slice(bank * 8, bank * 8 + 8);
+  const guitarLayout = layout === "legacy" ? legacyGuitarKeys : guitarKeys;
+  const chordKeys = guitarLayout.chords;
+  const pick = guitarLayout.strings;
   const choices = piano
-    ? (["left", "right"] as const).flatMap((hand) =>
-        keyboard[hand].map((code, i) => {
-          const midi = bases[hand] + i;
-          return {
-            code,
-            token: "key:" + hand + ":" + midi,
-            pitches: [midi],
-            label: noteName(midi),
-          };
-        }),
-      )
-    : ([] as Binding[]);
+    ? pianoKeys(
+        layout,
+        bases.left,
+        layout === "wide" ? Math.floor(bases.right / 12) * 12 : bases.right,
+      ).map((key) => ({
+        ...key,
+        token: "key:" + key.hand + ":" + key.midi,
+        pitches: [key.midi],
+        label: noteName(key.midi),
+      }))
+    : [];
+  const layoutPrefix = chart.instrument + ":" + layout + ":";
+  const oldKeyMap =
+    layout === "legacy"
+      ? getPreference<Record<string, string>>("practice-keys", {})
+      : {};
   const mapCode = (code: string) =>
-    keyMap[chart.instrument + ":" + code] ?? code;
+    keyMap[layoutPrefix + code] ??
+    oldKeyMap[chart.instrument + ":" + code] ??
+    code;
   const release = (code: string) => {
     pressStop.current.get(code)?.();
     pressStop.current.delete(code);
@@ -342,10 +373,9 @@ function PracticeStudio({
           if (at >= ctx.currentTime - 0.015)
             a.pitches.forEach((m, i) =>
               scheduled.push(
-                playPracticeTone(
+                sound(
                   ctx,
                   m,
-                  chart.instrument,
                   Math.max(ctx.currentTime, at) + i * 0.012,
                   Math.min(0.34, a.duration / speed),
                 ),
@@ -414,10 +444,9 @@ function PracticeStudio({
     if (pressStop.current.has(code)) return;
     const ctx = context();
     const voices = binding.pitches.map((pitch, i) =>
-      playPracticeTone(
+      sound(
         ctx,
         pitch,
-        chart.instrument,
         ctx.currentTime + (spread ? i * 0.011 : 0),
         spread ? 0.25 : undefined,
       ),
@@ -476,19 +505,21 @@ function PracticeStudio({
   function remapKey(code: string, next: string) {
     const assigned = [
       ...choices.map((k) => k.code),
-      ...(!piano ? [...chordKeys, "KeyJ", "KeyK", ...pick] : []),
+      ...(!piano
+        ? [...chordKeys, guitarLayout.down, guitarLayout.up, ...pick]
+        : []),
     ];
     if (
-      !/^(Key[A-Z]|Digit[0-9]|BracketLeft|BracketRight|Semicolon|Quote|Comma|Period|Slash)$/.test(
+      !/^(Key[A-Z]|Digit[0-9]|BracketLeft|BracketRight|Semicolon|Quote|Comma|Period|Slash|ArrowUp|ArrowDown)$/.test(
         next,
       )
     )
       return;
     if (assigned.some((item) => item !== code && mapCode(item) === next))
       return;
-    const nextMap = { ...keyMap, [chart.instrument + ":" + code]: next };
+    const nextMap = { ...keyMap, [layoutPrefix + code]: next };
     setKeyMap(nextMap);
-    setPreference("practice-keys", nextMap);
+    setPreference("practice-keys-v2", nextMap);
     setRemap(undefined);
   }
   useEffect(() => {
@@ -517,10 +548,49 @@ function PracticeStudio({
       a.at + a.duration > position - 0.04 && a.at < position + windowLength,
   );
   const reveal = mode === "wait" ? run.next() : upcoming[0];
-  const displayed = new Set(choices.map((b) => b.token));
+  const covers = (binding: Binding, attack: PracticeAttack) =>
+    binding.token === attack.token ||
+    (layout === "wide" &&
+      attack.pitches.length === 1 &&
+      attack.pitches[0] === binding.pitches[0]);
+  const practiceBinding = (binding: Binding) => {
+    if (layout !== "wide") return binding;
+    const attack = [reveal, ...upcoming].find((a) => a && covers(binding, a));
+    return attack ? { ...binding, token: attack.token } : binding;
+  };
+  const measure = reveal?.measure ?? 1;
+  const newBases = { ...bases };
+  const anchorOptions = whiteAnchors.slice(0, -4);
+  if (piano && layout === "split") {
+    for (const hand of ["left", "right"] as const) {
+      const pitches = chart.attacks
+        .filter(
+          (a) =>
+            a.measure === measure && a.token.startsWith("key:" + hand + ":"),
+        )
+        .flatMap((a) => a.pitches);
+      const score = (base: number) => {
+        const available = new Set(splitKeys(hand, base).map((key) => key.midi));
+        return pitches.filter((midi) => available.has(midi)).length;
+      };
+      for (const base of anchorOptions) {
+        if (score(base) > score(newBases[hand])) newBases[hand] = base;
+      }
+    }
+  }
+  const shift = newBases.left !== bases.left || newBases.right !== bases.right;
+  const changeBase = (hand: PracticeHand, base: number) => {
+    if (pressStop.current.size) return;
+    const next = { ...bases, [hand]: base };
+    setBases(next);
+    setPreference("practice-octaves", next);
+  };
   const outside = piano
     ? chart.attacks.filter(
-        (a) => a.at >= rangeStart && a.at < rangeEnd && !displayed.has(a.token),
+        (a) =>
+          a.at >= rangeStart &&
+          a.at < rangeEnd &&
+          !choices.some((b) => covers(b, a)),
       ).length
     : 0;
   function showDetails() {
@@ -576,19 +646,16 @@ function PracticeStudio({
                 {hand === "left" ? "左手" : "右手"}起始八度
                 <select
                   value={bases[hand]}
-                  onChange={(e) => {
-                    const next = { ...bases, [hand]: Number(e.target.value) };
-                    setBases(next);
-                    setPreference("practice-octaves", next);
-                  }}
+                  onChange={(e) => changeBase(hand, Number(e.target.value))}
                 >
-                  {Array.from({ length: 8 }, (_, i) => 24 + i * 12)
-                    .filter((n) => n <= 96)
-                    .map((base) => (
-                      <option key={base} value={base}>
-                        {noteName(base)}
-                      </option>
-                    ))}
+                  {(layout === "split"
+                    ? anchorOptions
+                    : [24, 36, 48, 60, 72, 84, 96]
+                  ).map((base) => (
+                    <option key={base} value={base}>
+                      {noteName(base)}
+                    </option>
+                  ))}
                 </select>
               </label>
             ))}
@@ -598,8 +665,8 @@ function PracticeStudio({
             ? choices.map((b) => [b.code, b.label])
             : [
                 ...chordKeys.map((key, i) => [key, "和弦 " + (i + 1)]),
-                ["KeyJ", "下扫"],
-                ["KeyK", "上扫"],
+                [guitarLayout.down, "下扫"],
+                [guitarLayout.up, "上扫"],
                 ...pick.map((key, i) => [key, i + 1 + "弦"]),
               ]
           ).map(([code, label]) => (
@@ -619,7 +686,7 @@ function PracticeStudio({
           className="text-button"
           onClick={() => {
             setKeyMap({});
-            setPreference("practice-keys", {});
+            setPreference("practice-keys-v2", {});
             setRemap(undefined);
           }}
         >
@@ -632,6 +699,46 @@ function PracticeStudio({
     <div className="practice-studio">
       <div className="practice-controls">
         <strong>{chart.title}</strong>
+        {piano && <span>{toneStatus}</span>}
+        <label>
+          键位
+          <select
+            aria-label="练习键位预设"
+            value={layout}
+            onChange={(e) => {
+              releaseAll();
+              setLayout(e.target.value as typeof layout);
+            }}
+          >
+            <option value="split">{piano ? "双手分区" : "左右手分工"}</option>
+            {piano && <option value="wide">单手宽音域</option>}
+            <option value="legacy">旧版键位与自定义</option>
+          </select>
+        </label>
+        {piano && layout === "wide" && (
+          <>
+            <button
+              onClick={() =>
+                changeBase(
+                  "right",
+                  Math.max(24, Math.floor(bases.right / 12) * 12 - 12),
+                )
+              }
+            >
+              降八度
+            </button>
+            <button
+              onClick={() =>
+                changeBase(
+                  "right",
+                  Math.min(96, Math.floor(bases.right / 12) * 12 + 12),
+                )
+              }
+            >
+              升八度
+            </button>
+          </>
+        )}
         <div role="group" aria-label="练习模式">
           {engine.modes.map((m) => (
             <button
@@ -716,7 +823,7 @@ function PracticeStudio({
             const b = choices.find((b) => mapCode(b.code) === e.code);
             if (b) {
               e.preventDefault();
-              playInput(e.code, b);
+              playInput(e.code, practiceBinding(b));
             }
             return;
           }
@@ -728,11 +835,20 @@ function PracticeStudio({
             return;
           }
           const s = pick.findIndex((k) => mapCode(k) === e.code);
-          if (s >= 0 || [mapCode("KeyJ"), mapCode("KeyK")].includes(e.code)) {
+          if (
+            s >= 0 ||
+            [mapCode(guitarLayout.down), mapCode(guitarLayout.up)].includes(
+              e.code,
+            )
+          ) {
             e.preventDefault();
             activateGuitar(
               e.code,
-              s >= 0 ? s + 1 : e.code === mapCode("KeyJ") ? "down" : "up",
+              s >= 0
+                ? 6 - s
+                : e.code === mapCode(guitarLayout.down)
+                  ? "down"
+                  : "up",
             );
           }
         }}
@@ -743,10 +859,28 @@ function PracticeStudio({
             ? "下一步 · 小节 " + reveal.measure + " · " + reveal.label
             : "预备或自由弹奏"}
           {outside > 0 && <span>{outside} 个练习音在当前键区外</span>}
+          {piano && layout === "split" && (
+            <span>
+              左手 {noteName(bases.left)} 起 · 右手 {noteName(bases.right)} 起
+            </span>
+          )}
+          {shift && (
+            <button
+              disabled={held.length > 0 || snap.status === "playing"}
+              onClick={() => {
+                setBases(newBases);
+                setPreference("practice-octaves", newBases);
+                board.current?.focus();
+              }}
+            >
+              按第 {measure} 小节移位
+            </button>
+          )}
+          {!piano && <span>左手选和弦 · 右手扫弦或拨弦</span>}
         </div>
         <div className={piano ? "piano-waterfall" : "guitar-timing"}>
           {upcoming.slice(0, 112).map((a) => {
-            const index = choices.findIndex((b) => b.token === a.token);
+            const index = choices.findIndex((b) => covers(b, a));
             const pct = Math.max(
               0,
               Math.min(96, ((a.at - position) / windowLength) * 100),
@@ -756,9 +890,9 @@ function PracticeStudio({
                 <span
                   key={a.id}
                   className="fall"
-                  data-hand={index < 12 ? "left" : "right"}
+                  data-hand={choices[index].hand}
                   style={{
-                    left: keyCenter(index) - 1.6 + "%",
+                    left: choices[index].center - 1.6 + "%",
                     bottom: pct + "%",
                     height:
                       Math.max(
@@ -781,19 +915,23 @@ function PracticeStudio({
           })}
         </div>
         {piano ? (
-          <div className="piano-keys" aria-label="模拟钢琴键盘">
-            {choices.map((b, index) => (
+          <div
+            className="piano-keys"
+            data-layout={layout}
+            aria-label="模拟钢琴键盘"
+          >
+            {choices.map((b) => (
               <button
                 key={b.code}
-                style={{ left: keyCenter(index) + "%" }}
-                className={blackKey(index) ? "black" : "white"}
+                style={{ left: b.center + "%" }}
+                className={b.black ? "black" : "white"}
                 data-active={
                   held.includes(mapCode(b.code)) ||
                   held.includes("pointer:" + b.code)
                 }
                 onPointerDown={(e) => {
                   e.currentTarget.setPointerCapture(e.pointerId);
-                  playInput("pointer:" + b.code, b);
+                  playInput("pointer:" + b.code, practiceBinding(b));
                 }}
                 onPointerUp={() => release("pointer:" + b.code)}
                 onPointerCancel={() => release("pointer:" + b.code)}
@@ -841,14 +979,14 @@ function PracticeStudio({
                 )}
               </div>
               <div>
-                {(["down", "up", ...pick.map((_, i) => i + 1)] as const).map(
+                {(["down", "up", ...pick.map((_, i) => 6 - i)] as const).map(
                   (action) => {
                     const key =
                       action === "down"
-                        ? "KeyJ"
+                        ? guitarLayout.down
                         : action === "up"
-                          ? "KeyK"
-                          : pick[action - 1];
+                          ? guitarLayout.up
+                          : pick[6 - action];
                     return (
                       <button
                         key={key}

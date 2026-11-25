@@ -2,7 +2,7 @@ import { loadInstrument } from "../../packages/plugin-host";
 import type { PianoAction } from "../../packages/contracts/piano";
 import type { PianoOptions } from "../../plugins/piano";
 import { pianoMusicXml } from "../../plugins/piano/musicxml";
-import { pagesEdition } from "../edition";
+import { nativeHost, pagesEdition } from "../edition";
 import { initialAI } from "../preferences";
 import { savedAudioAsset } from "../../packages/music/local";
 import {
@@ -429,9 +429,18 @@ export function useWorkbench() {
       if (c?.engine?.status === "checking") timer = setTimeout(refresh, 2000);
     };
     void refresh();
+    const host = nativeHost();
+    const runtimeChanged = (event: Event) => {
+      if ((event as MessageEvent).data === "runtime-changed") {
+        clearTimeout(timer);
+        void refresh();
+      }
+    };
+    host?.addEventListener("message", runtimeChanged);
     return () => {
       active = false;
       clearTimeout(timer);
+      host?.removeEventListener("message", runtimeChanged);
     };
   }, []);
   const neutralStop = useRef<(() => void) | null>(null);
@@ -1020,7 +1029,7 @@ export function useWorkbench() {
       }
     }
   }
-  async function exportPiano(format: "musicxml" | "midi") {
+  async function exportPiano(format: "musicxml" | "midi" | "wav") {
     const piano = project.piano;
     if (!piano) return;
     try {
@@ -1030,7 +1039,15 @@ export function useWorkbench() {
           "application/vnd.recordare.musicxml+xml",
           project.name + "-钢琴.musicxml",
         );
-      else {
+      else if (format === "wav") {
+        const renderer = await load("piano-samples").catch(() =>
+          load("note-audio"),
+        );
+        const data = await renderer.renderNotes!(piano.notes, project.duration);
+        download(data, "audio/wav", project.name + "-钢琴.wav");
+        if (!renderer.hasSamples?.(piano.notes))
+          notify("钢琴采样不完整，已导出合成键盘音色。");
+      } else {
         const data = (await load("note-exporters")).exportNotes!(
           piano.notes,
           project.bpm,
@@ -1735,7 +1752,16 @@ export function useWorkbench() {
       duration: Math.min(end, n.duration),
     }));
     try {
-      const renderer = await load(guitar ? "guitar-samples" : "note-audio");
+      const piano =
+        !guitar &&
+        (mode === "piano" || selectedTrackId === "piano-arrangement");
+      const renderer = await load(
+        guitar ? "guitar-samples" : piano ? "piano-samples" : "note-audio",
+      ).catch((error) => {
+        if (!piano) throw error;
+        return load("note-audio");
+      });
+      if (piano) await renderer.prepareAudio?.(ctx, material, "grand");
       if (revision !== previewRevision.current) {
         void ctx.close().catch(() => {});
         return;

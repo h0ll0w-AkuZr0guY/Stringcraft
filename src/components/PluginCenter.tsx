@@ -1,6 +1,8 @@
 import { nativeHost } from "../edition";
 import {
   localCapabilities,
+  localPluginInbox,
+  readLocalPlugin,
   type LocalEngineState,
 } from "../../packages/music/local";
 import { repairWorkbenchComponents } from "../../packages/music/maintenance";
@@ -20,6 +22,7 @@ import {
   enable,
   install,
   installed,
+  installSignedBrowserPackage,
   rollback,
   uninstall,
 } from "../../packages/plugin-host";
@@ -100,6 +103,75 @@ export default function PluginCenter({
       setBusy("");
     }
   }
+  async function scanInbox() {
+    const files = await localPluginInbox();
+    if (!files.length) {
+      notify("插件文件夹里没有可扫描的小型 ZIP。");
+      return;
+    }
+    const results: string[] = [];
+    for (const name of files) {
+      try {
+        const bytes = await readLocalPlugin(name);
+        try {
+          results.push((await installSignedBrowserPackage(bytes)).name);
+        } catch {
+          const { installPracticeZip } = await import(
+            "../../packages/plugin-host/practice"
+          );
+          const info = await installPracticeZip(new File([bytes], name));
+          results.push("键盘练习 " + info.version);
+        }
+      } catch {
+        results.push(name + " 校验失败");
+      }
+    }
+    await refresh();
+    notify(results.join(" · "));
+  }
+  async function checkUpdates() {
+    await refresh();
+    if (!nativeHost()) return;
+    const base = new URL(
+      "https://h0ll0w-akuzr0guy.github.io/Stringcraft/plugins/",
+    );
+    const response = await fetch(new URL("updates.json", base), {
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => null);
+    if (!response?.ok) {
+      notify("已检查随包目录。在线更新清单暂不可用。");
+      return;
+    }
+    const items: unknown = await response.json();
+    if (!Array.isArray(items) || items.length > 25)
+      throw new Error("在线插件清单无效。");
+    let applied = 0;
+    for (const entry of items) {
+      if (typeof entry !== "string" || !/^[a-z][a-z0-9.-]+\.zip$/.test(entry))
+        continue;
+      const pack = await fetch(new URL(entry, base), {
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!pack.ok) continue;
+      await installSignedBrowserPackage(await pack.arrayBuffer());
+      applied++;
+    }
+    await refresh();
+    notify(
+      applied ? `已检查并应用 ${applied} 个签名插件。` : "当前没有可用更新。",
+    );
+  }
+  useEffect(() => {
+    const host = nativeHost();
+    if (!host) return;
+    const received = (event: Event) => {
+      const message = (event as MessageEvent).data;
+      if (message === "runtime-changed")
+        void refresh().catch((e) => notify(e.message));
+    };
+    host.addEventListener("message", received);
+    return () => host.removeEventListener("message", received);
+  }, []);
   return (
     <>
       <div className="section-title">
@@ -112,11 +184,34 @@ export default function PluginCenter({
         </div>
         <button
           className="button secondary"
-          onClick={() => refresh().catch((e) => notify(e.message))}
+          onClick={() => checkUpdates().catch((e) => notify(e.message))}
         >
           检查更新
         </button>
       </div>
+      {nativeHost() && (
+        <section className="plugin-notice" aria-label="本地扩展管理">
+          <button
+            className="button secondary"
+            onClick={() => nativeHost()?.postMessage("open-plugins")}
+          >
+            打开插件文件夹
+          </button>
+          <button
+            className="button secondary"
+            disabled={!!busy}
+            onClick={() => void scanInbox().catch((e) => notify(e.message))}
+          >
+            扫描本地包
+          </button>
+          <button
+            className="button secondary"
+            onClick={() => nativeHost()?.postMessage("import-cuda")}
+          >
+            导入 CUDA 离线包
+          </button>
+        </section>
+      )}
       <div className="plugin-notice">
         <Puzzle size={21} />
         <p>
@@ -162,18 +257,33 @@ export default function PluginCenter({
             />
           </label>
           {practiceVersion && (
-            <button
-              className="text-button"
-              onClick={() =>
-                void act("practice", async () => {
-                  await (
-                    await import("../../packages/plugin-host/practice")
-                  ).removePrivatePractice();
-                })
-              }
-            >
-              卸载练习插件
-            </button>
+            <>
+              <button
+                className="text-button"
+                onClick={() =>
+                  void act("practice", async () => {
+                    await (
+                      await import("../../packages/plugin-host/practice")
+                    ).removePrivatePractice();
+                  })
+                }
+              >
+                卸载练习插件
+              </button>
+              <button
+                className="text-button"
+                onClick={() =>
+                  void act("practice", async () => {
+                    const { rollbackPractice } = await import(
+                      "../../packages/plugin-host/practice"
+                    );
+                    await rollbackPractice();
+                  })
+                }
+              >
+                恢复上一版
+              </button>
+            </>
           )}
         </section>
       )}

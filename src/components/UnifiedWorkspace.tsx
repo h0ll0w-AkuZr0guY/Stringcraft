@@ -91,6 +91,15 @@ export default function UnifiedWorkspace() {
     setZoom(1);
     setPaper(false);
   };
+  const printA4Tab = () => {
+    setControls(false);
+    setExporting(false);
+    chooseView("tab");
+    setReading(true);
+    setPaper(true);
+    setZoom(1);
+    requestAnimationFrame(() => requestAnimationFrame(printTab));
+  };
   const visible = c.tracks.filter(
     (t) => extras || !["bass", "drums", "other"].includes(t.role),
   );
@@ -229,16 +238,7 @@ export default function UnifiedWorkspace() {
                   <button onClick={() => void c.exportAs("musicxml")}>
                     编配 MusicXML
                   </button>
-                  <button
-                    onClick={() => {
-                      setControls(false);
-                      setExporting(false);
-                      chooseView("tab");
-                      setTimeout(printTab, 100);
-                    }}
-                  >
-                    打印六线谱 PDF
-                  </button>
+                  <button onClick={printA4Tab}>打印六线谱 PDF</button>
                 </>
               )}
             </div>
@@ -303,15 +303,48 @@ export default function UnifiedWorkspace() {
         <div className="reader-toolbar">
           <strong>{c.project.name}</strong>
           <span />
-          <button className="button secondary small" onClick={() => setZoom(1)}>
+          <button
+            className="button secondary small"
+            onClick={() => {
+              const width =
+                root.current?.querySelector(".notation-body")?.clientWidth ??
+                794;
+              setZoom(paper ? Math.min(1, (width - 24) / 794) : 1);
+            }}
+          >
             适合宽度
           </button>
+          {paper && (
+            <button
+              className="button secondary small"
+              onClick={() => {
+                const box = root.current?.querySelector(".notation-body");
+                setZoom(
+                  Math.max(
+                    0.25,
+                    Math.min(
+                      (box?.clientWidth ?? 794) / 820,
+                      (box?.clientHeight ?? 1122) / 1160,
+                    ),
+                  ),
+                );
+              }}
+            >
+              适合整页
+            </button>
+          )}
           <button
             className="button secondary small"
             aria-pressed={paper}
             onClick={() => {
               setPaper(!paper);
               setZoom(1);
+              if (
+                !paper &&
+                c.mode === "guitar" &&
+                c.project.arrangement?.goal === "fingerstyle"
+              )
+                chooseView("rhythm");
             }}
           >
             A4 预览
@@ -548,11 +581,13 @@ export default function UnifiedWorkspace() {
               professional={professional && !reading}
               shown={!controls}
               zoom={zoom}
+              paper={paper}
+              onPrintTab={printA4Tab}
             />
           </div>
           {c.mode === "piano" && (
             <div className="view-pane">
-              <PianoScore zoom={zoom} shown={!controls} />
+              <PianoScore zoom={zoom} shown={!controls} paper={paper} />
             </div>
           )}
         </div>

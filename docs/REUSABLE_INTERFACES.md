@@ -40,6 +40,10 @@ SDK v2 的音乐结构定义位于 `packages/contracts/score.ts`；SDK v1 兼容
 
 ## 插件
 
+0.2.1 补充可选 `playSampleNote` 与 `hasSamples`。实录钢琴插件通过 `prepareAudio` 预取并校验采样，同一音源供应谱面定位试听、轨道播放、键盘跟练与 WAV。练习键位属于输入层，位置和评分快照契约保持独立。
+
+桌面本地插件收件箱通过 `GET /api/v1/plugin-inbox` 列出有大小上限的 ZIP，再按文件名读取。可执行浏览器扩展需要签名清单、模块摘要和 SDK 检查。新代码只影响下一次加载，已有会话仍使用持有的旧模块。CUDA 离线环境由桌面宿主验证完整 ZIP 的签名，再通过专用环回调用启动自检与切换。
+
 `PluginManifest` 声明 id、name、version、sdk、capabilities、runtime、license、entry、sha256、size、dependencies。id 使用小写字母与连字符。插件接口为默认导出的 `MusicPlugin` 对象：
 
 | 方法 | 契约 |

@@ -1,9 +1,10 @@
-import { del, get, set } from "idb-keyval";
+import { delMany, get, setMany } from "idb-keyval";
 import { unzipSync } from "fflate";
 import type { PracticePlugin } from "../contracts/practice";
 import { practicePublicKey } from "./practice-public-key";
 
 const key = "plugin:private-practice";
+const previous = key + ":previous";
 const required = ["manifest.json", "manifest.sig", "practice.mjs"] as const;
 const allowed = new Set<string>(required);
 const maxBytes = 256 * 1024;
@@ -104,7 +105,16 @@ export async function installPracticeZip(file: File) {
   const bytes = await file.arrayBuffer(),
     result = await verifyPracticeZip(bytes);
   await loadModule(result.module);
-  await set(key, bytes);
+  const old = await get<ArrayBuffer>(key);
+  if (
+    old &&
+    (await verifyPracticeZip(old)).manifest.sha256 === result.manifest.sha256
+  )
+    return result.manifest;
+  await setMany([
+    [key, bytes],
+    [previous, old],
+  ]);
   return result.manifest;
 }
 export async function privatePractice() {
@@ -119,5 +129,16 @@ export async function privatePractice() {
 }
 export async function removePrivatePractice() {
   checkDesktop();
-  await del(key);
+  await delMany([key, previous]);
+}
+export async function rollbackPractice() {
+  checkDesktop();
+  const old = await get<ArrayBuffer>(previous);
+  if (!old) throw new Error("暂无可恢复版本。");
+  await verifyPracticeZip(old);
+  const current = await get<ArrayBuffer>(key);
+  await setMany([
+    [key, old],
+    [previous, current],
+  ]);
 }

@@ -24,7 +24,8 @@ with zipfile.ZipFile(args.archive) as archive:
     archive.extractall(directory)
 desktop=directory/'Stringcraft'
 assert (desktop/'Stringcraft.exe').is_file()
-exe=desktop/'service'/'StringcraftService.exe'
+internal=desktop/'_internal' if (desktop/'_internal').is_dir() else desktop
+exe=internal/'service'/'StringcraftService.exe'
 if args.environment:
     with zipfile.ZipFile(args.environment) as archive:
         for name in archive.namelist():
@@ -34,7 +35,7 @@ if args.environment:
 environment=os.environ.copy()
 environment['PATH']=str(Path(os.environ.get('SystemRoot','C:/Windows'))/'System32')
 environment['STRINGCRAFT_DATA']=str(directory/'user-data')
-environment['STRINGCRAFT_PLUGIN_DIR']=str(desktop/'runtime_plugins')
+environment['STRINGCRAFT_PLUGIN_DIR']=str(internal/'runtime_plugins')
 with socket.socket() as port_picker:
     port_picker.bind(('127.0.0.1', 0))
     port=port_picker.getsockname()[1]

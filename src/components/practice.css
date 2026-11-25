@@ -271,3 +271,19 @@
     #29453b calc(100% / 14)
   );
 }
+
+.piano-keys[data-layout="split"] button.white {
+  width: calc(10% - 1px);
+}
+.piano-keys[data-layout="split"] button.black {
+  width: 6.1%;
+}
+.piano-keys[data-layout="wide"] button.white {
+  width: calc(12.5% - 1px);
+}
+.piano-keys[data-layout="wide"] button.black {
+  width: 7.6%;
+}
+.practice-caption button {
+  padding: 0.25rem 0.5rem;
+}

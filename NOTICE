@@ -9,6 +9,8 @@ TensorFlow.js: Copyright Google LLC, Apache-2.0.
 alphaTab: Copyright Daniel Kuschny and contributors, MPL-2.0.
 Meta Open Sound instrument samples: CC0-1.0; see public/samples/manifest.json
 and public/samples/LICENSE-CC0.txt for the exact source and sample mapping.
+Salamander Grand Piano v3 by Alexander Holm: CC BY 3.0. See
+public/piano-samples/manifest.json and public/piano-samples/LICENSE.txt.
 Demucs: Copyright Meta Platforms and contributors, MIT (optional local plugin).
 
 Distribution builds include generated runtime JavaScript dependency notices.

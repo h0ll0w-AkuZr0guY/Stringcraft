@@ -38,6 +38,9 @@ export default function App() {
     if (!host) return;
     const receive = (event: Event) => {
       const controller = latest.current;
+      const value = (event as MessageEvent).data;
+      if (typeof value === "string" && value.startsWith("runtime:"))
+        controller.notify(value.slice(8));
       switch ((event as MessageEvent).data) {
         case "open-settings":
           controller.setSettings(true);
